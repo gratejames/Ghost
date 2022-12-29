@@ -1,0 +1,41 @@
+; Simple program to show arrow key presses on-screen for debugging
+
+
+main:
+
+LD 0 0xf800
+ROU up
+ST 0 $0xa000+128+2
+
+LD 0 0xf800
+ROU down
+ST 0 $0xa000+384+2
+
+LD 0 0xf800
+ROU left
+ST 0 $0xa000+256+1
+
+LD 0 0xf800
+ROU right
+ST 0 $0xa000+256+3
+
+JMP main
+
+
+
+up:
+JNZ $0x9f00 Color
+RET
+down:
+JNZ $0x9f01 Color
+RET
+left:
+JNZ $0x9f02 Color
+RET
+right:
+JNZ $0x9f03 Color
+RET
+
+Color:
+LD 0 0x07e0
+RET

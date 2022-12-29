@@ -1,0 +1,182 @@
+; Snake game, not working yet
+; Curently renders sprites though!
+; TODO: explain myself better
+
+
+gameLoop:
+	LD 0 SnackBodyStack
+	DD 0
+	LD 0
+	ROU splitByte
+	LD 2 SnakeHeadSprite
+	LD 3 $SnakeColor
+	ROU SpriteRender
+
+	LD 0 SnackBodyStack
+	PSH 0
+	drawSnakeStack:
+		POP 0
+		INC 0
+		PSH 0
+		DD 0
+		LD 0
+		JPE 0 0xffff drawSnakeStackExit
+		ROU splitByte
+
+		LD 2 SnakeSprite
+		LD 3 $SnakeColor
+		ROU SpriteRender
+		JMP drawSnakeStack
+	drawSnakeStackExit:
+	HLT
+	;JMP $gameLoop
+
+; 0/1 is SpritePosX/y, 2 is the address of the sprite, 3 is the color of the sprite
+; Desroys addresses SpriteRenderPositionX/Y
+SpriteRender:
+	PSH
+	SHL 0 0x0003
+	SHL 1 0x0003
+	ST 0 $SpriteRenderPositionX
+	ST 1 $SpriteRenderPositionY
+	ST 2 $SpriteRenderAddress
+	LD 2 0x0000 ; LoopY progress
+	SpriteRenderLoopY:
+		;DD 
+		JPE 2 0x0008 SpriteRenderLoopEndY
+		LD 1 0x0000 ; LoopX progress
+		SpriteRenderLoopX:
+			LD 0 $SpriteRenderPositionY
+			ADD 2 ; R0 + R2
+			SHL 0 0x0007 ; Equivalent to multiplying by 128
+			ADD 0 0xa000
+			ADD 0 $SpriteRenderPositionX
+			ADD 1 ; defaults to R0 + R1
+
+			PSH
+			LD 0 $SpriteRenderAddress
+			ADD 2
+			; 0 is now the address of the sprite + LoopY progress
+			DD 0
+			LD 0
+			; 0 is now correct row of the sprite
+			; 1 is LoopX progress
+			ROU getOneBit
+			DD SpriteRenderDontDraw
+			JPZ 0
+
+			SpriteRenderDraw:
+			POP
+			DD 0
+			ST 3
+			JMP SpriteRenderDrawEnd
+			SpriteRenderDontDraw:
+			POP
+			SpriteRenderDrawEnd:
+			INC 1
+			DD SpriteRenderLoopEndX
+			JPE 1 0x0008
+			JMP SpriteRenderLoopX
+		SpriteRenderLoopEndX:
+		INC 2
+		JMP SpriteRenderLoopY
+	SpriteRenderLoopEndY:
+	POP
+	RET
+
+SnakeDirection: .dd 1 ; 00^ 01> 10_ 11< 
+
+; R0 is the value to scan, R1 is the bit to scan
+; Returned is R0 with either 1 or 0
+; R0: 0b0000000100000000 will only return 1 if R1 is 7, the indice of the 1 value
+getOneBit:
+	SHL0 1
+	SHR 0 0x000f
+	RET
+
+; IN:  R0: 0xabcd
+; OUT: R0: 0x00ab, R1: 0x00cd
+splitByte:
+	ST 0 $splitByteStore
+	SHR 0 0x0008
+	LD 1 $splitByteStore
+	SHL 1 0x0008
+	SHR 1 0x0008
+	RET
+
+; IN:  R0: 0x00ab, R1: 0x00cd
+; OUT: R0: 0xabcd
+combineByte:
+	SHL 0 0x0008
+	ADD 1
+	RET
+
+splitByteStore: .dd 0
+
+SpriteRenderPositionX: .dd 0
+SpriteRenderPositionY: .dd 0
+SpriteRenderAddress: .dd 0
+
+; Sprites/Colors
+SnakeColor:
+.db 00000 111111 00000
+AppleColor:
+.db 11111 000000 00000
+SnakeHeadSprite:
+.db 0111 1100 0000 0000
+.db 1111 1110 0000 0000
+.db 1111 1110 0000 0000
+.db 1111 1110 0000 0000
+.db 1111 1110 0000 0000
+.db 1111 1110 0000 0000
+.db 0111 1100 0000 0000
+.db 0000 0000 0000 0000
+SnakeSprite:
+.db 0111 1100 0000 0000
+.db 1000 0010 0000 0000
+.db 1000 0010 0000 0000
+.db 1000 0010 0000 0000
+.db 1000 0010 0000 0000
+.db 1000 0010 0000 0000
+.db 0111 1100 0000 0000
+.db 0000 0000 0000 0000
+
+SnackBodyStack: ; 0xXXYY
+.dh 0x0101
+.dh 0x0102
+.dh 0x0103
+.dh 0x0203
+.dh 0x0303
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
+.dh 0xffff
