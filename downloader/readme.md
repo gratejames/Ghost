@@ -3,8 +3,10 @@ This script fetches the current documentation from Notion.so and creates `./inst
 I have included a read-only key to the original document at https://www.notion.so/jimmytech/Ghost-de748728e51a453288c075e56b2c64e3
 
 ## Operation
-### Requires `Notional` through pip
-### Requires a Notion authentification token in `./NotionAuthKey`
+**Requires `Notional` through pip**
+
+**Requires a Notion authentification token in `./NotionAuthKey`**
+
 Runs through the columns of the table given, and collects information to generate the specs fed into the simulator and assembler.
 Invalid binary instructions in the first column (ie. with an X on the end) are skipped
 Rows that have a valid binary instruction but are missing essential errors throw `IndexError` (TODO)
