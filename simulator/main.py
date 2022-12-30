@@ -120,12 +120,11 @@ else:
 
 with open(fileName, 'r') as f:
 	MEMORY = {}
-	for line in f.read().split("\n"):
-		if line == "":
+	for counter, word in enumerate(f.read().split()):
+		word = word.strip()
+		if word == "":
 			continue
-		parts = line[:-1].split(":")
-		parts[1] = parts[1].strip()
-		MEMORY[int(parts[0])] = int(parts[1])
+		MEMORY[counter] = int(word, 16)
 
 MEMORY[0xe000] = 0
 MEMORY[0xf000] = 0

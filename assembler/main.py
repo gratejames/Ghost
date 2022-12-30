@@ -199,10 +199,10 @@ def assemble(file="main.ghasm"):
 
 		linesList[lineNumber] = line
 	saveFileName = ".".join(file.split(".")[:-1]) + ".hex"
-	writeData(saveFileName, "\n".join(linesList))#, formatType="WhitespaceHex")
+	writeData(saveFileName, "\n".join(linesList))#, formatType="DecimalDict")
 	return saveFileName
 	
-def writeData(fileName, fileData, formatType = "DecimalDict"):
+def writeData(fileName, fileData, formatType = "Hex"):
 	if formatType == "WhitespaceHex":
 		outString = fileData
 	elif formatType == "Hex":

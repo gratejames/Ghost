@@ -28,13 +28,11 @@ The default accepted by the simulator as of now is DecimalDict for performance r
 ** WhitespaceHex**
 Outputs the 4 digit hex codes, but leaves the original whitespacing intact. Very useful for seeing the GHASM to hex conversion
 ** Hex**
-Basic Hex codes, as you would expect
+Current format, basic hex codes
 ** Binary**
 Same as above, but in 16 bit binary. Less useful in most cases, but an option nontheless
-** BinaryDict**
-Previous format, uses a python dictionary with 16 bit binary strings as both keys and values
 ** DecimalDict**
-Current format, uses a python dictionary with regular integers as both keys and values
+Previous format, uses a python dictionary with regular integers as both keys and values
 
 ## Debugging
-There is an optional step to output the midpoint file between the two passes to `./Pass1.txt`, but it must be uncommented. Line 144-145 (TODO: Make an easier option and change file name)
+There is an optional step to output the midpoint file between the two passes to `./Pass1.txt`, but it must be uncommented on line 144-145 (TODO: Make an easier option and change file name)
