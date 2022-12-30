@@ -53,7 +53,7 @@ def main():
 			Shorthand[ShorthandInstruction] = Shorthand.get(ShorthandInstruction, {})
 			Shorthand[ShorthandInstruction][str(getText(cells[4])).split(";")[1].strip()] = str(getText(cells[3]))
 
-	with open('../instructionSet.py', 'w+') as f:
+	with open('../simulator/instructionSet.py', 'w+') as f:
 		f.write("instructionSet = {\n" + instructionSet + "}")
 	with open('../assembler/assemblerDefs.py', 'w+') as f:
 		assemblerDefs += "Instructions = {\n"
