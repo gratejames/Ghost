@@ -18,6 +18,7 @@ Keybinds:
  + `s` Prints out Stack 1 (See Memory Mapping on Notion)
  + `d` Prints out Stack 2
  + `SPACE` Advances the clock by one
+ + `1-3` Advances the clock by 10^k: 10, 100, and 1000
  + (TODO: Add keypress to toggle power switch state)
 
 For use with a profiler, set `timingMode` (Line 108) to True. This will automatically turn the power on and exit on halt. The function `go()` was created so that you can tell in the profiler what calls are repetetive and what calls are one-time or setup related
