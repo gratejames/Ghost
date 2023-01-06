@@ -3,39 +3,43 @@
 
 main:
 
-LD 0 0xf800
-ROU up
-ST 0 $0xa000+128+2
+CALL up
+ST R0 $0xa000+128+2
 
-LD 0 0xf800
-ROU down
-ST 0 $0xa000+384+2
+CALL down
+ST R0 $0xa000+384+2
 
-LD 0 0xf800
-ROU left
-ST 0 $0xa000+256+1
+CALL left
+ST R0 $0xa000+256+1
 
-LD 0 0xf800
-ROU right
-ST 0 $0xa000+256+3
+CALL right
+ST R0 $0xa000+256+3
 
 JMP main
 
 
 
 up:
-JNZ $0x9f00 Color
+LD R0 0xf800
+CNZ $0x9f00
+JMPC Color
 RET
 down:
-JNZ $0x9f01 Color
+LD R0 0xf800
+CNZ $0x9f01
+JMPC Color
 RET
 left:
-JNZ $0x9f02 Color
+LD R0 0xf800
+CNZ $0x9f02
+JMPC Color
 RET
 right:
-JNZ $0x9f03 Color
+LD R0 0xf800
+CNZ $0x9f03
+JMPC Color
 RET
 
 Color:
-LD 0 0x07e0
+LD R0 0x07e0 ; GREEN
 RET

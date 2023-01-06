@@ -1,16 +1,14 @@
 ; Tests basic instructions, and performance
 
-; LDV DDR STRR ADV DDV JGV JMA HLT
-LD 0 0xa000
-
+LD R0 0xa000
 
 DrawRainbow:
-	DD 0
-	ST 0
-	ADD 0 0x0002
-	DD Exit
-	JPG 0 0xdfff
-	JMP $DrawRainbow
+	DD R0
+	ST R0
+	INC R0
+	CG R0 0xdfff
+	JMPC Exit
+	JMP DrawRainbow
 
 Exit:
 	HLT
