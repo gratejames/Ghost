@@ -2,6 +2,17 @@ import sys
 import os
 import re
 
+debugging = {
+	"Pass Notifs": False,
+	"Export Notifs": True,
+	"Rollover Warns": True,
+	"Halt Warns": True,
+	"Assumptions": False,
+	"Midpoint Ouput": False,
+	"Label Outputs": False,
+	"Defs Outputs": False,
+}
+
 def clearComments(line):
 	if assemblerDefs.Comment in line:
 		outLine = ""
@@ -50,6 +61,7 @@ def prettyOrList(listOfWords):
 				outString += ("or " + word)
 				break
 			outString += (word + ", ")
+		return outString
 
 def resolveShorthand(line):
 	words = line.strip().split(" ")
@@ -60,7 +72,7 @@ def resolveShorthand(line):
 			words[0] = assemblerDefs.Shorthand[words[0]][ArgumentTypesString]
 			return " ".join(words)
 		else:
-			print(f"\nX Error resolving shorthand command '{words[0]}' with arguments [{', '.join(ArgumentTypes)}]")
+			print(f"\nX Error resolving shorthand command '{words[0]}' with arguments [{', '.join(ArgumentTypes)}], on line {lineNumber+1}")
 			listOfShorthandArguments = list(assemblerDefs.Shorthand[words[0]].keys())
 			print(f"Expected types are: {prettyOrList(['[' + ', '.join(typeList.split(' ')) + ']' for typeList in listOfShorthandArguments])}")
 			sys.exit()
@@ -72,6 +84,8 @@ def validateArguments(line):
 	if line.strip() == '': # Empty
 		return line
 	if assemblerDefs.Label in line: # Label
+		return line
+	if line.startswith("#DEF"): # Definition
 		return line
 	if assemblerDefs.Data in line: # Data
 		return line
@@ -88,19 +102,27 @@ def validateArguments(line):
 		print(f"\nX Error resolving command '{words[0]}'")
 		sys.exit()
 
+def recordDefs(line):
+	if line.startswith("#DEF"):
+		words = line.split()
+		definitions[words[1]] = int(words[2], 0)
+		return ""
+	return line
+
 def recordLabels(line):
 	if assemblerDefs.Label in line:
 		labels[line.split(assemblerDefs.Label)[0]] = position
 		return line.split(assemblerDefs.Label)[-1].strip()
 	return line
 
+
 def intToHexString(num):
-	if num > 65535:
+	if num > 0xffff and debugging["Rollover Warns"]:
 		print(f"! Found the value {str(hex(num))}, which is greater than 0xffff. Rolling to {'0x' + ('0000' + str(hex(num))[2:])[-4:]}")
 	return "0x" + (("0"*4) + str(hex(num))[2:])[-4:]
 
 def intToBinString(num, prefix=True):
-	if num > 65535:
+	if num > 0xffff and debugging["Rollover Warns"]:
 		print(f"! Found the value {str(hex(num))}, which is greater than 0xffff. Rolling to {'0x' + ('0000' + str(hex(num))[2:])[-4:]}")
 	return ("0b" if prefix else "") + (("0"*16) + str(bin(num))[2:])[-16:]
 
@@ -116,42 +138,58 @@ def isValidFinalHex(hexString):
 
 
 def assemble(file="main.ghasm"):
-	global position, labels
+	global position, labels, definitions, lineNumber
 	labels = {}
+	definitions = {}
 	position = 0
 	print(f"GhostDefs {assemblerDefs.GhostDefsVersion}")
 	print(f"- Assembling {file}")
 	with open(file, 'r') as f:
 		allData = f.read()
-	if not "HLT" in allData:
+	if not "HLT" in allData and debugging["Halt Warns"]:
 		print(f"! No 'HLT' instruction found: may result in undefined behavior")
 	linesList = allData.split("\n")
-	
-	print("- Pass 1: Remove Comments, Record labels, Resolve Shorthand, Check Syntax")
+	if debugging["Pass Notifs"]:
+		print("- Pass 1: Remove Comments, Record labels, Record Defs, Resolve Shorthand, Check Syntax")
 	for lineNumber, line in enumerate(linesList):
 		line = line.strip()
 		line = clearComments(line)
 		line = resolveShorthand(line)
 		validateArguments(line)
 		line = recordLabels(line)
+		line = recordDefs(line)
 
 		position += sum([assemblerDefs.TypeLengths[typeOfItem] for typeOfItem in argumentTypes(line)])
 
 		linesList[lineNumber] = line
 
-	print("-", labels)
+	if debugging["Label Outputs"]:
+		for k,v in labels.items():
+			print("-", k, v)
 
-	# with open("Pass1.txt", 'w+') as f:
-	# 	f.write("\n".join(linesList))
+	if debugging["Defs Outputs"]:
+		for k,v in definitions.items():
+			print("-", k, v)
+
+	if debugging["Midpoint Ouput"]:
+		 with open("Midpoint.txt", 'w+') as f:
+		 	f.write("\n".join(linesList))
 	
-	print("- Pass 2: Resolve Labels, Resolve Registers, Do Math, To hexadecimal!")
+	if debugging["Pass Notifs"]:
+		print("- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, To hexadecimal!")
 	for lineNumber, line in enumerate(linesList):
 		if line.strip() == "":
 			continue
+			
 		for label in labels.keys():
 			if label in line:
 				pat = r"(\s\$?)(" + label + r")(?=[\s+\-\/*]|$)"
 				line = re.sub(pat, r"\g<1>" + str(intToHexString(labels[label])), line)
+			
+		for definition in definitions.keys():
+			if definition in line:
+				pat = r"(\s\$?)(" + definition + r")(?=[\s+\-\/*]|$)"
+				line = re.sub(pat, r"\g<1>" + str(intToHexString(definitions[definition])), line)
 
 		if line.strip()[0] == assemblerDefs.Data:
 			dataTypeWord = line.split(" ")[0].strip()
@@ -161,11 +199,11 @@ def assemble(file="main.ghasm"):
 				sys.exit()
 			val = "".join(line.split(" ")[1:])
 			if dataType == "Bin":
-				line = intToHexString(int(val, 2))
+				line = intToHexString(eval(val))
 			if dataType == "Dec":
-				line = intToHexString(int(val, 10))
+				line = intToHexString(eval(val))
 			if dataType == "Hex":
-				line = intToHexString(int(val, 16))
+				line = intToHexString(eval(val))
 
 		words = line.split(" ")
 		for wordNumber, word in enumerate(words):
@@ -182,12 +220,18 @@ def assemble(file="main.ghasm"):
 			if word in list(assemblerDefs.Instructions.keys()):
 				Binary = assemblerDefs.Instructions[word]["Bin"]
 				if "RR" in Binary:
-					Binary = Binary.replace("RR", str(bin(int(words[wordNumber+1])))[2:].zfill(2))
+					Binary = Binary.replace("RR", str(bin(assemblerDefs.Registers.index(words[wordNumber+1])))[2:].zfill(2))
 				word = intToHexString(int(Binary, 2))
 
 			if not isValidFinalHex(word):
-				print(f"\nX Error resolving token '{word}' on line {lineNumber+1}, word {wordNumber+1} ({line})")
-				sys.exit()
+				try:
+					newWord = intToHexString(int(word, 0))
+					if debugging["Assumptions"]:
+						print(f"! Assumed token '{word}' to '{newWord}'")
+					word = newWord
+				except ValueError:
+					print(f"\nX Error resolving token '{word}' on line {lineNumber+1}, word {wordNumber+1}")
+					sys.exit()
 
 
 			words[wordNumber] = word.strip()
@@ -198,32 +242,50 @@ def assemble(file="main.ghasm"):
 		
 
 		linesList[lineNumber] = line
-	saveFileName = ".".join(file.split(".")[:-1]) + ".hex"
-	writeData(saveFileName, "\n".join(linesList))#, formatType="DecimalDict")
+	saveFileName = ".".join(file.split(".")[:-1])
+	writeData(saveFileName, "\n".join(linesList), formatTypes=["Hex", "WhitespaceHex"])
 	return saveFileName
 	
-def writeData(fileName, fileData, formatType = "Hex"):
-	if formatType == "WhitespaceHex":
-		outString = fileData
-	elif formatType == "Hex":
+def writeData(fileName, fileData, formatTypes = ["Hex"]):
+	if "WhitespaceHex" in formatTypes:
+		outString = str(fileData)
+		if debugging["Export Notifs"]:
+			print("- Exporting to .w.hex")
+		with open(fileName + ".w.hex", 'w+') as f:
+			f.write(outString)
+	if "Hex" in formatTypes:
 		outString = ""
 		for bytePos, byte in enumerate(fileData.split()):
 			outString += byte + ("\n" if bytePos%8==7 else " ")
-	elif formatType == "Binary":
+		if debugging["Export Notifs"]:
+			print("- Exporting to .hex")
+		with open(fileName + ".hex", 'w+') as f:
+			f.write(outString)
+	if "Binary" in formatTypes:
 		outString = ""
 		for bytePos, byte in enumerate(fileData.split()):
 			outString += intToBinString(int(byte, 16)) + ("\n" if bytePos%8==7 else " ")
-	elif formatType == "BinaryDict":
+		if debugging["Export Notifs"]:
+			print("- Exporting to .bin")
+		with open(fileName + ".bin", 'w+') as f:
+			f.write(outString)
+	if "BinaryDict" in formatTypes:
 		outString = ""
 		for bytePos, byte in enumerate(fileData.split()):
 			outString += f'"{intToBinString(bytePos, prefix=False)}": "{intToBinString(int(byte, 16), prefix=False)}",\n'
-	elif formatType == "DecimalDict":
+		if debugging["Export Notifs"]:
+			print("- Exporting to .b.dict")
+		with open(fileName + ".b.dict", 'w+') as f:
+			f.write(outString)
+	if "DecimalDict" in formatTypes:
 		outString = ""
 		for bytePos, byte in enumerate(fileData.split()):
 			outString += f'{bytePos}: {int(byte, 16)},\n'
+		if debugging["Export Notifs"]:
+			print("- Exporting to .d.dict")
+		with open(fileName + ".d.dict", 'w+') as f:
+			f.write(outString)
 
-	with open(fileName, 'w+') as f:
-		f.write(outString)
 
 
 if __name__ == '__main__':
