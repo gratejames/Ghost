@@ -10,6 +10,9 @@ contexts:
       scope: punctuation.definition.comment.assembly
       push: line_comment
 
+    - match: '^#DEF'
+      scope: keyword.control.assembly
+
     - match: '^(\s)*(%INSTRUCTIONS%)\b'
       scope: keyword.control.assembly
       push: commandArgs
@@ -37,7 +40,7 @@ contexts:
       scope: keyword.operator
       push: addressStart
 
-    - match: '^[a-zA-Z0-9]*:'
+    - match: '^\s*[a-zA-Z0-9_]*:'
       scope: keyword.declaration.assembly
 
     - match: '^\b[a-zA-Z]+'
@@ -52,23 +55,23 @@ contexts:
     - match: $
       pop: true
 
-    - match: '\b(0|1|2|3|A|V)+\b'
+    - match: '\b(R0|R1|R2|R3)+\b'
       scope: constant.character.decimal.assembly # Register
 
     - match: '\$'
       scope: keyword.operator
 
-    - match: '\b0x[0-9abcdefABCDEF]{2}+\b'
+    - match: '\b0x[0-9a-fA-F]{4}\b'
       scope: constant.numeric.integer.hexadecimal.assembly
 
-    - match: '\b0b[01]{8}+\b'
+    - match: '\b0b[01\s]\b'
       scope: constant.numeric.integer.binary.assembly
 
-    - match: '\b[a-zA-Z0-9]+'
-      scope: variable.function
+    - match: '\b[0-9]+\b'
+      scope: constant.numeric.integer.hexadecimal.assembly
 
-    - match: '\b0b[01]{8}+\b'
-      scope: constant.numeric.integer.binary.assembly
+    - match: '\b[a-zA-Z0-9_]+'
+      scope: variable
 
     - match: ';'
       scope: punctuation.definition.comment.assembly
@@ -80,7 +83,7 @@ contexts:
   data_hex:
     - match: '\n'
       pop: true
-    - match: '\b0x[0-9abcdefABCDEF]{2}+\b'
+    - match: '\b0x[0-9a-fA-F\s]{4}\b'
       scope: constant.numeric.integer.hexadecimal.assembly
       pop: true
 
