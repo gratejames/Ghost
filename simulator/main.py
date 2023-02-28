@@ -9,8 +9,10 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 import pygame
 pygame.init()
-AnonFont = pygame.font.Font('./Anonymous_Pro_B.ttf', 20)
-AnonFontSmall = pygame.font.Font('./Anonymous_Pro_B.ttf', 11)
+
+FONT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Anonymous_Pro_B.ttf')
+AnonFont = pygame.font.Font(FONT_PATH, 20)
+AnonFontSmall = pygame.font.Font(FONT_PATH, 11)
 
 from instructionSet import instructionSet 
 
