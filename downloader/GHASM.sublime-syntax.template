@@ -55,7 +55,7 @@ contexts:
     - match: $
       pop: true
 
-    - match: '\b(R0|R1|R2|R3)+\b'
+    - match: '\bR[0-3]\b'
       scope: constant.character.decimal.assembly # Register
 
     - match: '\$'
@@ -68,7 +68,7 @@ contexts:
       scope: constant.numeric.integer.binary.assembly
 
     - match: '\b[0-9]+\b'
-      scope: constant.numeric.integer.hexadecimal.assembly
+      scope: constant.numeric.integer.decimal.assembly
 
     - match: '\b[a-zA-Z0-9_]+'
       scope: variable
