@@ -20,8 +20,6 @@ pallette = {
 	"DISABLED":	(100, 0, 0),
 }
 
-SpeedMode = True # Turns off ALL debugging for speed (Except for errors and user triggered logs)
-
 DispSet = {
 	"point0": 0xa000,
 	"dispPos": (295,20),
@@ -117,7 +115,7 @@ def updateGUI():
 screen = pygame.display.set_mode((700, 500), pygame.RESIZABLE)
 pygame.display.set_caption('Ghost Computer Simulator | By Jimmy')
 
-timingMode = False
+timingMode = True
 
 Halted = False
 Break = False
@@ -197,6 +195,8 @@ def WriteMem(addr, val):
 	MEMORY[addr] = ForceValidInt(val)
 	if addr >= 0xa000 and addr <= 0xdfff:
 		writeDisplayAddress(addr)
+def Pretty(hexInt):
+	return "0x"+str(hex(hexInt))[2:].zfill(4)
 
 def go():
 	global done, Halted, Break, PC, Registers, AddrRegister, ClockButton, PowerSwitch, ResetButton, CycleClock, JumpRegister
@@ -226,62 +226,62 @@ def go():
 				elif event.type == pygame.KEYUP:
 					if event.key == pygame.K_UP:
 						MEMORY[0x9f00] = 0
-					if event.key == pygame.K_DOWN:
+					elif event.key == pygame.K_DOWN:
 						MEMORY[0x9f01] = 0
-					if event.key == pygame.K_LEFT:
+					elif event.key == pygame.K_LEFT:
 						MEMORY[0x9f02] = 0
-					if event.key == pygame.K_RIGHT:
+					elif event.key == pygame.K_RIGHT:
 						MEMORY[0x9f03] = 0
 				elif event.type == pygame.KEYDOWN:
 					if event.key == pygame.K_UP:
 						MEMORY[0x9f00] = 1
-					if event.key == pygame.K_DOWN:
+					elif event.key == pygame.K_DOWN:
 						MEMORY[0x9f01] = 1
-					if event.key == pygame.K_LEFT:
+					elif event.key == pygame.K_LEFT:
 						MEMORY[0x9f02] = 1
-					if event.key == pygame.K_RIGHT:
+					elif event.key == pygame.K_RIGHT:
 						MEMORY[0x9f03] = 1
-					if event.key == pygame.K_SLASH:
+					elif event.key == pygame.K_SLASH:
 						os.system('clear')
 						print("DUMP:")
 						print("    PC:  ", PC, "\t(0x"+str(hex(PC))[2:].zfill(4)+")")
-						print("    R0:  ", Registers[0], "\t(0x"+str(hex(Registers[0]))[2:].zfill(4)+")")
-						print("    R1:  ", Registers[1], "\t(0x"+str(hex(Registers[1]))[2:].zfill(4)+")")
-						print("    R2:  ", Registers[2], "\t(0x"+str(hex(Registers[2]))[2:].zfill(4)+")")
-						print("    R3:  ", Registers[3], "\t(0x"+str(hex(Registers[3]))[2:].zfill(4)+")")
-						print("    Addr:", AddrRegister, "\t(0x"+str(hex(AddrRegister))[2:].zfill(4)+")")
-						print("    SP1: ", MEMORY[0xe000], "\t(0x"+str(hex(MEMORY[0xe000]))[2:].zfill(4)+")")
-						print("    SP2: ", MEMORY[0xf000], "\t(0x"+str(hex(MEMORY[0xf000]))[2:].zfill(4)+")")
+						print("    R0:  ", Registers[0], "\t("+Pretty(Registers[0])+")")
+						print("    R1:  ", Registers[1], "\t("+Pretty(Registers[1])+")")
+						print("    R2:  ", Registers[2], "\t("+Pretty(Registers[2])+")")
+						print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
+						print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
+						print("    SP1: ", MEMORY[0xe000], "\t("+Pretty(MEMORY[0xe000])+")")
+						print("    SP2: ", MEMORY[0xf000], "\t("+Pretty(MEMORY[0xf000])+")")
 						print("    JMP: ", JumpRegister)
 						print("    Memory:")
 						for add, val in MEMORY.items():
 							if add > 0x9eff:
 								continue
 							suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSet.keys() else str(val)]}' if add == PC else ""
-							print("       ", "0x"+str(hex(add))[2:].zfill(4)+":", val, "\t(0x"+str(hex(val))[2:].zfill(4)+")", suffix)
-					if event.key == pygame.K_s:
+							print("       ", Pretty(add)+":", val, "\t("+Pretty(val), suffix)
+					elif event.key == pygame.K_s:
 						os.system('clear')
 						print("Stack 1:")
 						for add, val in MEMORY.items():
 							if add >= 0xefff:
 								continue
 							if (add >= 0xe000) or add == 0xe000:
-								print("    ", "0x"+str(hex(add))[2:].zfill(4)+":", val, "\t(0x"+str(hex(val))[2:].zfill(4)+")")
-					if event.key == pygame.K_d:
+								print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
+					elif event.key == pygame.K_d:
 						os.system('clear')
 						print("Stack 1:")
 						for add, val in MEMORY.items():
 							if add >= 0xffff:
 								continue
 							if (add >= 0xf000) or add == 0xf000:
-								print("    ", "0x"+str(hex(add))[2:].zfill(4)+":", val, "\t(0x"+str(hex(val))[2:].zfill(4)+")")
-					if event.key == pygame.K_SPACE:
+								print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
+					elif event.key == pygame.K_SPACE:
 						CycleClock = 1
-					if event.key == pygame.K_1:
+					elif event.key == pygame.K_1:
 						CycleClock = 10
-					if event.key == pygame.K_2:
+					elif event.key == pygame.K_2:
 						CycleClock = 100
-					if event.key == pygame.K_3:
+					elif event.key == pygame.K_3:
 						CycleClock = 1000
 
 
@@ -515,14 +515,14 @@ try:
 	go()
 except:
 	print("DUMP:")
-	print("    PC:  ", PC, "\t(0x"+str(hex(PC))[2:].zfill(4)+")")
-	print("    R0:  ", Registers[0], "\t(0x"+str(hex(Registers[0]))[2:].zfill(4)+")")
-	print("    R1:  ", Registers[1], "\t(0x"+str(hex(Registers[1]))[2:].zfill(4)+")")
-	print("    R2:  ", Registers[2], "\t(0x"+str(hex(Registers[2]))[2:].zfill(4)+")")
-	print("    R3:  ", Registers[3], "\t(0x"+str(hex(Registers[3]))[2:].zfill(4)+")")
-	print("    Addr:", AddrRegister, "\t(0x"+str(hex(AddrRegister))[2:].zfill(4)+")")
-	print("    SP1: ", MEMORY[0xe000], "\t(0x"+str(hex(MEMORY[0xe000]))[2:].zfill(4)+")")
-	print("    SP2: ", MEMORY[0xf000], "\t(0x"+str(hex(MEMORY[0xf000]))[2:].zfill(4)+")")
+	print("    PC:  ", PC, "\t("+Pretty(PC)+")")
+	print("    R0:  ", Registers[0], "\t(" + Pretty(Registers[0])+")")
+	print("    R1:  ", Registers[1], "\t(" + Pretty(Registers[1])+")")
+	print("    R2:  ", Registers[2], "\t(" + Pretty(Registers[2])+")")
+	print("    R3:  ", Registers[3], "\t(" + Pretty(Registers[3])+")")
+	print("    Addr:", AddrRegister, "\t(" + Pretty(AddrRegister)+")")
+	print("    SP1: ", MEMORY[0xe000], "\t(" + Pretty(MEMORY[0xe000])+")")
+	print("    SP2: ", MEMORY[0xf000], "\t(" + Pretty(MEMORY[0xf000])+")")
 	print("    JMP: ", JumpRegister)
 	print("    Memory:")
 	for add, val in MEMORY.items():
