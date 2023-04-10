@@ -3,3 +3,5 @@ __pycache__/
 # Hide output files
 *.w.hex
 *.hex
+all.sublime-project
+all.sublime-workspace
