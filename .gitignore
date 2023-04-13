@@ -5,3 +5,4 @@ __pycache__/
 *.hex
 all.sublime-project
 all.sublime-workspace
+*.dat
