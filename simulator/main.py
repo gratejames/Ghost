@@ -118,8 +118,7 @@ def bitNOT(num):
 
 # rrrrr gggggg bbbbb
 def binColor(num):
-	binStr = str(bin(num))[2:].zfill(16)
-	return (int(binStr[:5],2) * (255/31),int(binStr[5:11],2) * (255/63),int(binStr[11:16],2) * (255/31))
+	return (num // 2048 * (255 / 31), (num % 2048) // 32 * (255 / 62), (num % 32) * (255 / 31))
 
 def Lmap(v, a1,b1,a2,b2, cap = True):
 	x = a2 + (b2-a2)*((v-a1)/(b1-a1))
