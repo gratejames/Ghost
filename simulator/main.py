@@ -4,6 +4,7 @@ import sys
 import json
 from collections import deque
 import traceback
+import ctypes
 import random
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
@@ -39,12 +40,15 @@ class settings:
 	class PowerSwitch:
 		def __init__(self, cfg):
 			self.rect 			= pygame.Rect(*eval(cfg["Pos"]), *eval(cfg["Size"]))
+			self.textSurface 	= AnonFontSmall.render(cfg["Text"], False, (0, 0, 0))
 	class ClockButton:
 		def __init__(self, cfg):
 			self.rect 			= pygame.Rect(*eval(cfg["Pos"]), *eval(cfg["Size"]))
+			self.textSurface 	= AnonFontSmall.render(cfg["Text"], False, (0, 0, 0))
 	class ResetButton:
 		def __init__(self, cfg):
 			self.rect 			= pygame.Rect(*eval(cfg["Pos"]), *eval(cfg["Size"]))
+			self.textSurface 	= AnonFontSmall.render(cfg["Text"], False, (0, 0, 0))
 	class display:
 		def __init__(self, cfg):
 			self.bg				= eval(cfg["BackgroundColor"])
@@ -173,20 +177,17 @@ def updateStackGUI():
 	if chg1 or chg2:
 		p1 = settings.stack.s1.pos
 		p2 = (settings.stack.s2.rect.x+settings.stack.s2.rect.width,settings.stack.s2.rect.y+settings.stack.s2.rect.height)
-		pygame.display.update(p1,p2)
+		# pygame.display.update(p1,p2)
 
 def updateGUI():
 	pygame.draw.rect(screen, settings.palette.DISABLED if (state.Halted or state.Break) else settings.palette.ON if state.PowerSwitch else settings.palette.OFF, settings.PowerSwitch.rect)
-	textSurface = AnonFontSmall.render("POW", False, (0, 0, 0))
-	screen.blit(textSurface, (settings.PowerSwitch.rect.x+1, settings.PowerSwitch.rect.y+6))
+	screen.blit(settings.PowerSwitch.textSurface, (settings.PowerSwitch.rect.x+1, settings.PowerSwitch.rect.y+6))
 
 	pygame.draw.rect(screen, settings.palette.DISABLED if state.Halted else settings.palette.ON if state.ClockButton else settings.palette.OFF, settings.ClockButton.rect)
-	textSurface = AnonFontSmall.render("CLK", False, (0, 0, 0))
-	screen.blit(textSurface, (settings.ClockButton.rect.x+2, settings.ClockButton.rect.y+6))
+	screen.blit(settings.ClockButton.textSurface, (settings.ClockButton.rect.x+2, settings.ClockButton.rect.y+6))
 
 	pygame.draw.rect(screen, settings.palette.ON if state.ResetButton else settings.palette.OFF, settings.ResetButton.rect)
-	textSurface = AnonFontSmall.render("RST", False, (0, 0, 0))
-	screen.blit(textSurface, (settings.ResetButton.rect.x+2, settings.ResetButton.rect.y+6))
+	screen.blit(settings.ResetButton.textSurface, (settings.ResetButton.rect.x+2, settings.ResetButton.rect.y+6))
 	
 	pygame.display.update((10,10), (30,90))
 
@@ -194,9 +195,10 @@ def updateGUI():
 
 
 
-screen = pygame.display.set_mode((128*settings.display.scale+50, 128*settings.display.scale+20), pygame.RESIZABLE)
 pygame.display.set_caption('Ghost Computer Simulator | By Jimmy')
-
+pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP])
+screen = pygame.display.set_mode((128*settings.display.scale+50, 128*settings.display.scale+20), pygame.DOUBLEBUF)#, pygame.RESIZABLE)
+screen.set_alpha(None)
 
 clock = pygame.time.Clock()
 
@@ -207,7 +209,7 @@ else:
 	fileName = args[0]
 
 with open(fileName, 'r') as f:
-	MEMORY = [0x0000]*0xffff
+	MEMORY = (ctypes.c_ushort * 0xffff)()
 	for counter, word in enumerate(f.read().split()):
 		word = word.strip()
 		if word == "":
@@ -226,7 +228,7 @@ Registers = [
 	0,				# Register3
 ]
 JumpRegister 	= False
-
+instructionSetkeys = instructionSet.keys()
 
 screen.fill(settings.display.bg)
 clearDisplay()
@@ -322,7 +324,7 @@ def go():
 						for add, val in MEMORY.items():
 							if add > 0x9eff:
 								continue
-							suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSet.keys() else str(val)]}' if add == PC else ""
+							suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSetkeys else str(val)]}' if add == PC else ""
 							print("       ", Pretty(add)+":", val, "\t("+Pretty(val), suffix)
 					elif event.key == pygame.K_s:
 						os.system('clear')
@@ -376,7 +378,7 @@ def go():
 				state.CycleClock -= 1
 
 			instruction = MEMORY[PC]
-			instructionString = instructionSet[str((instruction//4)*4)+"RR" if str((instruction//4)*4)+"RR" in instructionSet.keys() else str(instruction)]
+			instructionString = instructionSet[str((instruction//4)*4)+"RR" if str((instruction//4)*4)+"RR" in instructionSetkeys else str(instruction)]
 
 			if instructionString == "NOP":
 				pass
@@ -589,7 +591,7 @@ except:
 		if add > 0x9eff:
 			continue
 		try:
-			suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSet.keys() else str(val)]}' if add == PC else ""
+			suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSetkeys else str(val)]}' if add == PC else ""
 		except KeyError:
 			suffix = '< ?'
 		print("       ", "0x"+str(hex(add))[2:].zfill(4)+":", val, "\t(0x"+str(hex(val))[2:].zfill(4)+")", suffix)
