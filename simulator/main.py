@@ -129,7 +129,7 @@ def Lmap(v, a1,b1,a2,b2, cap = True):
 
 
 def writeDisplayAddress(addr):
-	color = binColor(MEMORY.get(addr, 0))
+	color = binColor(MEMORY[addr])
 
 	relativeAddress = addr - settings.display.address
 	x, y = relativeAddress%128, relativeAddress//128
@@ -147,7 +147,7 @@ def clearDisplay(color = (0,0,0)):
 
 def refreshDisplay():
 	for x,y in [(_i,_ii) for _i in range(128) for _ii in range(128)]:
-		color = binColor(MEMORY.get(settings.display.address + x + (y*128), 0))
+		color = binColor(MEMORY[settings.display.address + x + (y*128)])
 		pixelX, pixelY = ((x*settings.display.scale)+settings.display.position[0], (y*settings.display.scale)+settings.display.position[1])
 		pygame.draw.rect(screen, color, (pixelX, pixelY, settings.display.scale, settings.display.scale))
 	pygame.display.update(pygame.Rect(settings.display.position, (128*settings.display.scale, 128*settings.display.scale)))
@@ -159,13 +159,13 @@ stack1SizeLast = None
 stack2SizeLast = None
 
 def updateStackGUI():
-	stack1Size = Lmap(MEMORY.get(0xe000, 0), 0, 4096, 0, 80//settings.stack.refresh)
+	stack1Size = Lmap(MEMORY[0xe000], 0, 4096, 0, 80//settings.stack.refresh)
 	chg1 = stack1SizeLast != stack1Size
 	if chg1:
 		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s1.rect)
 		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s1.pos,(settings.stack.s1.width,stack1Size*settings.stack.refresh)))
 
-	stack2Size = Lmap(MEMORY.get(0xf000, 0), 0, 4096, 0, 80//settings.stack.refresh)
+	stack2Size = Lmap(MEMORY[0xf000], 0, 4096, 0, 80//settings.stack.refresh)
 	chg2 = stack2SizeLast != stack2Size
 	if chg2:
 		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s2.rect)
@@ -208,7 +208,7 @@ else:
 	fileName = args[0]
 
 with open(fileName, 'r') as f:
-	MEMORY = {}
+	MEMORY = [0x0000]*0xffff
 	for counter, word in enumerate(f.read().split()):
 		word = word.strip()
 		if word == "":
@@ -250,7 +250,7 @@ def GetAddress():
 	if addr == 0x9fff: # Random number generator
 		rand = random.randrange(0xffff)
 		return rand
-	return MEMORY.get(addr, 0)
+	return MEMORY[add]
 def SetAddress(val):
 	global PC
 	PC += 1
@@ -376,7 +376,7 @@ def go():
 			if state.CycleClock > 0:
 				state.CycleClock -= 1
 
-			instruction = MEMORY.get(PC, 0)
+			instruction = MEMORY[PC]
 			instructionString = instructionSet[str((instruction//4)*4)+"RR" if str((instruction//4)*4)+"RR" in instructionSet.keys() else str(instruction)]
 
 			if instructionString == "NOP":
