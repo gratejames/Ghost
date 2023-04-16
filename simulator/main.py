@@ -10,23 +10,97 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 import pygame
 pygame.init()
 
-FONT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'Anonymous_Pro_B.ttf')
-AnonFont = pygame.font.Font(FONT_PATH, 20)
-AnonFontSmall = pygame.font.Font(FONT_PATH, 11)
+AbsolutePath = os.path.abspath(os.path.dirname(__file__))
+FontPath = os.path.join(AbsolutePath, 'Anonymous_Pro_B.ttf')
+AnonFont = pygame.font.Font(FontPath, 20)
+AnonFontSmall = pygame.font.Font(FontPath, 11)
 
 from instructionSet import instructionSet 
 
-pallette = {
-	"ON":		(0, 255, 0),
-	"OFF":		(255, 0, 0),
-	"DISABLED":	(100, 0, 0),
-}
+import configparser
 
-DispSet = {
-	"point0": 0xa000,
-	"dispPos": (295,20),
-	"scaler": 3,
-}
+class settings:
+	def __init__(self, fileName):
+		config = configparser.ConfigParser()
+		config.read(os.path.join(AbsolutePath, fileName))
+
+
+		self.TimingMode 		= eval(config["Misc"]["TimingMode"])
+		
+		self.display 			= self.display(config["Display"])
+		self.palette 			= self.palette(config["Palette"])
+		self.stack   			= self.stack(config["Stack"])
+		
+		self.PowerSwitch 		= self.PowerSwitch(config["Display.Power"])
+		self.ClockButton 		= self.ClockButton(config["Display.Clock"])
+		self.ResetButton 		= self.ResetButton(config["Display.Reset"])
+
+
+	class PowerSwitch:
+		def __init__(self, cfg):
+			self.rect 			= pygame.Rect(*eval(cfg["Pos"]), *eval(cfg["Size"]))
+	class ClockButton:
+		def __init__(self, cfg):
+			self.rect 			= pygame.Rect(*eval(cfg["Pos"]), *eval(cfg["Size"]))
+	class ResetButton:
+		def __init__(self, cfg):
+			self.rect 			= pygame.Rect(*eval(cfg["Pos"]), *eval(cfg["Size"]))
+	class display:
+		def __init__(self, cfg):
+			self.bg				= eval(cfg["BackgroundColor"])
+			self.address		= int(cfg["Address"], 0)
+			self.position		= eval(cfg["Position"])
+			self.scale			= int(cfg["Scale"])
+			
+	class palette:
+		def __init__(self, cfg):
+			self.ON				= eval(cfg["ON"])
+			self.OFF			= eval(cfg["OFF"])
+			self.DISABLED		= eval(cfg["DISABLED"])
+	class stack:
+		def __init__(self, cfg):
+			self.refresh		= int(cfg["Refresh"])
+			
+			pos1 = eval(cfg["Stack1Pos"])
+			pos2 = eval(cfg["Stack2Pos"])
+			size = eval(cfg["Size"])
+			reveal = int(cfg["Reveal"])
+			self.s1.rect		= pygame.Rect(*pos1, *size)
+			self.s1.pos			= pos1
+			self.s1.width		= size[0] - reveal
+			self.s2.rect		= pygame.Rect(*pos2, *size)
+			self.s2.pos			= pos2
+			self.s2.width		= size[0] - reveal
+		class s1:
+			pass
+		class s2:
+			pass
+
+settings = settings("settings.ini")
+
+class state:
+	Done 			= False
+	
+	Halted 			= False
+	Break 			= False
+	CycleClock 		= 0 # Used to pass space button press between weird contexts
+
+	PowerSwitch     = settings.TimingMode
+	ResetButton     = False
+	ClockButton     = False
+	ClockButtonPrev = False
+		
+	def Reset(self):
+		self.Halted			= False
+		self.Break			= False
+		self.CycleClock		= 0
+		
+		self.PowerSwitch	= False
+
+
+state = state()
+
+
 
 def badDefinitions(message):
 	print(f"badDefinitions: {message}")
@@ -47,83 +121,85 @@ def binColor(num):
 	binStr = str(bin(num))[2:].zfill(16)
 	return (int(binStr[:5],2) * (255/31),int(binStr[5:11],2) * (255/63),int(binStr[11:16],2) * (255/31))
 
-def Lmap(v, a1,b1,a2,b2):
-	return int(a2 + (b2-a2)*((v-a1)/(b1-a1)))
+def Lmap(v, a1,b1,a2,b2, cap = True):
+	x = a2 + (b2-a2)*((v-a1)/(b1-a1))
+	return int(x) if not cap or x <= b2 else int(b2)
+	# real value if it's good or it's not capped
 
 
 
 def writeDisplayAddress(addr):
 	color = binColor(MEMORY.get(addr, 0))
 
-	relativeAddress = addr - DispSet["point0"]
+	relativeAddress = addr - settings.display.address
 	x, y = relativeAddress%128, relativeAddress//128
 
-	pixelX, pixelY = ((x*DispSet["scaler"])+DispSet["dispPos"][0], (y*DispSet["scaler"])+DispSet["dispPos"][1])
-	pygame.draw.rect(screen, color, (pixelX, pixelY, DispSet["scaler"], DispSet["scaler"]))
+	pixelX, pixelY = ((x*settings.display.scale)+settings.display.position[0], (y*settings.display.scale)+settings.display.position[1])
+	pygame.draw.rect(screen, color, (pixelX, pixelY, settings.display.scale, settings.display.scale))
 
-	pygame.display.update((pixelX, pixelY), (DispSet["scaler"],DispSet["scaler"]))
+	pygame.display.update((pixelX, pixelY), (settings.display.scale,settings.display.scale))
 
-def clearDisplay():
-	color = (0,0,0)
+def clearDisplay(color = (0,0,0)):
 	for x,y in [(_i,_ii) for _i in range(128) for _ii in range(128)]:
-		MEMORY[DispSet["point0"] + x + (y*128)] = 0
-	pygame.draw.rect(screen, color, (DispSet["dispPos"][0], DispSet["dispPos"][1], 128*DispSet["scaler"], 128*DispSet["scaler"]))
-	pygame.display.update(pygame.Rect(DispSet["dispPos"], (128*DispSet["scaler"], 128*DispSet["scaler"])))
+		MEMORY[settings.display.address + x + (y*128)] = 0
+	pygame.draw.rect(screen, color, (settings.display.position[0], settings.display.position[1], 128*settings.display.scale, 128*settings.display.scale))
+	pygame.display.update(pygame.Rect(settings.display.position, (128*settings.display.scale, 128*settings.display.scale)))
 
 def refreshDisplay():
 	for x,y in [(_i,_ii) for _i in range(128) for _ii in range(128)]:
-		color = binColor(MEMORY.get(DispSet["point0"] + x + (y*128), 0))
-		pixelX, pixelY = ((x*DispSet["scaler"])+DispSet["dispPos"][0], (y*DispSet["scaler"])+DispSet["dispPos"][1])
-		pygame.draw.rect(screen, color, (pixelX, pixelY, DispSet["scaler"], DispSet["scaler"]))
-	pygame.display.update(pygame.Rect(DispSet["dispPos"], (128*DispSet["scaler"], 128*DispSet["scaler"])))
+		color = binColor(MEMORY.get(settings.display.address + x + (y*128), 0))
+		pixelX, pixelY = ((x*settings.display.scale)+settings.display.position[0], (y*settings.display.scale)+settings.display.position[1])
+		pygame.draw.rect(screen, color, (pixelX, pixelY, settings.display.scale, settings.display.scale))
+	pygame.display.update(pygame.Rect(settings.display.position, (128*settings.display.scale, 128*settings.display.scale)))
+
+
+
+
+stack1SizeLast = None
+stack2SizeLast = None
 
 def updateStackGUI():
-	stack1Size = MEMORY.get(0xe000, 0)
-	pygame.draw.rect(screen, pallette["OFF"], pygame.Rect(110,35,80,10))
-	pygame.draw.rect(screen, pallette["ON"],  pygame.Rect(110,37,Lmap(stack1Size, 0, 4096, 0, 80),8))
+	stack1Size = Lmap(MEMORY.get(0xe000, 0), 0, 4096, 0, 80//settings.stack.refresh)
+	chg1 = stack1SizeLast != stack1Size
+	if chg1:
+		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s1.rect)
+		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s1.pos,(settings.stack.s1.width,stack1Size*settings.stack.refresh)))
 
-	stack2Size = MEMORY.get(0xf000, 0)
-	pygame.draw.rect(screen, pallette["OFF"], pygame.Rect(110,50,80,10))
-	pygame.draw.rect(screen, pallette["ON"],  pygame.Rect(110,50,Lmap(stack2Size, 0, 4096, 0, 80),8))
-
-	pygame.display.update((110,35), (190,60))
+	stack2Size = Lmap(MEMORY.get(0xf000, 0), 0, 4096, 0, 80//settings.stack.refresh)
+	chg2 = stack2SizeLast != stack2Size
+	if chg2:
+		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s2.rect)
+		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s2.pos,(settings.stack.s2.width,stack2Size*settings.stack.refresh)))
+	
+	if chg1 or chg2:
+		p1 = settings.stack.s1.pos
+		p2 = (settings.stack.s2.rect.x+settings.stack.s2.rect.width,settings.stack.s2.rect.y+settings.stack.s2.rect.height)
+		pygame.display.update(p1,p2)
 
 def updateGUI():
-	pygame.draw.rect(screen, pallette["DISABLED"] if (Halted or Break) else pallette["ON"] if PowerSwitch["state"] else pallette["OFF"], PowerSwitch["rect"])
+	pygame.draw.rect(screen, settings.palette.DISABLED if (state.Halted or state.Break) else settings.palette.ON if state.PowerSwitch else settings.palette.OFF, settings.PowerSwitch.rect)
 	textSurface = AnonFontSmall.render("POW", False, (0, 0, 0))
-	screen.blit(textSurface, (PowerSwitch["rect"].x+1, PowerSwitch["rect"].y+13))
+	screen.blit(textSurface, (settings.PowerSwitch.rect.x+1, settings.PowerSwitch.rect.y+6))
 
-	pygame.draw.rect(screen, pallette["DISABLED"] if Halted else pallette["ON"] if ClockButton["state"] else pallette["OFF"], ClockButton["rect"])
+	pygame.draw.rect(screen, settings.palette.DISABLED if state.Halted else settings.palette.ON if state.ClockButton else settings.palette.OFF, settings.ClockButton.rect)
 	textSurface = AnonFontSmall.render("CLK", False, (0, 0, 0))
-	screen.blit(textSurface, (ClockButton["rect"].x+2, ClockButton["rect"].y+13))
+	screen.blit(textSurface, (settings.ClockButton.rect.x+2, settings.ClockButton.rect.y+6))
 
-	pygame.draw.rect(screen, pallette["ON"] if ResetButton["state"] else pallette["OFF"], ResetButton["rect"])
+	pygame.draw.rect(screen, settings.palette.ON if state.ResetButton else settings.palette.OFF, settings.ResetButton.rect)
 	textSurface = AnonFontSmall.render("RST", False, (0, 0, 0))
-	screen.blit(textSurface, (ResetButton["rect"].x+2, ResetButton["rect"].y+13))
-	# Stack Status'
-	textSurface = AnonFontSmall.render("Stack status", False, (0, 0, 0))
-	screen.blit(textSurface, (110,20))
-	stack1Size = MEMORY.get(0xe000, 0)
-	pygame.draw.rect(screen, pallette["OFF"], pygame.Rect(110,35,80,10))
-	pygame.draw.rect(screen, pallette["ON"],  pygame.Rect(110,37,Lmap(stack1Size, 0, 4096, 0, 80),8))
+	screen.blit(textSurface, (settings.ResetButton.rect.x+2, settings.ResetButton.rect.y+6))
+	
+	pygame.display.update((10,10), (30,90))
 
-	stack2Size = MEMORY.get(0xf000, 0)
-	pygame.draw.rect(screen, pallette["OFF"], pygame.Rect(110,50,80,10))
-	pygame.draw.rect(screen, pallette["ON"],  pygame.Rect(110,50,Lmap(stack2Size, 0, 4096, 0, 80),8))
-
-	pygame.display.update((20,20), (170,40))
+	updateStackGUI()
 
 
-screen = pygame.display.set_mode((700, 500), pygame.RESIZABLE)
+
+screen = pygame.display.set_mode((128*settings.display.scale+50, 128*settings.display.scale+20), pygame.RESIZABLE)
 pygame.display.set_caption('Ghost Computer Simulator | By Jimmy')
 
-timingMode = True
 
-Halted = False
-Break = False
-done = False
 clock = pygame.time.Clock()
-CycleClock = 0 # Used to pass space button press between weird contexts
 
 args = sys.argv[1:]
 if len(args) == 0:
@@ -150,24 +226,10 @@ Registers = [
 	0,				# Register2
 	0,				# Register3
 ]
-JumpRegister = False
+JumpRegister 	= False
 
-PowerSwitch = {
-	"rect": pygame.Rect(20,20,20,40),
-	"state": timingMode,
-}
-ClockButton = {
-	"rect": pygame.Rect(50,20,20,40),
-	"state": False,
-	"prevState": False,
-}
-ResetButton = {
-	"rect": pygame.Rect(80,20,20,40),
-	"state": False,
-}
 
-screen.fill((50, 50, 50))
-pygame.draw.rect(screen, (100, 100, 100), pygame.Rect(10, 10, screen.get_width()-20, screen.get_height()-20))
+screen.fill(settings.display.bg)
 clearDisplay()
 updateGUI()
 pygame.display.flip()
@@ -201,29 +263,29 @@ def Pretty(hexInt):
 	return "0x"+str(hex(hexInt))[2:].zfill(4)
 
 def go():
-	global done, Halted, Break, PC, Registers, AddrRegister, ClockButton, PowerSwitch, ResetButton, CycleClock, JumpRegister
+	global state, PC, Registers, AddrRegister, JumpRegister
 	t=0
-	while not done:
-		ClockButton["prevState"] = ClockButton["state"]
-		if Halted or Break:
-			PowerSwitch["state"] = False
+	while not state.Done:
+		state.ClockButtonPrev = state.ClockButton
+		if state.Halted or state.Break:
+			state.PowerSwitch = False
 		t+=1
 		nextInput = 0
 		if t%20==0:
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
-					done = True
+					state.Done = True
 				elif event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
 					if event.button == 1:
 						newClick = event.pos
-						if PowerSwitch["rect"].collidepoint(newClick) and event.type == pygame.MOUSEBUTTONDOWN:
-							PowerSwitch["state"] = not PowerSwitch["state"]
-						if ClockButton["rect"].collidepoint(newClick):
-							ClockButton["state"] = (event.type == pygame.MOUSEBUTTONDOWN)
-							if not ClockButton["state"]:
-								Break = False
-						if ResetButton["rect"].collidepoint(newClick):
-							ResetButton["state"] = (event.type == pygame.MOUSEBUTTONDOWN)
+						if settings.PowerSwitch.rect.collidepoint(newClick) and event.type == pygame.MOUSEBUTTONDOWN:
+							state.PowerSwitch = not state.PowerSwitch
+						if settings.ClockButton.rect.collidepoint(newClick):
+							state.ClockButton = (event.type == pygame.MOUSEBUTTONDOWN)
+							if not state.ClockButton:
+								state.Break = False
+						if settings.ResetButton.rect.collidepoint(newClick):
+							state.ResetButton = (event.type == pygame.MOUSEBUTTONDOWN)
 						updateGUI()
 				elif event.type == pygame.KEYUP:
 					if event.key == pygame.K_UP:
@@ -245,6 +307,8 @@ def go():
 						MEMORY[0x9f03] = 1
 					elif event.key == pygame.K_SLASH:
 						os.system('clear')
+						print(state.PowerSwitch)
+
 						print("DUMP:")
 						print("    PC:  ", PC, "\t(0x"+str(hex(PC))[2:].zfill(4)+")")
 						print("    R0:  ", Registers[0], "\t("+Pretty(Registers[0])+")")
@@ -278,16 +342,16 @@ def go():
 							if (add >= 0xf000) or add == 0xf000:
 								print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
 					elif event.key == pygame.K_SPACE:
-						CycleClock = 1
+						state.CycleClock = 1
 					elif event.key == pygame.K_1:
-						CycleClock = 10
+						state.CycleClock = 10
 					elif event.key == pygame.K_2:
-						CycleClock = 100
+						state.CycleClock = 100
 					elif event.key == pygame.K_3:
-						CycleClock = 1000
+						state.CycleClock = 1000
 
 
-		if ResetButton["state"]:
+		if state.ResetButton:
 			clearDisplay()
 			PC           = 0 	# Program Counter
 			AddrRegister = 0 	# Address register
@@ -299,21 +363,18 @@ def go():
 			]
 			MEMORY[0xe000] = 0
 			MEMORY[0xf000] = 0
-			JumpRegister = False
-			Halted = False
-			Break = False
-			CycleClock = 0
+			state.Reset()
 
-		if Halted and timingMode:
-			done = True
+		if state.Halted and settings.TimingMode:
+			state.Done = True
 
-		if Halted or Break:
+		if state.Halted or state.Break:
 			updateGUI()
-			CycleClock = 0
+			state.CycleClock = 0
 
-		if (PowerSwitch["state"] or (ClockButton["state"] == True and ClockButton["prevState"] == False) or (CycleClock > 0)) and not Halted and not Break:
-			if CycleClock > 0:
-				CycleClock -= 1
+		if (state.PowerSwitch or (state.ClockButton == True and state.ClockButtonPrev == False) or (state.CycleClock > 0)) and not state.Halted and not state.Break:
+			if state.CycleClock > 0:
+				state.CycleClock -= 1
 
 			instruction = MEMORY.get(PC, 0)
 			instructionString = instructionSet[str((instruction//4)*4)+"RR" if str((instruction//4)*4)+"RR" in instructionSet.keys() else str(instruction)]
@@ -399,44 +460,44 @@ def go():
 				StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
 				MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
 				PC = AddrRegister-1 # Update PC to Address
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "CALA":
 				StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
 				newAddr = GetVal() # Update PC with addr read before writing it to the stack
 				MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
 				PC = newAddr-1 # Update PC to Address
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "RT":
 				StackPointer = MEMORY[0xe000] # Get stack pointer
 				PC = MEMORY[0xe000 + StackPointer]-1 # Load PC from stack
 				MEMORY[0xe000] = MEMORY[0xe000] - 1 # Decrease stack
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "PSHL":
 				for val in Registers:
 					StackPointer = MEMORY[0xf000] = MEMORY[0xf000] + 1 # Update stack pointer
 					MEMORY[0xf000 + StackPointer] = val
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "POPL":
 				for i in range(len(Registers)-1,-1,-1): # Reverse order - [3, 2, 1, 0]
 					StackPointer = MEMORY[0xf000]
 					Registers[i] = MEMORY[0xf000 + StackPointer]
 					MEMORY[0xf000] = MEMORY[0xf000] - 1 # Update stack pointer
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "RTC":
 				if JumpRegister:
 					StackPointer = MEMORY[0xe000] # Get stack pointer
 					PC = MEMORY[0xe000 + StackPointer]-1 # Load PC from stack
 					MEMORY[0xe000] = MEMORY[0xe000] - 1 # Decrease stack
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "PSHR":
 				StackPointer = MEMORY[0xf000] = MEMORY[0xf000] + 1 # Update stack pointer
 				MEMORY[0xf000 + StackPointer] = Registers[instruction%4]
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "POPR":
 				StackPointer = MEMORY[0xf000]
 				Registers[instruction%4] = MEMORY[0xf000 + StackPointer]
 				MEMORY[0xf000] = MEMORY[0xf000] - 1 # Update stack pointer
-				# updateStackGUI()
+				updateStackGUI()
 			elif instructionString == "STRR":
 				MEMORY[AddrRegister] = Registers[instruction%4]
 				if AddrRegister >= 0xa000 and AddrRegister <= 0xdfff:
@@ -487,13 +548,11 @@ def go():
 					StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
 					MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
 					PC = newAddr-1 # Update PC to Address
-				# updateStackGUI()
 			elif instructionString == "CCD":
 				if JumpRegister:
 					StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
 					MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
 					PC = AddrRegister-1 # Update PC to Address
-				# updateStackGUI()
 
 			elif instructionString == "CNEA":
 				JumpRegister = Registers[instruction%4]!=GetAddress()
@@ -501,17 +560,17 @@ def go():
 				JumpRegister = Registers[instruction%4]!=GetVal()
 
 			elif instructionString == "BRK":
-				Break = True
+				state.Break = True
 			elif instructionString == "HLT":
-				Halted = True
+				state.Halted = True
 			else:
 				print("ERR:", instructionString)
-				done = True
+				state.Done = True
 
 			for i in range(len(Registers)):
 				Registers[i] = Registers[i]%0x10000
 
-			if not Halted:
+			if not state.Halted:
 				PC += 1
 try:
 	go()
