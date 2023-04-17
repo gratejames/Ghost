@@ -44,7 +44,7 @@ def main():
 			InstructionBinaryDec = str(int(InstructionBinary.replace("RR", "00"),2)) + "RR"
 		else:
 			InstructionBinaryDec = str(int(InstructionBinary,2))
-		instructionSet += f'	"{InstructionBinaryDec}": "{getText(cells[3])}",\n' # Change 3 to 2 for the descritpion
+		instructionSet += f'	"{InstructionBinaryDec}": "{getText(cells[3])}",\n' # Change 3 to 2 for the description
 		Instruction += f'	"' + str(getText(cells[3])) + '": {\n		"Bin": "' + str(InstructionBinary) +'",\n		"Arguments": "' + str(getText(cells[4])).split(";")[1].strip() + '",\n	},\n'
 
 		ShorthandInstruction = str(getText(cells[4])).split(";")[0].strip()
