@@ -226,7 +226,7 @@ SnakeRender:
 	DD R0
 	LD R0
 	CALL splitByte
-	LD R2 FillSprite
+	LD R2 FilledSprite
 	LD R3 $SnakeColor
 	CALL SpriteRender
 
@@ -345,15 +345,6 @@ FilledSprite:
 .db 0b1111 1110 0000 0000
 .db 0b1111 1110 0000 0000
 .db 0b0111 1100 0000 0000
-.db 0b0000 0000 0000 0000
-FillSprite: ; Containts only the difference between Empty and Filled
-.db 0b0000 0000 0000 0000
-.db 0b0111 1100 0000 0000
-.db 0b0111 1100 0000 0000
-.db 0b0111 1100 0000 0000
-.db 0b0111 1100 0000 0000
-.db 0b0111 1100 0000 0000
-.db 0b0000 0000 0000 0000
 .db 0b0000 0000 0000 0000
 EmptySprite:
 .db 0b0111 1100 0000 0000

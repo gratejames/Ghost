@@ -13,11 +13,11 @@ contexts:
     - match: '^#DEF'
       scope: keyword.control.assembly
 
-    - match: '^(\s)*(NOP|STV|MVA|LDA|LDV|STR|ADA|ADV|SBA|SBV|SRA|SRV|NEG|INC|DEC|SHL1|SHR1|ANA|ANV|NNA|NNV|ORA|ORV|XRA|XRV|NOT|DDR|DDA|DDV|JPA|JPD|CZR|CEA|CEV|CLA|CLV|CGA|CGV|CALD|CALA|RT|PSHL|POPL|RTC|PSHR|POPR|STRR|STVR|LDRR|SHLV|SHRV|SHLA|SHRA|ADDR|SUBR|SBRR|SHL0|SHR0|CNZR|CZA|CNZA|JCA|JCD|CCA|CCD|CNEA|CNEV|BRK|HLT)\b'
+    - match: '^(\s)*(NOP|STV|SCR|MVA|LDA|LDV|STR|ADA|ADV|SBA|SBV|SRA|SRV|NEG|INC|DEC|SHL1|SHR1|ANA|ANV|NNA|NNV|ORA|ORV|XRA|XRV|NOT|DDR|DDA|DDV|JPA|JPD|CZR|CEA|CEV|CLA|CLV|CGA|CGV|CALD|CALA|RT|PSHL|POPL|RTC|PSHR|POPR|STRR|STVR|LDRR|SHLV|SHRV|SHLA|SHRA|ADDR|SUBR|SBRR|SHL0|SHR0|CNZR|CZA|CNZA|JCA|JCD|CCA|CCD|CNEA|CNEV|CLSR|CLSV|CLS|BRK|HLT)\b'
       scope: keyword.control.assembly
       push: commandArgs
 
-    - match: '^(\s)*(ST|MV|LD|LD|ST|ADD|ADD|SUB|SUB|SBR|SBR|SHL|SHR|AND|AND|NAND|NAND|OR|OR|XOR|XOR|DD|DD|DD|JMP|JMP|CZ|CE|CE|CL|CL|CG|CG|CALL|CALL|RET|PSH|POP|RETC|PSH|POP|ST|ST|LD|SHL|SHR|SHL|SHR|ADD|SUB|SBR|CNZ|CZ|CNZ|JMPC|JMPC|CALLC|CALLC|CNE|CNE)\b'
+    - match: '^(\s)*(ST|MV|LD|LD|ST|ADD|ADD|SUB|SUB|SBR|SBR|SHL|SHR|AND|AND|NAND|NAND|OR|OR|XOR|XOR|DD|DD|DD|JMP|JMP|CZ|CE|CE|CL|CL|CG|CG|CALL|CALL|RET|PSH|POP|RETC|PSH|POP|ST|ST|LD|SHL|SHR|SHL|SHR|ADD|SUB|SBR|CNZ|CZ|CNZ|JMPC|JMPC|CALLC|CALLC|CNE|CNE|CLS|CLS|CLS)\b'
       scope: keyword.control.assembly
       push: commandArgs
 
@@ -55,7 +55,7 @@ contexts:
     - match: $
       pop: true
 
-    - match: '\b(R0|R1|R2|R3)+\b'
+    - match: '\bR[0-3]\b'
       scope: constant.character.decimal.assembly # Register
 
     - match: '\$'
@@ -68,7 +68,7 @@ contexts:
       scope: constant.numeric.integer.binary.assembly
 
     - match: '\b[0-9]+\b'
-      scope: constant.numeric.integer.hexadecimal.assembly
+      scope: constant.numeric.integer.decimal.assembly
 
     - match: '\b[a-zA-Z0-9_]+'
       scope: variable

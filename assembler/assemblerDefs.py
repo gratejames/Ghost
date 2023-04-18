@@ -17,6 +17,10 @@ Instructions = {
 		"Bin": "00000001",
 		"Arguments": "Value Address",
 	},
+	"SCR": {
+		"Bin": "00000010",
+		"Arguments": "",
+	},
 	"MVA": {
 		"Bin": "00000011",
 		"Arguments": "Address Address",
@@ -277,6 +281,18 @@ Instructions = {
 		"Bin": "110111RR",
 		"Arguments": "RR Value",
 	},
+	"CLSR": {
+		"Bin": "111110RR",
+		"Arguments": "RR",
+	},
+	"CLSV": {
+		"Bin": "11111100",
+		"Arguments": "Value",
+	},
+	"CLS": {
+		"Bin": "11111101",
+		"Arguments": "",
+	},
 	"BRK": {
 		"Bin": "11111110",
 		"Arguments": "",
@@ -399,5 +415,10 @@ Shorthand = {
     "CNE": {
         "RR Address": "CNEA",
         "RR Value": "CNEV"
+    },
+    "CLS": {
+        "RR": "CLSR",
+        "Value": "CLSV",
+        "": "CLS"
     }
 }

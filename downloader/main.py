@@ -41,10 +41,12 @@ def main():
 			instructions.append(getText(cells[3]))
 		print(InstructionBinary)
 		if "RR" in InstructionBinary:
-			InstructionBinaryDec = str(int(InstructionBinary.replace("RR", "00"),2)) + "RR"
+			for i in ["00", "01", "10", "11"]:
+				InstructionBinaryDec = str(int(InstructionBinary.replace("RR", i),2))
+				instructionSet += f'	"{InstructionBinaryDec}": "{getText(cells[3])}",\n' # Change 3 to 2 for the description
 		else:
 			InstructionBinaryDec = str(int(InstructionBinary,2))
-		instructionSet += f'	"{InstructionBinaryDec}": "{getText(cells[3])}",\n' # Change 3 to 2 for the description
+			instructionSet += f'	"{InstructionBinaryDec}": "{getText(cells[3])}",\n' # Change 3 to 2 for the description
 		Instruction += f'	"' + str(getText(cells[3])) + '": {\n		"Bin": "' + str(InstructionBinary) +'",\n		"Arguments": "' + str(getText(cells[4])).split(";")[1].strip() + '",\n	},\n'
 
 		ShorthandInstruction = str(getText(cells[4])).split(";")[0].strip()

@@ -8,7 +8,16 @@ DrawRainbow:
 	INC R0
 	CG R0 0xdfff
 	JMPC Exit
+;	PSH R0
+;	SHL R0 12
+;	CZ R0
+;	CALLC UPD
+;	POP R0
 	JMP DrawRainbow
+
+UPD:
+	SCR
+	RET
 
 Exit:
 	HLT

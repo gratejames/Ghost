@@ -6,6 +6,7 @@ from collections import deque
 import traceback
 import ctypes
 import random
+import timeit
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 import pygame
@@ -16,7 +17,10 @@ FontPath = os.path.join(AbsolutePath, 'Anonymous_Pro_B.ttf')
 AnonFont = pygame.font.Font(FontPath, 20)
 AnonFontSmall = pygame.font.Font(FontPath, 11)
 
-from instructionSet import instructionSet 
+import instructionSet as instrSet
+instructionSet = [0] * 0x100
+for k, v in instrSet.instructionSet.items():
+	instructionSet[int(k)] = v
 
 import configparser
 
@@ -65,16 +69,18 @@ class settings:
 		def __init__(self, cfg):
 			self.refresh		= int(cfg["Refresh"])
 			
-			pos1 = eval(cfg["Stack1Pos"])
-			pos2 = eval(cfg["Stack2Pos"])
+			pos1 = eval(cfg["1Pos"])
+			pos2 = eval(cfg["2Pos"])
 			size = eval(cfg["Size"])
 			reveal = int(cfg["Reveal"])
 			self.s1.rect		= pygame.Rect(*pos1, *size)
 			self.s1.pos			= pos1
 			self.s1.width		= size[0] - reveal
+			self.s1.address		= int(cfg["1Address"], 0)
 			self.s2.rect		= pygame.Rect(*pos2, *size)
 			self.s2.pos			= pos2
 			self.s2.width		= size[0] - reveal
+			self.s2.address		= int(cfg["2Address"], 0)
 		class s1:
 			pass
 		class s2:
@@ -113,16 +119,17 @@ def addTuples(t1, t2):
 	return (t1[0]+t2[0], t1[1]+t2[1])
 
 def twosComp(val, bits=8): # https://stackoverflow.com/questions/1604464/twos-complement-in-python
-    if (val & (1 << (bits - 1))) != 0: # if sign bit is set e.g., 8bit: 128-255
-        val = val - (1 << bits)        # compute negative value
-    return val                         # return positive value as is
+	if (val & (1 << (bits - 1))) != 0: # if sign bit is set e.g., 8bit: 128-255
+		val = val - (1 << bits)        # compute negative value
+	return val                         # return positive value as is
 
 def bitNOT(num):
 	return int(str(bin(int(~np.uint8(num))))[4:],2)
 
 # rrrrr gggggg bbbbb
 def binColor(num):
-	return (num // 2048 * (255 / 31), (num % 2048) // 32 * (255 / 62), (num % 32) * (255 / 31))
+	return (num // 2048 * (255 / 31), (num % 2048) // 32 * (255 / 63), (num % 32) * (255 / 31))
+	print(color)
 
 def Lmap(v, a1,b1,a2,b2, cap = True):
 	x = a2 + (b2-a2)*((v-a1)/(b1-a1))
@@ -141,6 +148,10 @@ def writeDisplayAddress(addr):
 	pygame.draw.rect(screen, color, (pixelX, pixelY, settings.display.scale, settings.display.scale))
 
 	pygame.display.update((pixelX, pixelY), (settings.display.scale,settings.display.scale))
+	
+	# print(1, timeit.timeit(lambda:pygame.display.update((pixelX, pixelY), (settings.display.scale,settings.display.scale)), number=1000))
+	# print(2, timeit.timeit(lambda:pygame.display.update((0, 0), (128,128)), number=1000))
+	
 
 def clearDisplay(color = (0,0,0)):
 	for x,y in [(_i,_ii) for _i in range(128) for _ii in range(128)]:
@@ -149,35 +160,30 @@ def clearDisplay(color = (0,0,0)):
 	pygame.display.update(pygame.Rect(settings.display.position, (128*settings.display.scale, 128*settings.display.scale)))
 
 def refreshDisplay():
-	for x,y in [(_i,_ii) for _i in range(128) for _ii in range(128)]:
-		color = binColor(MEMORY[settings.display.address + x + (y*128)])
-		pixelX, pixelY = ((x*settings.display.scale)+settings.display.position[0], (y*settings.display.scale)+settings.display.position[1])
-		pygame.draw.rect(screen, color, (pixelX, pixelY, settings.display.scale, settings.display.scale))
-	pygame.display.update(pygame.Rect(settings.display.position, (128*settings.display.scale, 128*settings.display.scale)))
+	pygame.display.update(settings.display.position, (128*settings.display.scale, 128*settings.display.scale))
 
 
 
 
-stack1SizeLast = None
-stack2SizeLast = None
+# stack1SizeLast = None
+# stack2SizeLast = None
+# stackUpdateRect = (settings.stack.s1.pos, (settings.stack.s2.rect.x+settings.stack.s2.rect.width,settings.stack.s2.rect.y+settings.stack.s2.rect.height))
+# def updateStackGUI():
+# 	pass
+# 	stack1Size = Lmap(MEMORY[settings.stack.s1.address], 0, 4096, 0, 80//settings.stack.refresh)
+# 	chg1 = stack1SizeLast != stack1Size
+# 	if chg1:
+# 		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s1.rect)
+# 		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s1.pos,(settings.stack.s1.width,stack1Size*settings.stack.refresh)))
 
-def updateStackGUI():
-	stack1Size = Lmap(MEMORY[0xe000], 0, 4096, 0, 80//settings.stack.refresh)
-	chg1 = stack1SizeLast != stack1Size
-	if chg1:
-		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s1.rect)
-		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s1.pos,(settings.stack.s1.width,stack1Size*settings.stack.refresh)))
-
-	stack2Size = Lmap(MEMORY[0xf000], 0, 4096, 0, 80//settings.stack.refresh)
-	chg2 = stack2SizeLast != stack2Size
-	if chg2:
-		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s2.rect)
-		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s2.pos,(settings.stack.s2.width,stack2Size*settings.stack.refresh)))
+# 	stack2Size = Lmap(MEMORY[settings.stack.s2.address], 0, 4096, 0, 80//settings.stack.refresh)
+# 	chg2 = stack2SizeLast != stack2Size
+# 	if chg2:
+# 		pygame.draw.rect(screen, settings.palette.OFF, settings.stack.s2.rect)
+# 		pygame.draw.rect(screen, settings.palette.ON,  pygame.Rect(settings.stack.s2.pos,(settings.stack.s2.width,stack2Size*settings.stack.refresh)))
 	
-	if chg1 or chg2:
-		p1 = settings.stack.s1.pos
-		p2 = (settings.stack.s2.rect.x+settings.stack.s2.rect.width,settings.stack.s2.rect.y+settings.stack.s2.rect.height)
-		# pygame.display.update(p1,p2)
+# 	if chg1 or chg2:
+# 		pygame.display.update(stackUpdateRect)
 
 def updateGUI():
 	pygame.draw.rect(screen, settings.palette.DISABLED if (state.Halted or state.Break) else settings.palette.ON if state.PowerSwitch else settings.palette.OFF, settings.PowerSwitch.rect)
@@ -191,7 +197,7 @@ def updateGUI():
 	
 	pygame.display.update((10,10), (30,90))
 
-	updateStackGUI()
+	# updateStackGUI()
 
 
 
@@ -216,8 +222,8 @@ with open(fileName, 'r') as f:
 			continue
 		MEMORY[counter] = int(word, 16)
 
-MEMORY[0xe000] = 0
-MEMORY[0xf000] = 0
+MEMORY[settings.stack.s1.address] = 0
+MEMORY[settings.stack.s2.address] = 0
 
 PC           = 0 	# Program Counter
 AddrRegister = 0 	# Address register
@@ -228,7 +234,6 @@ Registers = [
 	0,				# Register3
 ]
 JumpRegister 	= False
-instructionSetkeys = instructionSet.keys()
 
 screen.fill(settings.display.bg)
 clearDisplay()
@@ -251,7 +256,7 @@ def GetAddress():
 	if addr == 0x9fff: # Random number generator
 		rand = random.randrange(0xffff)
 		return rand
-	return MEMORY[add]
+	return MEMORY[addr]
 def SetAddress(val):
 	global PC
 	PC += 1
@@ -263,94 +268,283 @@ def WriteMem(addr, val):
 def Pretty(hexInt):
 	return "0x"+str(hex(hexInt))[2:].zfill(4)
 
+def eventChecks():
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			state.Done = True
+		elif event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
+			if event.button == 1:
+				newClick = event.pos
+				if settings.PowerSwitch.rect.collidepoint(newClick) and event.type == pygame.MOUSEBUTTONDOWN:
+					state.PowerSwitch = not state.PowerSwitch
+				if settings.ClockButton.rect.collidepoint(newClick):
+					state.ClockButton = (event.type == pygame.MOUSEBUTTONDOWN)
+					if not state.ClockButton:
+						state.Break = False
+				if settings.ResetButton.rect.collidepoint(newClick):
+					state.ResetButton = (event.type == pygame.MOUSEBUTTONDOWN)
+				updateGUI()
+		elif event.type == pygame.KEYUP:
+			if event.key == pygame.K_UP:
+				MEMORY[0x9f00] = 0
+			elif event.key == pygame.K_DOWN:
+				MEMORY[0x9f01] = 0
+			elif event.key == pygame.K_LEFT:
+				MEMORY[0x9f02] = 0
+			elif event.key == pygame.K_RIGHT:
+				MEMORY[0x9f03] = 0
+		elif event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_UP:
+				MEMORY[0x9f00] = 1
+			elif event.key == pygame.K_DOWN:
+				MEMORY[0x9f01] = 1
+			elif event.key == pygame.K_LEFT:
+				MEMORY[0x9f02] = 1
+			elif event.key == pygame.K_RIGHT:
+				MEMORY[0x9f03] = 1
+			elif event.key == pygame.K_SLASH:
+				os.system('clear')
+				print("DUMP:")
+				print("    PC:  ", PC, "\t(0x"+str(hex(PC))[2:].zfill(4)+")")
+				print("    R0:  ", Registers[0], "\t("+Pretty(Registers[0])+")")
+				print("    R1:  ", Registers[1], "\t("+Pretty(Registers[1])+")")
+				print("    R2:  ", Registers[2], "\t("+Pretty(Registers[2])+")")
+				print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
+				print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
+				print("    SP1: ", MEMORY[settings.stack.s1.address], "\t("+Pretty(MEMORY[settings.stack.s1.address])+")")
+				print("    SP2: ", MEMORY[settings.stack.s2.address], "\t("+Pretty(MEMORY[settings.stack.s2.address])+")")
+				print("    JMP: ", JumpRegister)
+				# print("    Memory:")
+				# for add, val in MEMORY.items():
+				# 	if add > 0x9eff:
+				# 		continue
+				# 	suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSetkeys else str(val)]}' if add == PC else ""
+				# 	print("       ", Pretty(add)+":", val, "\t("+Pretty(val), suffix)
+			elif event.key == pygame.K_s:
+				os.system('clear')
+				print("Stack 1:")
+				for add, val in enumerate(MEMORY):
+					if add >= 0xefff:
+						continue
+					if (add >= settings.stack.s1.address) or add == settings.stack.s1.address:
+						print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
+			elif event.key == pygame.K_d:
+				os.system('clear')
+				print("Stack 1:")
+				for add, val in enumerate(MEMORY):
+					if add >= 0xffff:
+						continue
+					if (add >= settings.stack.s2.address) or add == settings.stack.s2.address:
+						print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
+			elif event.key == pygame.K_SPACE:
+				state.CycleClock = 1
+			elif event.key == pygame.K_1:
+				state.CycleClock = 10
+			elif event.key == pygame.K_2:
+				state.CycleClock = 100
+			elif event.key == pygame.K_3:
+				state.CycleClock = 1000
+				
+def executeInstruction(instruction):
+	global state, PC, Registers, AddrRegister, JumpRegister
+	instructionString = instructionSet[instruction]
+	match instructionString:
+		case "NOP":
+			pass
+		case "STV":
+			val = GetVal()
+			SetAddress(val)
+		case "SCR":
+			refreshDisplay()
+		case "MVA":
+			SetAddress(GetAddress())
+		case "LDA":
+			Registers[instruction%4] = GetAddress()
+		case "LDV":
+			Registers[instruction%4] = GetVal()
+		case "STR":
+			SetAddress(Registers[instruction%4])
+		case "ADA":
+			Registers[instruction%4] += GetAddress()
+		case "ADV":
+			Registers[instruction%4] += GetVal()
+		case "SBA":
+			Registers[instruction%4] += -GetAddress()
+		case "SBV":
+			Registers[instruction%4] += -GetVal()
+		case "SRA":
+			Registers[instruction%4] = GetAddress() - Registers[instruction%4]
+		case "SRV":
+			Registers[instruction%4] = GetVal() - Registers[instruction%4]
+		case "NEG":
+			Registers[instruction%4] = twosComp(Registers[instruction%4])
+		case "INC":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] + 1)
+		case "DEC":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] - 1)
+		case "SHL1":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] << 1)
+		case "SHR1":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] >> 1)
+		case "ANA":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] & GetAddress())
+		case "ANV":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] & GetVal())
+		case "NNA":
+			Registers[instruction%4] = ForceValidInt(bitNOT(Registers[instruction%4] & GetAddress()))
+		case "NNV":
+			Registers[instruction%4] = ForceValidInt(bitNOT(Registers[instruction%4] & GetVal()))
+		case "ORA":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] | GetAddress())
+		case "ORV":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] | GetVal())
+		case "XRA":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] ^ GetAddress())
+		case "XRV":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] ^ GetVal())
+		case "NOT":
+			Registers[instruction%4] = ForceValidInt(bitNOT(Registers[instruction%4]))
+		case "DDR":
+			AddrRegister = Registers[instruction%4]
+		case "DDA":
+			AddrRegister = GetAddress()
+		case "DDV":
+			AddrRegister = GetVal()
+		case "JPA":
+			PC = GetVal()-1
+		case "JPD":
+			PC = AddrRegister-1
+		case "CZR":
+			JumpRegister = Registers[instruction%4]==0
+		case "CEA":
+			JumpRegister = Registers[instruction%4]==GetAddress()
+		case "CEV":
+			JumpRegister = Registers[instruction%4]==GetVal()
+		case "CLA":
+			JumpRegister = Registers[instruction%4]<GetAddress()
+		case "CLV":
+			JumpRegister = Registers[instruction%4]<GetVal()
+		case "CGA":
+			JumpRegister = Registers[instruction%4]>GetAddress()
+		case "CGV":
+			JumpRegister = Registers[instruction%4]>GetVal()
+		case "CALD":
+			StackPointer = MEMORY[settings.stack.s1.address] = MEMORY[settings.stack.s1.address] + 1 # Update stack pointer
+			MEMORY[settings.stack.s1.address + StackPointer] = PC+1 # Put current PC in stack
+			PC = AddrRegister-1 # Update PC to Address
+			# updateStackGUI()
+		case "CALA":
+			StackPointer = MEMORY[settings.stack.s1.address] = MEMORY[settings.stack.s1.address] + 1 # Update stack pointer
+			newAddr = GetVal() # Update PC with addr read before writing it to the stack
+			MEMORY[settings.stack.s1.address + StackPointer] = PC+1 # Put current PC in stack
+			PC = newAddr-1 # Update PC to Address
+			# updateStackGUI()
+		case "RT":
+			StackPointer = MEMORY[settings.stack.s1.address] # Get stack pointer
+			PC = MEMORY[settings.stack.s1.address + StackPointer]-1 # Load PC from stack
+			MEMORY[settings.stack.s1.address] = MEMORY[settings.stack.s1.address] - 1 # Decrease stack
+			# updateStackGUI()
+		case "PSHL":
+			for val in Registers:
+				StackPointer = MEMORY[settings.stack.s2.address] = MEMORY[settings.stack.s2.address] + 1 # Update stack pointer
+				MEMORY[settings.stack.s2.address + StackPointer] = val
+			# updateStackGUI()
+		case "POPL":
+			for i in range(len(Registers)-1,-1,-1): # Reverse order - [3, 2, 1, 0]
+				StackPointer = MEMORY[settings.stack.s2.address]
+				Registers[i] = MEMORY[settings.stack.s2.address + StackPointer]
+				MEMORY[settings.stack.s2.address] = MEMORY[settings.stack.s2.address] - 1 # Update stack pointer
+			# updateStackGUI()
+		case "RTC":
+			if JumpRegister:
+				StackPointer = MEMORY[settings.stack.s1.address] # Get stack pointer
+				PC = MEMORY[settings.stack.s1.address + StackPointer]-1 # Load PC from stack
+				MEMORY[settings.stack.s1.address] = MEMORY[settings.stack.s1.address] - 1 # Decrease stack
+			# updateStackGUI()
+		case "PSHR":
+			StackPointer = MEMORY[settings.stack.s2.address] = MEMORY[settings.stack.s2.address] + 1 # Update stack pointer
+			MEMORY[settings.stack.s2.address + StackPointer] = Registers[instruction%4]
+			# updateStackGUI()
+		case "POPR":
+			StackPointer = MEMORY[settings.stack.s2.address]
+			Registers[instruction%4] = MEMORY[settings.stack.s2.address + StackPointer]
+			MEMORY[settings.stack.s2.address] = MEMORY[settings.stack.s2.address] - 1 # Update stack pointer
+			# updateStackGUI()
+		case "STRR":
+			MEMORY[AddrRegister] = Registers[instruction%4]
+			if AddrRegister >= 0xa000 and AddrRegister <= 0xdfff:
+				writeDisplayAddress(AddrRegister)
+		case "STRV":
+			WriteMem(MEMORY[AddrRegister], getValue())
+		case "LDRR":
+			Registers[instruction%4] = MEMORY[AddrRegister]
+		case "SHLV":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] << GetVal())
+		case "SHRV":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] >> GetVal())
+		case "SHLA":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] << GetAddress())
+		case "SHRA":
+			Registers[instruction%4] = ForceValidInt(Registers[instruction%4] >> GetAddress())
+		case "ADDR":
+			Registers[0] = ForceValidInt(Registers[0] + Registers[instruction%4])
+		case "SUBR":
+			Registers[0] = ForceValidInt(Registers[0] - Registers[instruction%4])
+		case "SBRR":
+			Registers[0] = ForceValidInt(Registers[instruction%4] - Registers[0])
+		case "SHL0":
+			Registers[0] = ForceValidInt(Registers[0] << Registers[instruction%4])
+		case "SHR0":
+			Registers[0] = ForceValidInt(Registers[0] >> Registers[instruction%4])
+		case "CZA":
+			JumpRegister = GetAddress()==0
+		case "CNZR":
+			JumpRegister = Registers[instruction%4]!=0
+		case "CZA":
+			JumpRegister = GetAddress()==0
+		case "CNZA":
+			JumpRegister = GetAddress()!=0
+
+		case "JCA":
+			newAddr = GetVal()
+			if JumpRegister:
+				PC = newAddr-1
+		case "JCD":
+			if JumpRegister:
+				PC = AddrRegister-1
+
+		case "CCA":
+			newAddr = GetVal() # Update PC with addr read before writing it to the stack
+			if JumpRegister:
+				StackPointer = MEMORY[settings.stack.s1.address] = MEMORY[settings.stack.s1.address] + 1 # Update stack pointer
+				MEMORY[settings.stack.s1.address + StackPointer] = PC+1 # Put current PC in stack
+				PC = newAddr-1 # Update PC to Address
+		case "CCD":
+			if JumpRegister:
+				StackPointer = MEMORY[settings.stack.s1.address] = MEMORY[settings.stack.s1.address] + 1 # Update stack pointer
+				MEMORY[settings.stack.s1.address + StackPointer] = PC+1 # Put current PC in stack
+				PC = AddrRegister-1 # Update PC to Address
+		case "CNEA":
+			JumpRegister = Registers[instruction%4]!=GetAddress()
+		case "CNEV":
+			JumpRegister = Registers[instruction%4]!=GetVal()
+		case "BRK":
+			state.Break = True
+		case "HLT":
+			state.Halted = True
+		case _:
+			print("ERR:", instructionString)
+			state.Done = True
+
+	
 def go():
 	global state, PC, Registers, AddrRegister, JumpRegister
 	t=0
 	while not state.Done:
 		state.ClockButtonPrev = state.ClockButton
-		if state.Halted or state.Break:
-			state.PowerSwitch = False
 		t+=1
-		nextInput = 0
 		if t%20==0:
-			for event in pygame.event.get():
-				if event.type == pygame.QUIT:
-					state.Done = True
-				elif event.type in [pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP]:
-					if event.button == 1:
-						newClick = event.pos
-						if settings.PowerSwitch.rect.collidepoint(newClick) and event.type == pygame.MOUSEBUTTONDOWN:
-							state.PowerSwitch = not state.PowerSwitch
-						if settings.ClockButton.rect.collidepoint(newClick):
-							state.ClockButton = (event.type == pygame.MOUSEBUTTONDOWN)
-							if not state.ClockButton:
-								state.Break = False
-						if settings.ResetButton.rect.collidepoint(newClick):
-							state.ResetButton = (event.type == pygame.MOUSEBUTTONDOWN)
-						updateGUI()
-				elif event.type == pygame.KEYUP:
-					if event.key == pygame.K_UP:
-						MEMORY[0x9f00] = 0
-					elif event.key == pygame.K_DOWN:
-						MEMORY[0x9f01] = 0
-					elif event.key == pygame.K_LEFT:
-						MEMORY[0x9f02] = 0
-					elif event.key == pygame.K_RIGHT:
-						MEMORY[0x9f03] = 0
-				elif event.type == pygame.KEYDOWN:
-					if event.key == pygame.K_UP:
-						MEMORY[0x9f00] = 1
-					elif event.key == pygame.K_DOWN:
-						MEMORY[0x9f01] = 1
-					elif event.key == pygame.K_LEFT:
-						MEMORY[0x9f02] = 1
-					elif event.key == pygame.K_RIGHT:
-						MEMORY[0x9f03] = 1
-					elif event.key == pygame.K_SLASH:
-						os.system('clear')
-						print(state.PowerSwitch)
-
-						print("DUMP:")
-						print("    PC:  ", PC, "\t(0x"+str(hex(PC))[2:].zfill(4)+")")
-						print("    R0:  ", Registers[0], "\t("+Pretty(Registers[0])+")")
-						print("    R1:  ", Registers[1], "\t("+Pretty(Registers[1])+")")
-						print("    R2:  ", Registers[2], "\t("+Pretty(Registers[2])+")")
-						print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
-						print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
-						print("    SP1: ", MEMORY[0xe000], "\t("+Pretty(MEMORY[0xe000])+")")
-						print("    SP2: ", MEMORY[0xf000], "\t("+Pretty(MEMORY[0xf000])+")")
-						print("    JMP: ", JumpRegister)
-						print("    Memory:")
-						for add, val in MEMORY.items():
-							if add > 0x9eff:
-								continue
-							suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSetkeys else str(val)]}' if add == PC else ""
-							print("       ", Pretty(add)+":", val, "\t("+Pretty(val), suffix)
-					elif event.key == pygame.K_s:
-						os.system('clear')
-						print("Stack 1:")
-						for add, val in MEMORY.items():
-							if add >= 0xefff:
-								continue
-							if (add >= 0xe000) or add == 0xe000:
-								print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
-					elif event.key == pygame.K_d:
-						os.system('clear')
-						print("Stack 1:")
-						for add, val in MEMORY.items():
-							if add >= 0xffff:
-								continue
-							if (add >= 0xf000) or add == 0xf000:
-								print("    ", Pretty(add)+":", val, "\t("+Pretty(val)+")")
-					elif event.key == pygame.K_SPACE:
-						state.CycleClock = 1
-					elif event.key == pygame.K_1:
-						state.CycleClock = 10
-					elif event.key == pygame.K_2:
-						state.CycleClock = 100
-					elif event.key == pygame.K_3:
-						state.CycleClock = 1000
-
+			eventChecks()
 
 		if state.ResetButton:
 			clearDisplay()
@@ -362,8 +556,8 @@ def go():
 				0,				# Register2
 				0,				# Register3
 			]
-			MEMORY[0xe000] = 0
-			MEMORY[0xf000] = 0
+			MEMORY[settings.stack.s1.address] = 0
+			MEMORY[settings.stack.s2.address] = 0
 			state.Reset()
 
 		if state.Halted and settings.TimingMode:
@@ -372,204 +566,15 @@ def go():
 		if state.Halted or state.Break:
 			updateGUI()
 			state.CycleClock = 0
+			state.PowerSwitch = False
 
 		if (state.PowerSwitch or (state.ClockButton == True and state.ClockButtonPrev == False) or (state.CycleClock > 0)) and not state.Halted and not state.Break:
 			if state.CycleClock > 0:
 				state.CycleClock -= 1
 
 			instruction = MEMORY[PC]
-			instructionString = instructionSet[str((instruction//4)*4)+"RR" if str((instruction//4)*4)+"RR" in instructionSetkeys else str(instruction)]
 
-			if instructionString == "NOP":
-				pass
-			elif instructionString == "STV":
-				val = GetVal()
-				SetAddress(val)
-			elif instructionString == "MVA":
-				SetAddress(GetAddress())
-			elif instructionString == "LDA":
-				Registers[instruction%4] = GetAddress()
-			elif instructionString == "LDV":
-				Registers[instruction%4] = GetVal()
-			elif instructionString == "STR":
-				SetAddress(Registers[instruction%4])
-			elif instructionString == "ADA":
-				Registers[instruction%4] += GetAddress()
-			elif instructionString == "ADV":
-				Registers[instruction%4] += GetVal()
-			elif instructionString == "SBA":
-				Registers[instruction%4] += -GetAddress()
-			elif instructionString == "SBV":
-				Registers[instruction%4] += -GetVal()
-			elif instructionString == "SRA":
-				Registers[instruction%4] = GetAddress() - Registers[instruction%4]
-			elif instructionString == "SRV":
-				Registers[instruction%4] = GetVal() - Registers[instruction%4]
-			elif instructionString == "NEG":
-				Registers[instruction%4] = twosComp(Registers[instruction%4])
-			elif instructionString == "INC":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] + 1)
-			elif instructionString == "DEC":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] - 1)
-			elif instructionString == "SHL1":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] << 1)
-			elif instructionString == "SHR1":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] >> 1)
-			elif instructionString == "ANA":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] & GetAddress())
-			elif instructionString == "ANV":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] & GetVal())
-			elif instructionString == "NNA":
-				Registers[instruction%4] = ForceValidInt(bitNOT(Registers[instruction%4] & GetAddress()))
-			elif instructionString == "NNV":
-				Registers[instruction%4] = ForceValidInt(bitNOT(Registers[instruction%4] & GetVal()))
-			elif instructionString == "ORA":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] | GetAddress())
-			elif instructionString == "ORV":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] | GetVal())
-			elif instructionString == "XRA":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] ^ GetAddress())
-			elif instructionString == "XRV":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] ^ GetVal())
-			elif instructionString == "NOT":
-				Registers[instruction%4] = ForceValidInt(bitNOT(Registers[instruction%4]))
-			elif instructionString == "DDR":
-				AddrRegister = Registers[instruction%4]
-			elif instructionString == "DDA":
-				AddrRegister = GetAddress()
-			elif instructionString == "DDV":
-				AddrRegister = GetVal()
-			elif instructionString == "JPA":
-				PC = GetVal()-1
-			elif instructionString == "JPD":
-				PC = AddrRegister-1
-			elif instructionString == "CZR":
-				JumpRegister = Registers[instruction%4]==0
-			elif instructionString == "CEA":
-				JumpRegister = Registers[instruction%4]==GetAddress()
-			elif instructionString == "CEV":
-				JumpRegister = Registers[instruction%4]==GetVal()
-			elif instructionString == "CLA":
-				JumpRegister = Registers[instruction%4]<GetAddress()
-			elif instructionString == "CLV":
-				JumpRegister = Registers[instruction%4]<GetVal()
-			elif instructionString == "CGA":
-				JumpRegister = Registers[instruction%4]>GetAddress()
-			elif instructionString == "CGV":
-				JumpRegister = Registers[instruction%4]>GetVal()
-			elif instructionString == "CALD":
-				StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
-				MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
-				PC = AddrRegister-1 # Update PC to Address
-				updateStackGUI()
-			elif instructionString == "CALA":
-				StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
-				newAddr = GetVal() # Update PC with addr read before writing it to the stack
-				MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
-				PC = newAddr-1 # Update PC to Address
-				updateStackGUI()
-			elif instructionString == "RT":
-				StackPointer = MEMORY[0xe000] # Get stack pointer
-				PC = MEMORY[0xe000 + StackPointer]-1 # Load PC from stack
-				MEMORY[0xe000] = MEMORY[0xe000] - 1 # Decrease stack
-				updateStackGUI()
-			elif instructionString == "PSHL":
-				for val in Registers:
-					StackPointer = MEMORY[0xf000] = MEMORY[0xf000] + 1 # Update stack pointer
-					MEMORY[0xf000 + StackPointer] = val
-				updateStackGUI()
-			elif instructionString == "POPL":
-				for i in range(len(Registers)-1,-1,-1): # Reverse order - [3, 2, 1, 0]
-					StackPointer = MEMORY[0xf000]
-					Registers[i] = MEMORY[0xf000 + StackPointer]
-					MEMORY[0xf000] = MEMORY[0xf000] - 1 # Update stack pointer
-				updateStackGUI()
-			elif instructionString == "RTC":
-				if JumpRegister:
-					StackPointer = MEMORY[0xe000] # Get stack pointer
-					PC = MEMORY[0xe000 + StackPointer]-1 # Load PC from stack
-					MEMORY[0xe000] = MEMORY[0xe000] - 1 # Decrease stack
-				updateStackGUI()
-			elif instructionString == "PSHR":
-				StackPointer = MEMORY[0xf000] = MEMORY[0xf000] + 1 # Update stack pointer
-				MEMORY[0xf000 + StackPointer] = Registers[instruction%4]
-				updateStackGUI()
-			elif instructionString == "POPR":
-				StackPointer = MEMORY[0xf000]
-				Registers[instruction%4] = MEMORY[0xf000 + StackPointer]
-				MEMORY[0xf000] = MEMORY[0xf000] - 1 # Update stack pointer
-				updateStackGUI()
-			elif instructionString == "STRR":
-				MEMORY[AddrRegister] = Registers[instruction%4]
-				if AddrRegister >= 0xa000 and AddrRegister <= 0xdfff:
-					writeDisplayAddress(AddrRegister)
-			elif instructionString == "STRV":
-				WriteMem(MEMORY[AddrRegister], getValue())
-			elif instructionString == "LDRR":
-				Registers[instruction%4] = MEMORY[AddrRegister]
-			elif instructionString == "SHLV":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] << GetVal())
-			elif instructionString == "SHRV":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] >> GetVal())
-			elif instructionString == "SHLA":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] << GetAddress())
-			elif instructionString == "SHRA":
-				Registers[instruction%4] = ForceValidInt(Registers[instruction%4] >> GetAddress())
-			elif instructionString == "ADDR":
-				Registers[0] = ForceValidInt(Registers[0] + Registers[instruction%4])
-			elif instructionString == "SUBR":
-				Registers[0] = ForceValidInt(Registers[0] - Registers[instruction%4])
-			elif instructionString == "SBRR":
-				Registers[0] = ForceValidInt(Registers[instruction%4] - Registers[0])
-			elif instructionString == "SHL0":
-				Registers[0] = ForceValidInt(Registers[0] << Registers[instruction%4])
-			elif instructionString == "SHR0":
-				Registers[0] = ForceValidInt(Registers[0] >> Registers[instruction%4])
-			elif instructionString == "CZA":
-				JumpRegister = GetAddress()==0
-
-			elif instructionString == "CNZR":
-				JumpRegister = Registers[instruction%4]!=0
-			elif instructionString == "CZA":
-				JumpRegister = GetAddress()==0
-			elif instructionString == "CNZA":
-				JumpRegister = GetAddress()!=0
-
-			elif instructionString == "JCA":
-				newAddr = GetVal()
-				if JumpRegister:
-					PC = newAddr-1
-			elif instructionString == "JCD":
-				if JumpRegister:
-					PC = AddrRegister-1
-
-			elif instructionString == "CCA":
-				newAddr = GetVal() # Update PC with addr read before writing it to the stack
-				if JumpRegister:
-					StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
-					MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
-					PC = newAddr-1 # Update PC to Address
-			elif instructionString == "CCD":
-				if JumpRegister:
-					StackPointer = MEMORY[0xe000] = MEMORY[0xe000] + 1 # Update stack pointer
-					MEMORY[0xe000 + StackPointer] = PC+1 # Put current PC in stack
-					PC = AddrRegister-1 # Update PC to Address
-
-			elif instructionString == "CNEA":
-				JumpRegister = Registers[instruction%4]!=GetAddress()
-			elif instructionString == "CNEV":
-				JumpRegister = Registers[instruction%4]!=GetVal()
-
-			elif instructionString == "BRK":
-				state.Break = True
-			elif instructionString == "HLT":
-				state.Halted = True
-			else:
-				print("ERR:", instructionString)
-				state.Done = True
-
-			for i in range(len(Registers)):
-				Registers[i] = Registers[i]%0x10000
+			executeInstruction(instruction)
 
 			if not state.Halted:
 				PC += 1
@@ -583,17 +588,17 @@ except:
 	print("    R2:  ", Registers[2], "\t(" + Pretty(Registers[2])+")")
 	print("    R3:  ", Registers[3], "\t(" + Pretty(Registers[3])+")")
 	print("    Addr:", AddrRegister, "\t(" + Pretty(AddrRegister)+")")
-	print("    SP1: ", MEMORY[0xe000], "\t(" + Pretty(MEMORY[0xe000])+")")
-	print("    SP2: ", MEMORY[0xf000], "\t(" + Pretty(MEMORY[0xf000])+")")
+	print("    SP1: ", MEMORY[settings.stack.s1.address], "\t(" + Pretty(MEMORY[settings.stack.s1.address])+")")
+	print("    SP2: ", MEMORY[settings.stack.s2.address], "\t(" + Pretty(MEMORY[settings.stack.s2.address])+")")
 	print("    JMP: ", JumpRegister)
-	print("    Memory:")
-	for add, val in MEMORY.items():
-		if add > 0x9eff:
-			continue
-		try:
-			suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSetkeys else str(val)]}' if add == PC else ""
-		except KeyError:
-			suffix = '< ?'
-		print("       ", "0x"+str(hex(add))[2:].zfill(4)+":", val, "\t(0x"+str(hex(val))[2:].zfill(4)+")", suffix)
+	# print("    Memory:")
+	# for add, val in enumerate(MEMORY):
+	# 	if add > 0x9eff:
+	# 		continue
+	# 	try:
+	# 		suffix = f'< {instructionSet[str((val//4)*4)+"RR" if str((val//4)*4)+"RR" in instructionSetkeys else str(val)]}' if add == PC else ""
+	# 	except KeyError:
+	# 		suffix = '< ?'
+	# 	print("       ", "0x"+str(hex(add))[2:].zfill(4)+":", val, "\t(0x"+str(hex(val))[2:].zfill(4)+")", suffix)
 	traceback.print_exc()
 pygame.quit()
