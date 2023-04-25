@@ -7,6 +7,7 @@ import traceback
 import ctypes
 import random
 import timeit
+import time
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 
 import pygame
@@ -225,6 +226,7 @@ with open(fileName, 'r') as f:
 MEMORY[settings.stack.s1.address] = 0
 MEMORY[settings.stack.s2.address] = 0
 
+InstructionsProcessed = 0
 PC           = 0 	# Program Counter
 AddrRegister = 0 	# Address register
 Registers = [
@@ -348,6 +350,9 @@ def eventChecks():
 def executeInstruction(instruction):
 	global state, PC, Registers, AddrRegister, JumpRegister
 	instructionString = instructionSet[instruction]
+	with open("Instructions.log", 'a+') as f:
+		f.write(str(instruction) + "\n")
+		# f.write(str(instruction) + " instruction: " + instructionString + "\n")
 	match instructionString:
 		case "NOP":
 			pass
@@ -475,7 +480,7 @@ def executeInstruction(instruction):
 			if AddrRegister >= 0xa000 and AddrRegister <= 0xdfff:
 				writeDisplayAddress(AddrRegister)
 		case "STRV":
-			WriteMem(MEMORY[AddrRegister], getValue())
+			WriteMem(MEMORY[AddrRegister], GetVal())
 		case "LDRR":
 			Registers[instruction%4] = MEMORY[AddrRegister]
 		case "SHLV":
@@ -538,7 +543,7 @@ def executeInstruction(instruction):
 
 	
 def go():
-	global state, PC, Registers, AddrRegister, JumpRegister
+	global state, PC, Registers, AddrRegister, JumpRegister, InstructionsProcessed
 	t=0
 	while not state.Done:
 		state.ClockButtonPrev = state.ClockButton
@@ -575,11 +580,19 @@ def go():
 			instruction = MEMORY[PC]
 
 			executeInstruction(instruction)
+			InstructionsProcessed += 1
 
 			if not state.Halted:
 				PC += 1
 try:
+	startTime = time.time()
 	go()
+	endTime = time.time()
+	elapsedTime = endTime - startTime
+	# print("Elapsed time:", f'{elapsedTime:.5f}')
+	# print("Instructions:", InstructionsProcessed)
+	# print("Avg Sec/Instr:", np.format_float_positional(elapsedTime/InstructionsProcessed))
+	# print("Avg ns/Instr:", int((elapsedTime/InstructionsProcessed)*(10**9)))
 except:
 	print("DUMP:")
 	print("    PC:  ", PC, "\t("+Pretty(PC)+")")

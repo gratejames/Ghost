@@ -274,11 +274,11 @@ Instructions = {
 		"Arguments": "",
 	},
 	"CNEA": {
-		"Bin": "110110RR",
+		"Bin": "110111RR",
 		"Arguments": "RR Address",
 	},
 	"CNEV": {
-		"Bin": "110111RR",
+		"Bin": "111000RR",
 		"Arguments": "RR Value",
 	},
 	"CLSR": {
