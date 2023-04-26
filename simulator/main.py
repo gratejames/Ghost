@@ -350,8 +350,8 @@ def eventChecks():
 def executeInstruction(instruction):
 	global state, PC, Registers, AddrRegister, JumpRegister
 	instructionString = instructionSet[instruction]
-	with open("Instructions.log", 'a+') as f:
-		f.write(str(instruction) + "\n")
+	# with open("Instructions.log", 'a+') as f:
+	# 	f.write(str(instruction) + "\n")
 		# f.write(str(instruction) + " instruction: " + instructionString + "\n")
 	match instructionString:
 		case "NOP":
