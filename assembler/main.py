@@ -29,6 +29,10 @@ def argumentTypes(line):
 	if line == "":
 		return []
 	if line.strip()[0] == assemblerDefs.Data:
+		if line.strip().startswith(".ds"):
+			amountOfChars = len(line.replace(".ds", "").strip().replace('"', ""))
+			print("In line", line, "there are", amountOfChars, "characters")
+			return ["Value"] * amountOfChars
 		return ["Value"]
 	words = line.strip().split(" ")
 
@@ -87,6 +91,8 @@ def validateArguments(line):
 		return line
 	if line.startswith("#DEF"): # Definition
 		return line
+	if line.startswith("#INC"): # Include
+		return line
 	if assemblerDefs.Data in line: # Data
 		return line
 	# Validating
@@ -102,6 +108,19 @@ def validateArguments(line):
 		print(f"\nX Error resolving command '{words[0]}'")
 		sys.exit()
 
+def resolveChars(line):
+	if not line.startswith(".dc"):
+		words = line.replace("' '", str(ord(" "))).strip().split(" ")
+	else:
+		words = line.strip().split(" ")
+	for wordNumber, word in enumerate(words):
+		if len(word) == 3 and word[0] == word[2] == "'" and not line.startswith(".dc"):
+			print(line)
+			words[wordNumber] = intToHexString(ord(word[1]))
+			continue
+	line = " ".join(words)
+	return line
+
 def recordDefs(line):
 	if line.startswith("#DEF"):
 		words = line.split()
@@ -109,7 +128,7 @@ def recordDefs(line):
 		return ""
 	return line
 
-def recordLabels(line):
+def recordLabels(line, position):
 	if assemblerDefs.Label in line:
 		labels[line.split(assemblerDefs.Label)[0]] = position
 		return line.split(assemblerDefs.Label)[-1].strip()
@@ -136,9 +155,8 @@ def isValidFinalHex(hexString):
 			return False
 	return True
 
-
 def assemble(file="main.ghasm"):
-	global position, labels, definitions, lineNumber
+	global labels, definitions, lineNumber
 	labels = {}
 	definitions = {}
 	position = 0
@@ -153,10 +171,28 @@ def assemble(file="main.ghasm"):
 		print("- Pass 1: Remove Comments, Record labels, Record Defs, Resolve Shorthand, Check Syntax")
 	for lineNumber, line in enumerate(linesList):
 		line = line.strip()
+		if line.startswith("#INC"):
+			if len(line.split(" ")) != 2:
+				print("X Include requires exactly 1 argument: a file name")
+				sys.exit()
+			incFile = line.split(" ")[1]
+			if not incFile.endswith(".hex"):
+				print("X Include requires file to end in .hex, you gave:", incFile)
+				sys.exit()
+			print("- Including hex file", incFile)
+			try:
+				with open(incFile, 'r') as f:
+					line = "#INC" + (" ".join(f.read().split()))
+			except OSError:
+				print("X Include could not open the provided file:", incFile)
+				sys.exit()
+				
+			linesList[lineNumber] = line
 		line = clearComments(line)
+		line = resolveChars(line)
 		line = resolveShorthand(line)
 		validateArguments(line)
-		line = recordLabels(line)
+		line = recordLabels(line, position)
 		line = recordDefs(line)
 
 		position += sum([assemblerDefs.TypeLengths[typeOfItem] for typeOfItem in argumentTypes(line)])
@@ -193,7 +229,7 @@ def assemble(file="main.ghasm"):
 
 		if line.strip()[0] == assemblerDefs.Data:
 			dataTypeWord = line.split(" ")[0].strip()
-			dataType = {".db":"Bin",".dh":"Hex",".dd":"Dec"}.get(dataTypeWord, None)
+			dataType = {".db":"Bin",".dh":"Hex",".dd":"Dec",".dc":"Char",".ds":"String"}.get(dataTypeWord, None)
 			if dataType == None:
 				print(f"\nX Error resolving data type of '{word}' on line {lineNumber+1}")
 				sys.exit()
@@ -204,13 +240,36 @@ def assemble(file="main.ghasm"):
 				line = intToHexString(eval(val))
 			if dataType == "Hex":
 				line = intToHexString(eval(val))
-
+			if dataType == "Char":
+				val = " ".join(line.split(" ")[1:])
+				if len(val) != 3 or (val[0] != "'" or val[2] != "'"):
+					print(f"\nX Error resolving char {val} on line {lineNumber+1}")
+					sys.exit()
+				line = intToHexString(ord(val[1]))
+			if dataType == "String":
+				val = " ".join(line.split(" ")[1:])
+				if not val[0] == val[-1] == '"':
+					print(f"\nX Error resolving string {val} on line {lineNumber+1}")
+					sys.exit()
+				line = " ".join([intToHexString(ord(ch)) for ch in val[1:-1]])
+		
+		if line.startswith("#INC"):
+			line = line.replace("#INC", "")
+			linesList[lineNumber] = line
+			continue
+		
 		words = line.split(" ")
 		for wordNumber, word in enumerate(words):
 			if word in assemblerDefs.Registers:
 				words[wordNumber] = ""
 				line = " ".join([x for x in words if x != ""])
 				continue
+				
+			if len(word) == 3 and word[0] == word[2] == "'":
+				words[wordNumber] = intToHexString(ord(word[1]))
+				line = " ".join([x for x in words if x != ""])
+				continue
+					
 			word = word.replace(assemblerDefs.Address, "")
 			if word.strip() == "":
 				continue
@@ -222,7 +281,7 @@ def assemble(file="main.ghasm"):
 				if "RR" in Binary:
 					Binary = Binary.replace("RR", str(bin(assemblerDefs.Registers.index(words[wordNumber+1])))[2:].zfill(2))
 				word = intToHexString(int(Binary, 2))
-
+			
 			if not isValidFinalHex(word):
 				try:
 					newWord = intToHexString(int(word, 0))
@@ -235,16 +294,13 @@ def assemble(file="main.ghasm"):
 
 
 			words[wordNumber] = word.strip()
-			line = " ".join([x for x in words if x != ""])
-		linesList[lineNumber] = line
-
-
-		
+			line = " ".join([x for x in words if x != ""])		
 
 		linesList[lineNumber] = line
 	saveFileName = ".".join(file.split(".")[:-1])
-	writeData(saveFileName, "\n".join(linesList), formatTypes=["Hex", "WhitespaceHex"])
-	return saveFileName
+	writeData(saveFileName, "\n".join(linesList))#, formatTypes=["Hex", "WhitespaceHex"])
+	# return saveFileName
+	return " ".join(linesList)
 	
 def writeData(fileName, fileData, formatTypes = ["Hex"]):
 	if "WhitespaceHex" in formatTypes:
@@ -285,6 +341,7 @@ def writeData(fileName, fileData, formatTypes = ["Hex"]):
 			print("- Exporting to .d.dict")
 		with open(fileName + ".d.dict", 'w+') as f:
 			f.write(outString)
+	print("- The total file size is",len(fileData.split()),"bytes")
 
 
 
