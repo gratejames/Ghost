@@ -231,6 +231,7 @@ def SetAddress(val):
 	global PC
 	PC += 1
 	WriteMem(MEMORY[PC], val)
+	
 def WriteMem(addr, val):
 	MEMORY[addr] = ForceValidInt(val)
 	if addr >= 0xa000 and addr <= 0xdfff:
@@ -278,7 +279,7 @@ def eventChecks():
 				print("    R1:  ", Registers[1], "\t("+Pretty(Registers[1])+")")
 				print("    R2:  ", Registers[2], "\t("+Pretty(Registers[2])+")")
 				print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
-				print("    R3:  ", Registers[3], "\t("+Pretty(Registers[3])+")")
+				print("    Addr:", AddrRegister, "\t(" + Pretty(AddrRegister)+")")
 				print("    SP1: ", MEMORY[settings.stack.s1.address], "\t("+Pretty(MEMORY[settings.stack.s1.address])+")")
 				print("    SP2: ", MEMORY[settings.stack.s2.address], "\t("+Pretty(MEMORY[settings.stack.s2.address])+")")
 				print("    JMP: ", JumpRegister)
@@ -315,6 +316,7 @@ def eventChecks():
 				
 def executeInstruction(instruction):
 	global state, PC, Registers, AddrRegister, JumpRegister
+	# print(instruction, hex(instruction))
 	instructionString = instructionSet[instruction]
 	# with open("Instructions.log", 'a+') as f:
 	# 	f.write(str(instruction) + "\n")
@@ -445,8 +447,8 @@ def executeInstruction(instruction):
 			MEMORY[AddrRegister] = Registers[instruction%4]
 			if AddrRegister >= 0xa000 and AddrRegister <= 0xdfff:
 				writeDisplayAddress(AddrRegister)
-		case "STRV":
-			WriteMem(MEMORY[AddrRegister], GetVal())
+		case "STVR":
+			WriteMem(Registers[instruction%4], GetVal())
 		case "LDRR":
 			Registers[instruction%4] = MEMORY[AddrRegister]
 		case "SHLV":
