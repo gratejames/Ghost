@@ -189,6 +189,10 @@ Instructions = {
 		"Bin": "10001010",
 		"Arguments": "",
 	},
+	"STVD": {
+		"Bin":  "10001011",
+		"Arguments": "Value",
+	},
 	"PSHR": {
 		"Bin": "100011RR",
 		"Arguments": "RR",
@@ -307,6 +311,7 @@ Shorthand = {
         "Value Address": "STV",
         "RR Address": "STR",
         "RR": "STRR",
+        "Value": "STVD",
         "RR Value": "STVR"
     },
     "MV": {
