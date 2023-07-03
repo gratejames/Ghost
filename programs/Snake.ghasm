@@ -240,6 +240,7 @@ SnakeRender:
 	LD R3 $SnakeColor
 	CALL SpriteRender
 	POP
+	SCR
 	RET
 
 
