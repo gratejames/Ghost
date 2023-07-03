@@ -15,6 +15,8 @@ import configparser
 from helper import *
 pygame.init()
 
+slowDebuggingString = ""
+
 AbsolutePath = os.path.abspath(os.path.dirname(__file__))
 FontPath = os.path.join(AbsolutePath, 'Anonymous_Pro_B.ttf')
 AnonFont = pygame.font.Font(FontPath, 20)
@@ -315,12 +317,13 @@ def eventChecks():
 				state.CycleClock = 1000
 				
 def executeInstruction(instruction):
-	global state, PC, Registers, AddrRegister, JumpRegister
+	global state, PC, Registers, AddrRegister, JumpRegister, slowDebuggingString
 	# print(instruction, hex(instruction))
+
+	slowDebuggingString += str(PC) + ":" + str(instruction) + "\n"
+			
+			
 	instructionString = instructionSet[instruction]
-	# with open("Instructions.log", 'a+') as f:
-	# 	f.write(str(instruction) + "\n")
-		# f.write(str(instruction) + " instruction: " + instructionString + "\n")
 	match instructionString:
 		case "NOP":
 			pass
@@ -508,7 +511,6 @@ def executeInstruction(instruction):
 		case _:
 			print("ERR:", instructionString)
 			state.Done = True
-
 	
 def go():
 	global state, PC, Registers, AddrRegister, JumpRegister, InstructionsProcessed
@@ -558,9 +560,11 @@ try:
 	endTime = time.time()
 	elapsedTime = endTime - startTime
 	# print("Elapsed time:", f'{elapsedTime:.5f}')
-	# print("Instructions:", InstructionsProcessed)
+	print("Instructions:", InstructionsProcessed)
 	# print("Avg Sec/Instr:", np.format_float_positional(elapsedTime/InstructionsProcessed))
 	# print("Avg ns/Instr:", int((elapsedTime/InstructionsProcessed)*(10**9)))
+	with open("Instructions.log", 'w+') as f:
+		f.write(slowDebuggingString)
 except:
 	print("DUMP:")
 	print("    PC:  ", PC, "\t("+Pretty(PC)+")")
