@@ -31,7 +31,7 @@ def argumentTypes(line):
 	if line.strip()[0] == assemblerDefs.Data:
 		if line.strip().startswith(".ds"):
 			amountOfChars = len(line.replace(".ds", "").strip().replace('"', ""))
-			print("In line", line, "there are", amountOfChars, "characters")
+			# print("In line", line, "there are", amountOfChars, "characters")
 			return ["Value"] * amountOfChars
 		return ["Value"]
 	words = line.strip().split(" ")
@@ -115,7 +115,7 @@ def resolveChars(line):
 		words = line.strip().split(" ")
 	for wordNumber, word in enumerate(words):
 		if len(word) == 3 and word[0] == word[2] == "'" and not line.startswith(".dc"):
-			print(line)
+			# print(line)
 			words[wordNumber] = intToHexString(ord(word[1]))
 			continue
 	line = " ".join(words)
@@ -129,6 +129,8 @@ def recordDefs(line):
 	return line
 
 def recordLabels(line, position):
+	if line.startswith(assemblerDefs.Data):
+		return line
 	if assemblerDefs.Label in line:
 		labels[line.split(assemblerDefs.Label)[0]] = position
 		return line.split(assemblerDefs.Label)[-1].strip()
@@ -298,7 +300,7 @@ def assemble(file="main.ghasm"):
 
 		linesList[lineNumber] = line
 	saveFileName = ".".join(file.split(".")[:-1])
-	writeData(saveFileName, "\n".join(linesList))#, formatTypes=["Hex", "WhitespaceHex"])
+	writeData(saveFileName, "\n".join(linesList), formatTypes=["Hex", "WhitespaceHex", "HexPerLine"])
 	# return saveFileName
 	return " ".join(linesList)
 	
@@ -308,6 +310,14 @@ def writeData(fileName, fileData, formatTypes = ["Hex"]):
 		if debugging["Export Notifs"]:
 			print("- Exporting to .w.hex")
 		with open(fileName + ".w.hex", 'w+') as f:
+			f.write(outString)
+	if "HexPerLine" in formatTypes:
+		outString = ""
+		for bytePos, byte in enumerate(fileData.split()):
+			outString += byte + "\n"
+		if debugging["Export Notifs"]:
+			print("- Exporting to .l.hex")
+		with open(fileName + ".l.hex", 'w+') as f:
 			f.write(outString)
 	if "Hex" in formatTypes:
 		outString = ""
