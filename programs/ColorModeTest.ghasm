@@ -1,0 +1,135 @@
+; Color mode testing
+#DEF ScreenMode 0x9f04
+#DEF pal 0x9f10
+#DEF ScreenAddress 0xa000
+
+#DEF Loops 0x0600
+
+
+; R0: Address
+; R1: Color
+; R2: Loop Counter
+
+
+; MODE 1
+ST 0 $ScreenMode
+LD R0 0
+LD R1 0
+LD R2 0
+
+Mode1Loop:
+	LD R0 ScreenAddress
+	Mode1Draw:
+		DD R0
+		ST R1
+		INC R0
+		INC R1
+		
+		CNE R0 ScreenAddress+0x4000
+		JMPC Mode1Draw
+		SCR
+		
+		INC R2
+		CNE R2 Loops
+		JMPC Mode1Loop
+		
+
+; MODE 2
+ST 1 $ScreenMode
+LD R0 0
+LD R1 0
+LD R2 0
+
+Mode2Loop:
+	LD R0 ScreenAddress
+	Mode2Draw:
+		DD R0
+		ST R1
+		INC R0
+		INC R1
+		INC R1
+		
+		CNE R0 ScreenAddress+0x4000
+		JMPC Mode2Draw
+		SCR
+		
+		INC R2
+		CNE R2 Loops
+		JMPC Mode2Loop
+
+
+; MODE 3
+; Pallette!
+ST 0b1111100000000000 $pal+0x0
+ST 0b0000011111100000 $pal+0x1
+ST 0b1111111111100000 $pal+0x2
+ST 0b0000000000011111 $pal+0x3
+ST 0b1111100000011111 $pal+0x4
+ST 0b0000011111111111 $pal+0x5
+ST 0b1111111111111111 $pal+0x6
+ST 0b0101010100101010 $pal+0x7
+ST 0b0110100110010101 $pal+0x8
+ST 0b1101011101101111 $pal+0x9
+ST 0b0011111110000011 $pal+0xa
+ST 0b0101010100101011 $pal+0xb
+ST 0b0000001111111111 $pal+0xc
+ST 0b1111110000000000 $pal+0xd
+ST 0b1111111111111111 $pal+0xe
+ST 0b0000000000000000 $pal+0xf
+
+ST 2 $ScreenMode
+LD R0 0
+LD R1 0
+LD R2 0
+
+Mode3Loop:
+	LD R0 ScreenAddress
+	Mode3Draw:
+		DD R0
+		ST R1
+		INC R0
+		INC R1
+		INC R1
+		
+		CNE R0 ScreenAddress+0x4000
+		JMPC Mode3Draw
+		SCR
+		
+		INC R2
+		CNE R2 Loops
+		JMPC Mode3Loop
+
+
+; MODE 4
+; Pallette!
+ST 0b1111100000000000 $pal
+
+ST 3 $ScreenMode
+LD R0 0
+LD R1 0
+LD R2 0
+
+Mode4Loop:
+	LD R0 ScreenAddress
+	Mode4Draw:
+		DD R0
+		ST R1
+		INC R0
+		INC R1
+		INC R1
+		
+		CNE R0 ScreenAddress+0x4000
+		JMPC Mode4Draw
+		SCR
+		
+		INC R2
+		CNE R2 Loops
+		JMPC Mode4Loop
+
+
+
+
+
+
+HLT
+		
