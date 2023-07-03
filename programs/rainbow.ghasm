@@ -1,23 +1,17 @@
 ; Tests basic instructions, and performance
 
-LD R0 0xa000
 
+LD R1 0
 DrawRainbow:
-	DD R0
-	ST R0
-	INC R0
-	CG R0 0xdfff
-	JMPC Exit
-;	PSH R0
-;	SHL R0 12
-;	CZ R0
-;	CALLC UPD
-;	POP R0
-	JMP DrawRainbow
-
-UPD:
 	SCR
-	RET
+	LD R0 0xa000
+	DrawPixel:
+		DD R0
+		ST R1
+		INC R0
+		INC R1
+		CG R0 0xdfff
+		JMPC DrawRainbow
+		JMP DrawPixel
 
-Exit:
-	HLT
+HLT
