@@ -6,13 +6,23 @@ Main:
 	ST 0 $CursorPosY
 	LD R0 String
 	CALL PrintString
+	SCR
+	
+	
+	ST 0b0000000000011111 $CursorFG 
+	ST 0 $CursorPosX
+	ST 32 $CursorPosY
+	LD R0 String2
+	CALL PrintString
+	SCR
 	
 	
 	ST 0b1111100000000000 $CursorFG 
 	ST 0 $CursorPosX
 	ST 120 $CursorPosY
-	LD R0 String2
+	LD R0 String3
 	CALL PrintString
+	SCR
 	HLT
 
 
@@ -154,13 +164,17 @@ CursorPosX: .dd 0
 CursorPosY: .dd 0
 
 String:
-.ds "Hi Mason! This  "
-.ds "is a 602 byte   "
+.ds "Hi Viewer! This "
+.ds "is a 651 byte   "
 .ds "program to draw "
 .ds "this string...  "
 .dd 0
-
 String2:
+.ds "(Mode : 128x128)"
+.ds "Better res soon!"
+.dd 0
+
+String3:
 .ds "-Send Help Soon-"
 .dd 0
 
