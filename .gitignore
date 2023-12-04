@@ -1,8 +1,1 @@
 __pycache__/
-
-# Hide output files
-*.w.hex
-all.sublime-project
-all.sublime-workspace
-*.dat
-Instructions.log
