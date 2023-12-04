@@ -1,0 +1,28 @@
+PSH
+
+LD R0 $0xaf70		; The address of the string
+LD R1 $0xaf71 		; The X position
+
+CharPrintLoop:
+	DD R0			; The address of the char at the position R1
+	MV $0xaf70		; Move from at DD, the address of the pos R1 char, to the interrupt argument
+	ST R1 $0xaf71	; Store the X position to the x argument
+	INT 0x5f		; Display the character
+	INC R0
+	INC R1
+	CLT R1 0x0040
+	JMPC SkipAdd
+		LD R2 $0xaf72
+		ADD R2 1
+		ST R2 $0xaf72
+		LD R1 0
+	SkipAdd:
+	DD R0
+	LDD R2
+	CEZ R2
+	JMPC Exit
+	JMP CharPrintLoop
+
+Exit:
+POP
+RET

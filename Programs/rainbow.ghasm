@@ -1,0 +1,13 @@
+LD R1 0
+DrawRainbow:
+	LD R0 0xb000
+	DrawPixel:
+		DD R0
+		STD R1
+		INC R0
+		INC R1
+		CGT R0 0xefff
+		JMPC DrawRainbow
+		JMP DrawPixel
+
+HLT

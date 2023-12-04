@@ -1,0 +1,16 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/flicker/Desktop/Cpp/display.cpp
+display.h
+/home/flicker/Desktop/Cpp/display.h
+iostream
+-
+
+/home/flicker/Desktop/Cpp/display.h
+

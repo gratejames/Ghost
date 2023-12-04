@@ -1,0 +1,13 @@
+[
+{
+  "directory": "/home/flicker/Desktop/Ghost/SDLSim/build",
+  "command": "/usr/bin/g++    -g   -pthread -Winvalid-pch -x c++-header -include /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/SDLSIM.dir/cmake_pch.hxx -o CMakeFiles/SDLSIM.dir/cmake_pch.hxx.gch -c /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/SDLSIM.dir/cmake_pch.hxx.cxx",
+  "file": "/home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/SDLSIM.dir/cmake_pch.hxx.cxx"
+},
+
+{
+  "directory": "/home/flicker/Desktop/Ghost/SDLSim/build",
+  "command": "/usr/bin/g++    -g   -pthread -Winvalid-pch -include /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/SDLSIM.dir/cmake_pch.hxx -o CMakeFiles/SDLSIM.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o -c /home/flicker/Desktop/Ghost/SDLSim/src/main.cpp",
+  "file": "/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp"
+}
+]

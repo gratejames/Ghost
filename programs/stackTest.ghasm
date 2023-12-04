@@ -1,6 +1,0 @@
-; Overflows both stacks to test their display
-
-
-lp:
-	PSH R0
-	CALL lp

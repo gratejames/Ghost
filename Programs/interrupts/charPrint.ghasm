@@ -1,0 +1,83 @@
+#DEF ScreenAddress 0xb000
+
+
+PSH
+LD R1 $0xaf70				; Load the character
+PSH R1
+DBGC R1
+
+SUB R1 ' '
+SHL R1 2 					; Multiply by 4 because each font character takes 4 bytes
+ADD R1 $0xaf73				; Add the address of the font
+
+LD R0 0
+PSH R0
+LD R3 $0xaf72
+SHL R3 9
+ADD R3 $0xaf71
+SHRO R3						; Divide by 2 because each address points to 2 chars
+ADD R3 ScreenAddress
+
+DrawCharRow:
+	DD R1
+	INC R1
+
+	LD R2 $0xaf71
+	AND R2 1
+	CEZ R2					; Whether to draw in the first or second word of byte
+	JMPC DrawCharFirst
+		LDD R0
+		PSH R0
+
+		DD R3
+		ADD R3 32
+		SHR R0 8
+		LDD R2
+		AND R2 0xff00
+		OR R2
+		STD R0
+
+		POP R0
+
+		DD R3
+		ADD R3 32
+		AND R0 0x00ff
+		LDD R2
+		AND R2 0xff00
+		OR R2
+		STD R0
+	JMP DrawCharExit
+	DrawCharFirst:
+		LDD R0
+		PSH R0
+
+		DD R3
+		ADD R3 32
+		AND R0 0xff00
+		LDD R2
+		AND R2 0x00ff
+		OR R2
+		STD R0
+
+		POP R0
+
+		DD R3
+		ADD R3 32
+		SHL R0 8
+		LDD R2
+		AND R2 0x00ff
+		OR R2
+		STD R0
+	DrawCharExit:
+
+	POP R0
+	INC R0
+	CE R0 4
+	PSH R0
+	JMPC DrawCharReturn
+	JMP DrawCharRow
+DrawCharReturn:
+	POP R0
+	POP R1
+	POP
+	RET

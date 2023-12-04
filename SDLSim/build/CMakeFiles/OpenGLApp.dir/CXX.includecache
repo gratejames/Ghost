@@ -1,0 +1,36 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/flicker/Desktop/Cpp/OpenGL.cpp
+GL/glew.h
+-
+GLFW/glfw3.h
+-
+iostream
+-
+display.cpp
+/home/flicker/Desktop/Cpp/display.cpp
+vector
+-
+
+/home/flicker/Desktop/Cpp/display.cpp
+GL/glew.h
+-
+GLFW/glfw3.h
+-
+display.h
+/home/flicker/Desktop/Cpp/display.h
+iostream
+-
+
+/home/flicker/Desktop/Cpp/display.h
+GL/glew.h
+-
+GLFW/glfw3.h
+-
+
