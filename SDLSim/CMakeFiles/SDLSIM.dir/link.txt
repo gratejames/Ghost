@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/SDLSIM.dir/src/main.cpp.o  -o SDLSIM  -lSDL2main -lSDL2 -lGL -pthread 

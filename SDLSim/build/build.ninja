@@ -11,7 +11,7 @@
 # =============================================================================
 
 # =============================================================================
-# Project: SDLSIM
+# Project: Simulator
 # Configuration: Debug
 # =============================================================================
 
@@ -31,17 +31,6 @@ include rules.ninja
 
 
 #############################################
-# Utility command for edit_cache
-
-build CMakeFiles/edit_cache.util: CUSTOM_COMMAND
-  COMMAND = cd /home/flicker/Desktop/Ghost/SDLSim/build && /usr/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
-  DESC = No interactive CMake dialog available...
-  restat = 1
-
-build edit_cache: phony CMakeFiles/edit_cache.util
-
-
-#############################################
 # Utility command for rebuild_cache
 
 build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
@@ -52,44 +41,55 @@ build CMakeFiles/rebuild_cache.util: CUSTOM_COMMAND
 
 build rebuild_cache: phony CMakeFiles/rebuild_cache.util
 
+
+#############################################
+# Utility command for edit_cache
+
+build CMakeFiles/edit_cache.util: CUSTOM_COMMAND
+  COMMAND = cd /home/flicker/Desktop/Ghost/SDLSim/build && /usr/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+  DESC = No interactive CMake dialog available...
+  restat = 1
+
+build edit_cache: phony CMakeFiles/edit_cache.util
+
 # =============================================================================
-# Object build statements for EXECUTABLE target SDLSIM
+# Object build statements for EXECUTABLE target Simulator
 
 
 #############################################
-# Order-only phony target for SDLSIM
+# Order-only phony target for Simulator
 
-build cmake_object_order_depends_target_SDLSIM: phony || CMakeFiles/SDLSIM.dir
+build cmake_object_order_depends_target_Simulator: phony || CMakeFiles/Simulator.dir
 
-build CMakeFiles/SDLSIM.dir/cmake_pch.hxx.gch: CXX_COMPILER__SDLSIM CMakeFiles/SDLSIM.dir/cmake_pch.hxx.cxx | CMakeFiles/SDLSIM.dir/cmake_pch.hxx || cmake_object_order_depends_target_SDLSIM
-  DEP_FILE = CMakeFiles/SDLSIM.dir/cmake_pch.hxx.gch.d
-  FLAGS = -g   -pthread -Winvalid-pch -x c++-header -include /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/SDLSIM.dir/cmake_pch.hxx
-  OBJECT_DIR = CMakeFiles/SDLSIM.dir
-  OBJECT_FILE_DIR = CMakeFiles/SDLSIM.dir
+build CMakeFiles/Simulator.dir/cmake_pch.hxx.gch: CXX_COMPILER__Simulator CMakeFiles/Simulator.dir/cmake_pch.hxx.cxx | CMakeFiles/Simulator.dir/cmake_pch.hxx || cmake_object_order_depends_target_Simulator
+  DEP_FILE = CMakeFiles/Simulator.dir/cmake_pch.hxx.gch.d
+  FLAGS = -g   -pthread -Winvalid-pch -x c++-header -include /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/Simulator.dir/cmake_pch.hxx
+  OBJECT_DIR = CMakeFiles/Simulator.dir
+  OBJECT_FILE_DIR = CMakeFiles/Simulator.dir
 
-build CMakeFiles/SDLSIM.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o: CXX_COMPILER__SDLSIM /home/flicker/Desktop/Ghost/SDLSim/src/main.cpp | CMakeFiles/SDLSIM.dir/cmake_pch.hxx CMakeFiles/SDLSIM.dir/cmake_pch.hxx.gch || cmake_object_order_depends_target_SDLSIM
-  DEP_FILE = CMakeFiles/SDLSIM.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o.d
-  FLAGS = -g   -pthread -Winvalid-pch -include /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/SDLSIM.dir/cmake_pch.hxx
-  OBJECT_DIR = CMakeFiles/SDLSIM.dir
-  OBJECT_FILE_DIR = CMakeFiles/SDLSIM.dir/home/flicker/Desktop/Ghost/SDLSim/src
+build CMakeFiles/Simulator.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o: CXX_COMPILER__Simulator /home/flicker/Desktop/Ghost/SDLSim/src/main.cpp | CMakeFiles/Simulator.dir/cmake_pch.hxx CMakeFiles/Simulator.dir/cmake_pch.hxx.gch || cmake_object_order_depends_target_Simulator
+  DEP_FILE = CMakeFiles/Simulator.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o.d
+  FLAGS = -g   -pthread -Winvalid-pch -include /home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/Simulator.dir/cmake_pch.hxx
+  OBJECT_DIR = CMakeFiles/Simulator.dir
+  OBJECT_FILE_DIR = CMakeFiles/Simulator.dir/home/flicker/Desktop/Ghost/SDLSim/src
 
 
 # =============================================================================
-# Link build statements for EXECUTABLE target SDLSIM
+# Link build statements for EXECUTABLE target Simulator
 
 
 #############################################
-# Link the executable SDLSIM
+# Link the executable Simulator
 
-build SDLSIM: CXX_EXECUTABLE_LINKER__SDLSIM CMakeFiles/SDLSIM.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o
+build Simulator: CXX_EXECUTABLE_LINKER__Simulator CMakeFiles/Simulator.dir/home/flicker/Desktop/Ghost/SDLSim/src/main.cpp.o
   FLAGS = -g
   LINK_FLAGS = -rdynamic
   LINK_LIBRARIES = -lSDL2main  -lSDL2  -lGL  -pthread
-  OBJECT_DIR = CMakeFiles/SDLSIM.dir
+  OBJECT_DIR = CMakeFiles/Simulator.dir
   POST_BUILD = :
   PRE_LINK = :
-  TARGET_FILE = SDLSIM
-  TARGET_PDB = SDLSIM.dbg
+  TARGET_FILE = Simulator
+  TARGET_PDB = Simulator.dbg
 
 # =============================================================================
 # Target aliases.
@@ -102,7 +102,7 @@ build SDLSIM: CXX_EXECUTABLE_LINKER__SDLSIM CMakeFiles/SDLSIM.dir/home/flicker/D
 #############################################
 # Folder: /home/flicker/Desktop/Ghost/SDLSim/build
 
-build all: phony SDLSIM
+build all: phony Simulator
 
 # =============================================================================
 # Unknown Build Time Dependencies.
