@@ -1,3 +1,0 @@
-/home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/rebuild_cache.dir
-/home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/edit_cache.dir
-/home/flicker/Desktop/Ghost/SDLSim/build/CMakeFiles/Simulator.dir

@@ -1,3 +1,0 @@
-/home/flicker/Desktop/SDLSim/CMakeFiles/edit_cache.dir
-/home/flicker/Desktop/SDLSim/CMakeFiles/rebuild_cache.dir
-/home/flicker/Desktop/SDLSim/CMakeFiles/SDLSIM.dir

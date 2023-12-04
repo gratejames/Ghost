@@ -1,0 +1,13 @@
+[
+{
+  "directory": "/home/flicker/Desktop/Ghost/Simulator/build",
+  "command": "/usr/bin/clang++    -g   -pthread -Xclang -emit-pch -Xclang -include -Xclang /home/flicker/Desktop/Ghost/Simulator/build/CMakeFiles/Simulator.dir/cmake_pch.hxx -o CMakeFiles/Simulator.dir/cmake_pch.hxx.pch -c /home/flicker/Desktop/Ghost/Simulator/build/CMakeFiles/Simulator.dir/cmake_pch.hxx.cxx",
+  "file": "/home/flicker/Desktop/Ghost/Simulator/build/CMakeFiles/Simulator.dir/cmake_pch.hxx.cxx"
+},
+
+{
+  "directory": "/home/flicker/Desktop/Ghost/Simulator/build",
+  "command": "/usr/bin/clang++    -g   -pthread -Xclang -include-pch -Xclang /home/flicker/Desktop/Ghost/Simulator/build/CMakeFiles/Simulator.dir/cmake_pch.hxx.pch -o CMakeFiles/Simulator.dir/home/flicker/Desktop/Ghost/Simulator/src/main.cpp.o -c /home/flicker/Desktop/Ghost/Simulator/src/main.cpp",
+  "file": "/home/flicker/Desktop/Ghost/Simulator/src/main.cpp"
+}
+]
