@@ -16,6 +16,7 @@ bool init();
 void deinit();
 void DrawerFunc();
 void TickerFunc();
+unsigned char asciiFromKeycode(SDL_Keycode kc);
 
 std::thread Drawer;
 std::thread Ticker;
@@ -32,6 +33,7 @@ int main (int argc, char **argv)
   cxxopts::Options options("Ghost Simulator SDL", "Simulator for the fantasy console GHOST");
   options.add_options()
     ("v,verbose", "Verbose output")
+    ("r,flush", "Flush each debugged character")
     ("f,file", "File name", cxxopts::value<std::string>())
     ("h,help", "Print usage")
     ;
@@ -45,7 +47,6 @@ int main (int argc, char **argv)
   }
   
   std::string fileName;
-  bool verbose = result.count("verbose");
   if (!result.count("file")) {
     std::cout << "No romfile provided" << std::endl;
     return 1;
@@ -54,23 +55,37 @@ int main (int argc, char **argv)
     std::cout << "Loading file: " << fileName << std::endl;
   }
   processor = new cpu(fileName);
-  processor->verbose = verbose;
+  processor->verbose = result.count("verbose");
+  processor->flushDebugChar = result.count("flush");
   bool success = init();
   if (!success) {
     return 1;
   }
 
   while (!processor->closed) {
-    SDL_PollEvent(&event);
-    switch (event.type) {
-      case SDL_QUIT:
-        std::cout << "Engine Closing" << std::endl;
-        processor->closed = true;
-        break;
-      // case SDL_WINDOWEVENT: 
-      //   break;
-      default:
-        break;
+    if(SDL_PollEvent(&event)) {
+      switch (event.type) {
+        case SDL_QUIT:
+          std::cout << "Engine Closing" << std::endl;
+          processor->closed = true;
+          break;
+        case SDL_KEYDOWN:
+          if (event.key.repeat!=0)
+            break;
+          if (event.key.keysym.sym == SDLK_KP_0) {
+            processor->memLog(0, 0x15);
+          } else {
+            processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 1);
+          }
+          break;
+        case SDL_KEYUP:
+          if (event.key.repeat!=0)
+            break;
+          processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 0);
+          break;
+        default:
+          break;
+      }
     }
   }
   deinit();
@@ -124,7 +139,7 @@ bool init() {
   // color = {0, 0, 255};
   SDL_UpdateWindowSurface(window);
 
-  printf("Engine Initialized\n");
+  std::cout << "Engine Initialized" << std:: endl;
 
   // Drawer = std::thread(DrawerFunc, std::ref(DrawerX));
   Drawer = std::thread(DrawerFunc);
@@ -146,4 +161,8 @@ void DrawerFunc() {
     }
     SDL_UpdateWindowSurface(window);
   }
+}
+
+unsigned char asciiFromKeycode(SDL_Keycode kc) {
+  return (unsigned char)kc;
 }
