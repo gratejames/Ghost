@@ -34,7 +34,7 @@ Stack: 0xf000 - 0xffff (  4096 Bytes )
 	0x70: Button Number
 	0x71: Event (0: up, 1: down)
 #### 0x4f-5f: User defined, not called by hardware. Convention below.
-#### 0x5f: High Res. String Print
+#### 0x5e: High Res. String Print
 	0x70: String Address
 	0x71: X Start Position
 	0x72: Y Position
