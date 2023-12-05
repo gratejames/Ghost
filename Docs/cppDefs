@@ -96,11 +96,11 @@
 		break;
 	case 0x1f: // INT
 		value = getArgument();
-		if (value > 0xf5 || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
-			std::cout << "ERR: Invalid interrupt " << std::setw(2) << std::setfill('0') << value << std::endl;
+		if (value > 0x5f || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
+			std::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
 			halted = true;
 		} else {
-			pushToStack(PC+1);
+			pushToStack(PC);
 			PC = MEMORY[0xaf00 + value]-1;
 		}
 		break;
@@ -637,15 +637,15 @@
 		PC = DD-1;
 		break;
 	case 0xd2: // CALA
-		pushToStack(PC+2);
+		pushToStack(PC);
 		PC = getArgument()-1;
 		break;
 	case 0xd3: // CALD
-		pushToStack(PC+1);
+		pushToStack(PC);
 		PC = DD-1;
 		break;
 	case 0xd4: // RET
-		PC = popFromStack()-1;
+		PC = popFromStack();
 		break;
 	case 0xd5: // JPCA
 		value = getArgument();
@@ -659,26 +659,26 @@
 	case 0xd7: // CLCA
 		value = getArgument();
 		if(jump) {
-			pushToStack(PC+2);
+			pushToStack(PC);
 			PC = value-1;
 		}
 		break;
 	case 0xd8: // CLCD
 		if(jump) {
-			pushToStack(PC+1);
+			pushToStack(PC);
 			PC = DD-1;
 		}
 		break;
 	case 0xd9: // RETC
 		if(jump)
-			PC = popFromStack()-1;
+			PC = popFromStack();
 		break;
 	case 0xda: // BRK
-		std::cout << "CPU BREAK" << std::endl;
+		std::cout << "\nCPU BREAK" << std::endl;
 		broken = true;
 		break;
 	case 0xdb: // HLT
-		std::cout << "CPU HALT" << std::endl;
+		std::cout << "\nCPU HALT" << std::endl;
 		halted = true;
 		break;
 	case 0xdc: // DBGR0
@@ -701,21 +701,33 @@
 		break;
 	case 0xe2: // DBCA
 		std::cout << (char)getAtAddress(getArgument());
+		if (flushDebugChar)
+			std::cout << std::endl;
 		break;
 	case 0xe3: // DBCV
 		std::cout << (char)getArgument();
+		if (flushDebugChar)
+			std::cout << std::endl;
 		break;
 	case 0xe4: // DBCR0
 		std::cout << (char)R0;
+		if (flushDebugChar)
+			std::cout << std::endl;
 		break;
 	case 0xe5: // DBCR1
 		std::cout << (char)R1;
+		if (flushDebugChar)
+			std::cout << std::endl;
 		break;
 	case 0xe6: // DBCR2
 		std::cout << (char)R2;
+		if (flushDebugChar)
+			std::cout << std::endl;
 		break;
 	case 0xe7: // DBCR3
 		std::cout << (char)R3;
+		if (flushDebugChar)
+			std::cout << std::endl;
 		break;
 	case 0xe8: // ADOR0
 		offsetRegister = R0;

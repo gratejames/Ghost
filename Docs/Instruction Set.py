@@ -198,8 +198,8 @@ def setAtDD(value):
 	return setAtAddress("DD", value)
 def pushStack(value):
 	return f"\t\tpushToStack({value});\n"
-def jumpTo(address):
-	return f"\t\tPC = {address}-1;\n"
+def jumpTo(address, noAdd=False):
+	return f"\t\tPC = {address}{'' if noAdd else '-1'};\n"
 def conditional(interior):
 	lines = len(interior.split("\n"))
 	if lines == 2:
@@ -209,7 +209,7 @@ def conditional(interior):
 def debugOut(value):
 	return f"\t\tstd::cout << \"0x\" << std::hex << std::setw(4) << std::setfill('0') << {value} << std::endl;\n"
 def debugOutChar(value):
-	return f"\t\tstd::cout << (char){value};\n"
+	return f"\t\tstd::cout << (char){value};\n\t\tif (flushDebugChar)\n\t\t\tstd::cout << std::endl;\n"
 def setOffset(value):
 	return f"\t\toffsetRegister = {value};\n"
 
@@ -248,11 +248,11 @@ with open("cppDefs", "w+") as f:
 		elif mne == "MVDD":
 			content = setAtAddress(getArgument(), getAtDD())  # setAtAddress(address, value="value"):
 		elif mne == "INT":
-			content = setValue(getArgument()) + """\t\tif (value > 0xf5 || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
-			std::cout << "ERR: Invalid interrupt " << std::setw(2) << std::setfill('0') << value << std::endl;
+			content = setValue(getArgument()) + """\t\tif (value > 0x5f || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
+			std::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
 			halted = true;
 		} else {
-			pushToStack(PC+1);
+			pushToStack(PC);
 			PC = MEMORY[0xaf00 + value]-1;
 		}
 """
@@ -355,26 +355,26 @@ with open("cppDefs", "w+") as f:
 		elif mne == "JMPD":
 			content = jumpTo(getDD())
 		elif mne == "CALA":
-			content = pushStack("PC+2") + jumpTo(getArgument())
+			content = pushStack("PC") + jumpTo(getArgument())
 		elif mne == "CALD":
-			content = pushStack("PC+1") + jumpTo(getDD())
+			content = pushStack("PC") + jumpTo(getDD())
 		elif mne == "RET":
-			content = jumpTo(popStack())
+			content = jumpTo(popStack(), noAdd=True)
 		elif mne == "JPCA":
 			content = setValue(getArgument()) + conditional(jumpTo(getValue()))
 		elif mne == "JPCD":
 			content = conditional(jumpTo(getDD()))
 		elif mne == "CLCA":
-			content = setValue(getArgument()) + conditional(pushStack("PC+2") + jumpTo(getValue()))
+			content = setValue(getArgument()) + conditional(pushStack("PC") + jumpTo(getValue()))
 		elif mne == "CLCD":
-			content = conditional(pushStack("PC+1") + jumpTo(getDD()))
+			content = conditional(pushStack("PC") + jumpTo(getDD()))
 		elif mne == "RETC":
-			content = conditional(jumpTo(popStack()))
+			content = conditional(jumpTo(popStack(), noAdd=True))
 		elif mne == "BRK":
-			content = "\t\tstd::cout << \"CPU BREAK\" << std::endl;\n"
+			content = "\t\tstd::cout << \"\\nCPU BREAK\" << std::endl;\n"
 			content += "\t\tbroken = true;\n"
 		elif mne == "HLT":
-			content = "\t\tstd::cout << \"CPU HALT\" << std::endl;\n"
+			content = "\t\tstd::cout << \"\\nCPU HALT\" << std::endl;\n"
 			content += "\t\thalted = true;\n"
 		elif mne.startswith("DBGR"):
 			content = debugOut(RR())
