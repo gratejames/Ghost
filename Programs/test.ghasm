@@ -15,12 +15,8 @@ HLT
 
 
 string:
-.ds "This is my test string! What happens when you overflow? Almost there! "
-.ds "We've overflowed now, and are going to test the font. How exciting! "
-.ds "1234567890`~!@#$%^&*()-=_+[]\{}|;"':,./<>? "
-.ds "You know what would be stupid? To write a shell for this Fantasy Console. "
+.ds "Hello World!"
 .dd 0
-.ds "Else"
 
 printString:
 #INC ./interrupts/stringPrint.ghasm
