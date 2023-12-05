@@ -270,10 +270,10 @@ class assembler:
 			linesList[self.lineNumber] = line
 
 		for k, v in self.labels.items():
-			print("-", k, v)
+			print("-", k, hex(v))
 
 		for k, v in self.definitions.items():
-			print("-", k, v)
+			print("-", k, hex(v))
 
 		print("- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, Force hexadecimal")
 
