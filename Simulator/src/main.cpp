@@ -60,11 +60,17 @@ int main (int argc, char **argv)
     return 1;
   }
 
-  while (1) {
-    if (SDL_PollEvent(&event) && event.type == SDL_QUIT) {
-      processor->closed = true;
-      std::cout << "Engine Closing" << std::endl;
-      break;
+  while (!processor->closed) {
+    SDL_PollEvent(&event);
+    switch (event.type) {
+      case SDL_QUIT:
+        std::cout << "Engine Closing" << std::endl;
+        processor->closed = true;
+        break;
+      // case SDL_WINDOWEVENT: 
+      //   break;
+      default:
+        break;
     }
   }
   deinit();
