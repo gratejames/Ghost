@@ -144,14 +144,14 @@ int cpu::getColorAt(int x) {
 		case 1:
 			d = 256;
 			address = ((int)floor((d*x)/WINSIZE) % d) + (d * floor((d*x)/WINSIZESqr));
-			color = drgb_888((MEMORY[VideoMemory+address/4] >> (3-(x%4))*0x4) % 0x10);
+			color = drgb_888((MEMORY[VideoMemory+address/4] >> (3-(x/2)%4)*0x4) % 0x10);
 			break;
 		// 256 x 256 display scaled to 512 x 512
 		// 16 color pallette
 		case 2:
 			d = 256;
 			address = ((int)floor((d*x)/WINSIZE) % d) + (d * floor((d*x)/WINSIZESqr));
-			color = pallette16_888((MEMORY[VideoMemory+address/4] >> (3-(x%4))*0x4) & 0xf);
+			color = pallette16_888((MEMORY[VideoMemory+address/4] >> (3-(x/2)%4)*0x4) & 0xf);
 			break;
 		// 512 x 512 display
 		// 2 color pallette
