@@ -37,8 +37,8 @@
 | 0b011001RR   | 0x64 | Negate Register (Twos Compliment)                 | Negate                              | NEG  |       | Register          |        |
 | 0b011010RR   | 0x68 | Increase Register                                 | Increase                            | INC  |       | Register          |        |
 | 0b011011RR   | 0x6c | Decrease Register                                 | Decrease                            | DEC  |       | Register          |        |
-| 0b011100RR   | 0x70 | Shift Register Left 1                             | Register << 1                       | SHLO | SHL   | Register          |        |
-| 0b011101RR   | 0x74 | Shift Register Right 1                            | Register >> 1                       | SHRO | SHR   | Register          |        |
+| 0b011100RR   | 0x70 | Shift Register Left 1                             | Register << 1                       | SHLO |       | Register          |        |
+| 0b011101RR   | 0x74 | Shift Register Right 1                            | Register >> 1                       | SHRO |       | Register          |        |
 | 0b011110RR   | 0x78 | Register AND Value                                | Register AND Value                  | ANDV | AND   | Register, Value   |        |
 | 0b011111RR   | 0x7c | Register AND Address                              | Register AND Address                | ANDA | AND   | Register, Address |        |
 | 0b100000RR   | 0x80 | Register AND Address                              | R0 = Register AND R0                | ANDR | AND   | Register          |        |
