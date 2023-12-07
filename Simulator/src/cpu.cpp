@@ -67,7 +67,7 @@ void cpu::tick() {
 
 void cpu::debug() {
 	unsigned short instr = MEMORY[PC];
-	if (instr == 0xd0)
+	if (PC >= 0x100 || instr == 0xd0)
 		return;
 	std::cout << "CPU INSTRUCTION $" << std::hex << std::setw(4) << std::setfill('0') << PC;
 	if (instr < 0x100) {
@@ -230,7 +230,6 @@ void cpu::memLog(unsigned short from, unsigned short to) {
 	for (int i = from; i <= to; i++) {
 		std::cout << "0x" << std::setw(4) << i << ":0x" << std::setw(4) << MEMORY[i] << std::endl;
 	}
-
 }
 
 void cpu::executeFunction(unsigned short instruction) {
@@ -872,7 +871,7 @@ void cpu::executeFunction(unsigned short instruction) {
 		PC = DD-1;
 		break;
 	case 0xd2: // CALA
-		pushToStack(PC);
+		pushToStack(PC+1);
 		PC = getArgument()-1;
 		break;
 	case 0xd3: // CALD
