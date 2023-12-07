@@ -4,14 +4,14 @@ import AssemblerDefs
 
 class assembler:
 	TypeLengths = {"Value": 1, "Address": 1, "Instruction": 1, "Register": 0}  # Length in bytes of each type used below
-	fileContents = ""
-	fileName = "String Input"
-	labels = {}
-	definitions = {}
-	position = 0
-	lineNumber = 0
 
 	def __init__(self):
+		self.fileContents = ""
+		self.fileName = "String Input"
+		self.labels = {}
+		self.definitions = {}
+		self.position = 0
+		self.lineNumber = 0
 		pass
 
 	def loadFile(self, fileName):
@@ -40,12 +40,10 @@ class assembler:
 			return line
 		if line.strip().startswith('.'):
 			return line
-		# print("Line has chars:", line)
 		i = 0
 		while i < len(line) - 1:
 			char = line[i]
 			if char == "'":
-				# print("Found q at:", i)
 				if len(line) < i + 2:
 					print(f"\nX Error resolving char: not enough room, on line {self.lineNumber+1}")
 					sys.exit()
@@ -55,7 +53,6 @@ class assembler:
 					sys.exit()
 				target = self.intToHexString(ord(target))
 				line = line[:i] + target + line[i + 3:]
-				# print("After splice:", line)
 			i += 1
 		return line
 
@@ -105,7 +102,7 @@ class assembler:
 			print(f"- Subassembling {fileName}, org is {self.position} on line {self.lineNumber+1}")
 			subAssembler = assembler()
 			subAssembler.loadFile(fileName)
-			line = " ".join(subAssembler.assemble(org=self.position, warnHLT=-1).split())
+			line = " ".join(subAssembler.assemble(org=self.position, warnHLT=-1, nested=self.nested+1).split())
 		else:
 			print(f"X Error including {fileName}: file extension not supported {self.lineNumber+1}")
 			sys.exit()
@@ -136,8 +133,6 @@ class assembler:
 			line = " ".join(line.split(':')[1:])
 		if line == "":
 			return []
-		# if line.strip()[0] == '.':
-		# 	return ["Value"]
 		if line.strip().startswith("#DATA"):
 			return ["Value"] * len(line.strip().replace("#DATA", "", 1).split())
 		words = line.strip().split(" ")
@@ -242,15 +237,16 @@ class assembler:
 		line = " ".join(self.intToHexString(ord(char)) for char in line[1:-1])
 		return line
 	
-	def assemble(self, org=0, warnHLT=1):
+	def assemble(self, org=0, warnHLT=1, nested=0):
 		self.position = org
+		self.nested = nested
 		print(f"Assembling {self.fileName.split('/')[-1]}")
 		if "HLT" not in self.fileContents and warnHLT == 1:
 			print("! No 'HLT' instruction found: may result in unpredictable behavior")
 		elif "HLT" in self.fileContents and warnHLT == -1:
 			print("! A 'HLT' instruction found and one is not recommended: may result in unpredictable behavior")
 		linesList = self.fileContents.split("\n")
-		print("- Pass 1: Remove Comments, Replace Chars, Resolve Data, Record labels, Record Defs, Resolve Shorthand, Check Syntax")
+		# print("\t" * self.nested + "- Pass 1: Remove Comments, Replace Chars, Resolve Data, Record labels, Record Defs, Resolve Shorthand, Check Syntax")
 		for lineN, line in enumerate(linesList):
 			self.lineNumber = lineN
 			line = line.strip()
@@ -270,12 +266,12 @@ class assembler:
 			linesList[self.lineNumber] = line
 
 		for k, v in self.labels.items():
-			print("-", k, hex(v))
+			print("\t" * self.nested + "-", k, hex(v))
 
 		for k, v in self.definitions.items():
-			print("-", k, hex(v))
+			print("\t" * self.nested + "-", k, hex(v))
 
-		print("- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, Force hexadecimal")
+		# print("\t" * self.nested + "- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, Force hexadecimal")
 
 		for lineN, line in enumerate(linesList):
 			self.lineNumber = lineN
