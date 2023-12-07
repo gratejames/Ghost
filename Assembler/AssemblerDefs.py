@@ -355,12 +355,12 @@ Shorthand = {
     "SHL": {
         "Register Value": "SHLV",
         "Register Address": "SHLA",
-        "Register": "SHLO"
+        "Register": "SHLR"
     },
     "SHR": {
         "Register Value": "SHRV",
         "Register Address": "SHRA",
-        "Register": "SHRO"
+        "Register": "SHRR"
     },
     "ADD": {
         "Register Value": "ADDV",
