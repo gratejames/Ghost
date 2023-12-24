@@ -24,13 +24,10 @@ std::thread Ticker;
 SDL_Window *window = NULL;
 SDL_Surface *surface = NULL;
 SDL_Event event;
-// SDL_PixelFormat* surfacePixelFormat;
-// SDL_Color color = {255,255,0};
 cpu *processor;
 int scale = 1;
 
-int main (int argc, char **argv)
-{
+int main (int argc, char **argv) {
   cxxopts::Options options("Ghost Simulator SDL", "Simulator for the fantasy console GHOST");
   options.add_options()
     ("v,verbose", "Verbose output")
@@ -142,15 +139,10 @@ bool init() {
 
   surface = SDL_GetWindowSurface(window);
 
-  // surfacePixelFormat = surface->format;
-  // int c = SDL_MapRGB(surfacePixelFormat, color.r, color.g, color.b);
-  // SDL_FillRect(surface, NULL, c);
-  // color = {0, 0, 255};
   SDL_UpdateWindowSurface(window);
 
   std::cout << "Engine Initialized" << std:: endl;
 
-  // Drawer = std::thread(DrawerFunc, std::ref(DrawerX));
   Drawer = std::thread(DrawerFunc);
   Ticker = std::thread(TickerFunc);
   return true;
