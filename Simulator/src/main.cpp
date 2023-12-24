@@ -27,6 +27,7 @@ SDL_Event event;
 // SDL_PixelFormat* surfacePixelFormat;
 // SDL_Color color = {255,255,0};
 cpu *processor;
+int scale = 1;
 
 int main (int argc, char **argv)
 {
@@ -34,6 +35,7 @@ int main (int argc, char **argv)
   options.add_options()
     ("v,verbose", "Verbose output")
     ("r,flush", "Flush each debugged character")
+    ("s,scale", "Integer scale of the resolution (Integr between 1 and 4)", cxxopts::value<int>())
     ("f,file", "File name", cxxopts::value<std::string>())
     ("h,help", "Print usage")
     ;
@@ -45,10 +47,17 @@ int main (int argc, char **argv)
     std::cout << options.help() << std::endl;
     return 0;
   }
+  if (result.count("scale")) {
+    scale = result["scale"].as<int>();
+    if (!(scale == 1 || scale == 2 || scale == 3 || scale == 4)) {
+      std::cout << scale << " is an invalid scale" << std::endl;
+      return 1;
+    }
+  }
   
   std::string fileName;
   if (!result.count("file")) {
-    std::cout << "No romfile provided" << std::endl;
+    std::cout << "No romfile provided (Use -f)" << std::endl;
     return 1;
   } else {
     fileName = result["file"].as<std::string>();
