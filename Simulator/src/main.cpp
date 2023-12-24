@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <atomic>
 #include <thread>
+#include <fstream>
 
 #include "cxxopts.hpp"
 #include "cpu.cpp"
@@ -23,9 +24,15 @@ std::thread Ticker;
 
 SDL_Window *window = NULL;
 SDL_Surface *surface = NULL;
+SDL_Renderer *renderer;
+SDL_Texture *texture;
+Uint32* pixels = nullptr;
+
 SDL_Event event;
 cpu *processor;
 int scale = 1;
+
+int pitch = 0;
 
 int main (int argc, char **argv) {
   cxxopts::Options options("Ghost Simulator SDL", "Simulator for the fantasy console GHOST");
@@ -58,7 +65,12 @@ int main (int argc, char **argv) {
     return 1;
   } else {
     fileName = result["file"].as<std::string>();
-    std::cout << "Loading file: " << fileName << std::endl;
+    if (std::ifstream(fileName.c_str()).good()) {
+      std::cout << "Loading file: " << fileName << std::endl;
+    } else {
+      std::cout << "Failed to load file: " << fileName << std::endl;
+      return 1;
+    }
   }
   processor = new cpu(fileName);
   processor->verbose = result.count("verbose");
@@ -79,7 +91,7 @@ int main (int argc, char **argv) {
           if (event.key.repeat!=0)
             break;
           if (event.key.keysym.sym == SDLK_KP_0) {
-            processor->memLog(0, 0x15);
+            processor->memLog(0, 0x15); // If numpad 0 key pressed, log first 0x15 of memory
           } else {
             processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 1);
           }
@@ -102,10 +114,10 @@ int main (int argc, char **argv) {
 void deinit() {
   Drawer.join();
   Ticker.join();
-  // processor->debug();
-  // std::cout << processor->MEMORY[128*128-1] << std::endl;
   
   /* Frees memory */
+  SDL_DestroyTexture(texture);
+  SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 
   /* Shuts down all SDL subsystems */
@@ -126,8 +138,8 @@ bool init() {
   window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
 			    SDL_WINDOWPOS_UNDEFINED, /* Position x of the window */
 			    SDL_WINDOWPOS_UNDEFINED, /* Position y of the window */
-			    WINSIZE, /* Width of the window in pixels */
-			    WINSIZE, /* Height of the window in pixels */
+			    WINSIZE*scale, /* Width of the window in pixels */
+			    WINSIZE*scale, /* Height of the window in pixels */
 			    0); /* Additional flag(s) */
 
 
@@ -140,6 +152,11 @@ bool init() {
   surface = SDL_GetWindowSurface(window);
 
   SDL_UpdateWindowSurface(window);
+
+  renderer = SDL_CreateRenderer(window, -1, 0);
+  SDL_SetRenderDrawColor(renderer, 255, 0, 255, 1);
+
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WINSIZE, WINSIZE);
 
   std::cout << "Engine Initialized" << std:: endl;
 
@@ -156,11 +173,16 @@ void TickerFunc () {
 
 void DrawerFunc() {
   while (!processor->closed) {
+    SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
+
     for (int pos = 0; pos < WINSIZESqr; pos++) {
-      Uint32 * const target_pixel = (Uint32 *) ((Uint8 *) surface->pixels + pos*surfaceBytesPerPixel);
-      *target_pixel = processor->getColorAt(pos);
+      pixels[pos] = processor->getColorAt(pos);
     }
-    SDL_UpdateWindowSurface(window);
+
+    SDL_UnlockTexture(texture);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    SDL_RenderPresent(renderer);
   }
 }
 
