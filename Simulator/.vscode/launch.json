@@ -5,7 +5,7 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/SDLSIM",
+            "program": "${workspaceFolder}/build/Simulator",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
