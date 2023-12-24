@@ -4,5 +4,6 @@ Simulator/build/CMakeFiles/
 Simulator/build/.ninja_log
 Simulator/build/.ninja_deps
 Simulator/build/CMakeCache.txt
+Simulator/build/Simulator
 Simulator/src/cxxopts-*/
 *.hex
