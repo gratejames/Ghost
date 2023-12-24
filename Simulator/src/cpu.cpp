@@ -210,9 +210,11 @@ void cpu::callInterrupt(unsigned short interrupt) {
 	needToInterrupt = true;
 }
 void cpu::callInterrupt() {
-	pushToStack(PC-1);
-	PC = MEMORY[InterruptTableStart + interruptToCall];
-	needToInterrupt = false;
+	if (MEMORY[InterruptTableStart + interruptToCall] != 0) {
+		pushToStack(PC-1);
+		PC = MEMORY[InterruptTableStart + interruptToCall];
+		needToInterrupt = false;
+	}
 }
 
 void cpu::keyStateChange(unsigned char keyCode, bool state) {
