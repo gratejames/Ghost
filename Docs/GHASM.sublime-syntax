@@ -78,10 +78,10 @@ contexts:
     - match: '\$'
       scope: keyword.operator
 
-    - match: '\b0x[0-9a-fA-F]{4}\b'
+    - match: '\b0x[0-9a-fA-F]+\b'
       scope: constant.numeric.integer.hexadecimal.assembly
 
-    - match: '\b0b[01\s]\b'
+    - match: '\b0b[01\s]+\b'
       scope: constant.numeric.integer.binary.assembly
 
     - match: '\b[0-9]+\b'
