@@ -17,22 +17,25 @@ Stack: 0xf000 - 0xffff (  4096 Bytes )
 ## I/O
 0x00-0x5f: Interrupt Table
 0x60-0x6f: Unused
-0x70-0x7f: Interrupt Data
+0x70-0x7f: Interrupt Data // Not recommended
 0x80-0x8f: Display Pallet
 0x90-0xfd: Unused
 0xfe: Display settings
 0xff: Random Number
 
 ### Interrupt Table
-#### 0x00: Key Status Change
-	0x70: Key code. Refer [[Ghost Keycodes]]
-	0x71: Event (0: up, 1: down)
-#### 0x01: Mouse Position Change
-	0x70: MouseX Position Absolute
-	0x71: MouseY Position Absolute
-#### 0x02: Mouse Button Change
-	0x70: Button Number
-	0x71: Event (0: up, 1: down)
+#### 0x00: Key Status Change                     Done
+	Push all
+	Push key code. Refer [[Ghost Keycodes]]
+	Push event (0: up, 1: down)
+#### 0x01: Mouse Position Change                 NYI
+	Push all
+	Push MouseX position (absolute to window)
+	Push MouseY position (absolute to window)
+#### 0x02: Mouse Button Change                   NYI
+	Push all
+	Push button number
+	Push event (0: up, 1: down)
 #### 0x4f-5f: User defined, not called by hardware. Convention below.
 #### 0x5e: High Res. String Print
 	0x70: String Address

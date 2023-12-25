@@ -15,12 +15,13 @@
 #define StackMemory 0xf000
 
 #define InterruptTableStart 0xaf00
-#define InterruptDataStart 0xaf70
+// #define InterruptDataStart 0xaf70
 
 const std::string InstructionDebugging[0x100] {"NOP", "MVAA", "DDV", "DDA", "DDR0", "DDR1", "DDR2", "DDR3", "LDV0", "LDV1", "LDV2", "LDV3", "LDA0", "LDA1", "LDA2", "LDA3", "LDD0", "LDD1", "LDD2", "LDD3", "STR0", "STR1", "STR2", "STR3", "STAR0", "STAR1", "STAR2", "STAR3", "STV", "STDV", "MVDD", "INT", "STDR0", "STDR1", "STDR2", "STDR3", "SHLV0", "SHLV1", "SHLV2", "SHLV3", "SHLA0", "SHLA1", "SHLA2", "SHLA3", "SHLR0", "SHLR1", "SHLR2", "SHLR3", "SHRV0", "SHRV1", "SHRV2", "SHRV3", "SHRA0", "SHRA1", "SHRA2", "SHRA3", "SHRR0", "SHRR1", "SHRR2", "SHRR3", "ADDV0", "ADDV1", "ADDV2", "ADDV3", "ADDA0", "ADDA1", "ADDA2", "ADDA3", "ADDR0", "ADDR1", "ADDR2", "ADDR3", "SUBV0", "SUBV1", "SUBV2", "SUBV3", "SUBA0", "SUBA1", "SUBA2", "SUBA3", "SUBR0", "SUBR1", "SUBR2", "SUBR3", "SBRV0", "SBRV1", "SBRV2", "SBRV3", "SBRA0", "SBRA1", "SBRA2", "SBRA3", "SBRR0", "SBRR1", "SBRR2", "SBRR3", "NOT0", "NOT1", "NOT2", "NOT3", "NEG0", "NEG1", "NEG2", "NEG3", "INC0", "INC1", "INC2", "INC3", "DEC0", "DEC1", "DEC2", "DEC3", "SHLO0", "SHLO1", "SHLO2", "SHLO3", "SHRO0", "SHRO1", "SHRO2", "SHRO3", "ANDV0", "ANDV1", "ANDV2", "ANDV3", "ANDA0", "ANDA1", "ANDA2", "ANDA3", "ANDR0", "ANDR1", "ANDR2", "ANDR3", "ORV0", "ORV1", "ORV2", "ORV3", "ORA0", "ORA1", "ORA2", "ORA3", "ORR0", "ORR1", "ORR2", "ORR3", "XORV0", "XORV1", "XORV2", "XORV3", "XORA0", "XORA1", "XORA2", "XORA3", "XORR0", "XORR1", "XORR2", "XORR3", "PSHR0", "PSHR1", "PSHR2", "PSHR3", "POPR0", "POPR1", "POPR2", "POPR3", "PSHA", "POPA", "CEZA", "CNZA", "CEZR0", "CEZR1", "CEZR2", "CEZR3", "CNZR0", "CNZR1", "CNZR2", "CNZR3", "CEV0", "CEV1", "CEV2", "CEV3", "CEA0", "CEA1", "CEA2", "CEA3", "CNV0", "CNV1", "CNV2", "CNV3", "CNA0", "CNA1", "CNA2", "CNA3", "CLTV0", "CLTV1", "CLTV2", "CLTV3", "CLTA0", "CLTA1", "CLTA2", "CLTA3", "CGTV0", "CGTV1", "CGTV2", "CGTV3", "CGTA0", "CGTA1", "CGTA2", "CGTA3", "JMPA", "JMPD", "CALA", "CALD", "RET", "JPCA", "JPCD", "CLCA", "CLCD", "RETC", "BRK", "HLT", "DBGR0", "DBGR1", "DBGR2", "DBGR3", "DBGV", "DBGA", "DBCA", "DBCV", "DBCR0", "DBCR1", "DBCR2", "DBCR3", "ADOR0", "ADOR1", "ADOR2", "ADOR3", "ADOV", "ADOA", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused", "Unused"};
 const int InstructionDebuggingNumArgs[0x100] {0, 2, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 const std::set <unsigned short> AllowedInterrupts {0x5e, 0x5f};
-
+unsigned short intArg0;
+unsigned short intArg1;
 cpu::cpu(std::string romFile) {
 	std::cout << "CPU START" << std::endl;
 	romFileName = romFile;
@@ -212,16 +213,25 @@ void cpu::callInterrupt(unsigned short interrupt) {
 void cpu::callInterrupt() {
 	if (MEMORY[InterruptTableStart + interruptToCall] != 0) {
 		pushToStack(PC-1);
+		if (interruptToCall == 0x00) {
+			pushToStack(R0);
+			pushToStack(R1);
+			pushToStack(R2);
+			pushToStack(R3);
+			pushToStack(intArg0);
+			pushToStack(intArg1);
+			// std::cout << "Stacked " << (int)intArg0 << " and then " << (int)intArg1 << "!" << std::endl;
+		}
 		PC = MEMORY[InterruptTableStart + interruptToCall];
 		needToInterrupt = false;
 	}
 }
 
 void cpu::keyStateChange(unsigned char keyCode, bool state) {
+	intArg0 = keyCode;
+	intArg1 = state;
 	// std::cout << "Got keycode " << keyCode << std::endl;
 	// std::cout << "Got keycode " << (int)keyCode << std::endl;
-	setValueAtAddress(keyCode, InterruptDataStart+0);
-	setValueAtAddress(state, InterruptDataStart+1);
 	callInterrupt(0x00);
 }
 
