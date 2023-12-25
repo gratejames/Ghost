@@ -1,5 +1,5 @@
 # TODO
- + Add project to git(hub)
++ [x] Add project to git(hub)
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
 \$Register:          The value that the register points to   , store at
