@@ -11,9 +11,14 @@ class assembler:
 		self.fileName = "String Input"
 		self.labels = {}
 		self.definitions = {}
+		self.macros = {}
 		self.position = 0
 		self.lineNumber = 0
 		pass
+
+	def die(self, message):
+		print(message)
+		sys.exit()
 
 	def loadFile(self, fileName):
 		self.fileName = fileName
@@ -42,10 +47,16 @@ class assembler:
 		else:
 			newPos = eval(line.replace("#ORG", "").strip())
 			if (newPos < self.position):
-				print(f"\nX Error resolving #ORG: new position ({newPos}) is less than current ({self.position}), on line {self.lineNumber+1}")
-				sys.exit()
+				self.die(f"\nX Error resolving #ORG: new position ({newPos}) is less than current ({self.position}), on line {self.lineNumber+1}")
 			outLine = "#DATA " + "0x0000 " * (newPos - self.position)
 			return outLine
+
+	def resolveMacros(self, line):
+		if line.strip() in self.macros.keys():
+			# print(self.macros[line.strip()])
+			return self.macros[line.strip()]
+		else:
+			return line
 
 	def replaceChars(self, line):
 		if "'" not in line:
@@ -57,12 +68,10 @@ class assembler:
 			char = line[i]
 			if char == "'":
 				if len(line) < i + 2:
-					print(f"\nX Error resolving char: not enough room, on line {self.lineNumber+1}")
-					sys.exit()
+					self.die(f"\nX Error resolving char: not enough room, on line {self.lineNumber+1}")
 				target = line[i + 1]
 				if line[i + 2] != "'":
-					print(f"\nX Error resolving char '{line[i] + target + line[i + 2] }': no closing apostraphe, on line {self.lineNumber+1}")
-					sys.exit()
+					self.die(f"\nX Error resolving char '{line[i] + target + line[i + 2] }': no closing apostraphe, on line {self.lineNumber+1}")
 				target = self.intToHexString(ord(target))
 				line = line[:i] + target + line[i + 3:]
 			i += 1
@@ -79,8 +88,7 @@ class assembler:
 			dataTypeWord = line.split(" ")[0].strip()
 			dataType = {".db": "Bin", ".dh": "Hex", ".dd": "Dec", ".ds": "Str"}.get(dataTypeWord, None)
 			if dataType is None:
-				print(f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}")
-				sys.exit()
+				self.die(f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}")
 			val = "".join(line.split(" ")[1:])
 			if dataType == "Bin":
 				line = self.intToHexString(eval(val))
@@ -101,14 +109,12 @@ class assembler:
 			with open(fileName, 'r') as f:
 				loadedContents = f.read()
 		except OSError:
-			print(f"X Error including {fileName}: file not found on line {self.lineNumber+1}")
-			sys.exit()
+			self.die(f"X Error including {fileName}: file not found on line {self.lineNumber+1}")
 		if fileName.endswith(".hex"):
 			line = " ".join(loadedContents.split())
 			for word in line.split(' '):
 				if not self.isValidFinalHex(word):
-					print(f"X Error including {fileName}: token not valid hex '{word}' on line {self.lineNumber+1}")
-					sys.exit()
+					self.die(f"X Error including {fileName}: token not valid hex '{word}' on line {self.lineNumber+1}")
 
 		elif fileName.endswith(".ghasm"):
 			print(f"- Subassembling {fileName}, org is {self.position} on line {self.lineNumber+1}")
@@ -116,8 +122,7 @@ class assembler:
 			subAssembler.loadFile(fileName)
 			line = " ".join(subAssembler.assemble(org=self.position, warnHLT=-1, nested=self.nested+1).split())
 		else:
-			print(f"X Error including {fileName}: file extension not supported {self.lineNumber+1}")
-			sys.exit()
+			self.die(f"X Error including {fileName}: file extension not supported {self.lineNumber+1}")
 		return "#DATA " + line
 
 	def prettyOrList(self, listOfWords): 
@@ -172,8 +177,7 @@ class assembler:
 			else:
 				print(f"\nX Error resolving shorthand command '{words[0]}' with arguments [{', '.join(ArgumentTypes)}], on line {self.lineNumber+1}")
 				listOfShorthandArguments = list(AssemblerDefs.Shorthand[words[0]].keys())
-				print(f"Expected types are: {self.prettyOrList(['[' + ', '.join(typeList.split(' ')) + ']' for typeList in listOfShorthandArguments])}")
-				sys.exit()
+				self.die(f"Expected types are: {self.prettyOrList(['[' + ', '.join(typeList.split(' ')) + ']' for typeList in listOfShorthandArguments])}")
 		return line
 
 	def validateArguments(self, line):
@@ -181,13 +185,9 @@ class assembler:
 		# Exceptions, should not be instructions
 		if line.strip() == '':        # Empty
 			return line
-		if ':' in line:               # Label
-			return line
-		if line.startswith("#DEF"):   # Definition
-			return line
+		# if ':' in line:               # Label
+		# 	return line
 		if line.startswith("#DATA"):  # Data
-			return line
-		if line.startswith("#INC"):   # Include
 			return line
 		# Validating
 		if words[0] in AssemblerDefs.Instructions.keys():
@@ -196,11 +196,9 @@ class assembler:
 			if not ArgumentTypesString == AssemblerDefs.Instructions[words[0]]['Arguments']:
 				print(f"\nX Error validating command '{words[0]}' with arguments [{', '.join(ArgumentTypes)}]")
 				expectedArguments = AssemblerDefs.Instructions[words[0]]['Arguments']
-				print(f"Expected types are: [{', '.join(expectedArguments.split(' '))}]")
-				sys.exit()
+				self.die(f"Expected types are: [{', '.join(expectedArguments.split(' '))}]")
 		else:
-			print(f"\nX Error resolving command '{words[0]}'")
-			sys.exit()
+			self.die(f"\nX Error resolving command '{words[0]}'")
 
 
 	def recordDefs(self, line):
@@ -213,8 +211,7 @@ class assembler:
 	def recordLabels(self, line):
 		if ':' in line:
 			if line.split(':')[0] in self.labels.keys():
-				print(f"X Error recording labels: the label '{line.split(':')[0]}' was encountered earlier at position {self.labels[line.split(':')[0]]}")
-				sys.exit()
+				self.die(f"X Error recording labels: the label '{line.split(':')[0]}' was encountered earlier at position {self.labels[line.split(':')[0]]}")
 			self.labels[line.split(':')[0]] = self.position
 			# print(f"Found Label {line.split(':')[0]} in line {line} and replaced the line with {':'.join(line.split(':')[1:]).strip()}")
 			return ':'.join(line.split(':')[1:]).strip()
@@ -239,12 +236,10 @@ class assembler:
 
 	def parseString(self, line):
 		if line[0] != '"':
-			print(f"\nX Error parsing string, expected \" to open the string but got {line[0]} on line {self.lineNumber+1}")
-			sys.exit()
+			self.die(f"\nX Error parsing string, expected \" to open the string but got {line[0]} on line {self.lineNumber+1}")
 
 		if line[-1] != '"':
-			print(f"\nX Error parsing string, expected \" to close the string but got {line[-1]} on line {self.lineNumber+1}")
-			sys.exit()
+			self.die(f"\nX Error parsing string, expected \" to close the string but got {line[-1]} on line {self.lineNumber+1}")
 
 		line = " ".join(self.intToHexString(ord(char)) for char in line[1:-1])
 		return line
@@ -258,25 +253,59 @@ class assembler:
 		elif "HLT" in self.fileContents and warnHLT == -1:
 			print("! A 'HLT' instruction found and one is not recommended: may result in unpredictable behavior")
 		linesList = self.fileContents.split("\n")
+		
+		# print("\t" * self.nested + "- Pass 0: Macros!")
+		currentMacro = None
+		collectedMacroLines = ""
+		for lineN, line in enumerate(linesList):
+			if currentMacro == None:
+				if line.startswith("#MACRO"):
+					currentMacro = line.replace("#MACRO", "").strip()
+					linesList[lineN] = ""
+			else:
+				if line == "#ENDM":
+					self.macros[currentMacro] = collectedMacroLines.strip()
+					currentMacro = None
+					collectedMacroLines  = ""
+				else:
+					collectedMacroLines += line + "\n"
+				linesList[lineN] = ""
+		if currentMacro != None:
+			self.die(f"\nX Error reading macros: EOF while reading macro (did you forget a '#ENDM'?)")
+
+
+
+
 		# print("\t" * self.nested + "- Pass 1: Remove Comments, Replace Chars, Resolve Data, Record labels, Record Defs, Resolve Shorthand, Check Syntax")
 		for lineN, line in enumerate(linesList):
+			if line == "":
+				continue
+			# print("-L", line)
 			self.lineNumber = lineN
 			line = line.strip()
 			line = self.clearComments(line)
 			line = self.resolveORG(line)
-			line = self.replaceChars(line)
-			line = self.resolveData(line)
-			line = self.resolveIncludes(line)
-			line = self.resolveShorthand(line)
-			self.validateArguments(line)
-			line = self.recordLabels(line)
-			line = self.recordDefs(line)
+			line = self.resolveMacros(line)
+			subLinesList = line.split("\n")
+			for subLineN, subLine in enumerate(subLinesList):
+				# print("-SL", subLine)
+				subLine = self.replaceChars(subLine)
+				subLine = self.resolveData(subLine)
+				subLine = self.resolveIncludes(subLine)
+				subLine = self.resolveShorthand(subLine)
+				subLine = self.recordLabels(subLine)
+				subLine = self.recordDefs(subLine)
+				self.validateArguments(subLine)
+				# print("+SL", subLine)
 
-			# print(self.argumentTypes(line))
+				subLinesList[subLineN] = subLine
+				# print(self.argumentTypes(line))
+			line = "\n".join(subLinesList)
 
 			self.position += sum([self.TypeLengths[typeOfItem] for typeOfItem in self.argumentTypes(line)])
 
-			linesList[self.lineNumber] = line
+			# print("+L", line)
+			linesList[lineN] = line
 
 		for k, v in self.labels.items():
 			print("\t" * self.nested + "-", k, hex(v))
@@ -285,6 +314,8 @@ class assembler:
 			print("\t" * self.nested + "-", k, hex(v))
 
 		# print("\t" * self.nested + "- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, Force hexadecimal")
+
+		linesList = "\n".join(linesList).split("\n") # Unfold all the lines that are single list items seperated by "\n" characters from the macro process
 
 		for lineN, line in enumerate(linesList):
 			self.lineNumber = lineN
@@ -327,14 +358,12 @@ class assembler:
 						# print(f"! Assumed token '{word}' to '{newWord}'")
 						word = newWord
 					except ValueError:
-						print(f"\nX Error resolving token '{word}' on line {self.lineNumber+1}, word {wordNumber+1}")
-						sys.exit()
+						# self.die(f"\nX Error resolving token '{word}' on line {self.lineNumber+1}, word {wordNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
+						self.die(f"\nX Error resolving token '{word}'")
 
 
 				words[wordNumber] = word.strip()
 				line = " ".join([x for x in words if x != ""])
-			linesList[self.lineNumber] = line
-
 
 			
 
