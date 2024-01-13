@@ -16,6 +16,9 @@ contexts:
     - match: '^#INC'
       scope: keyword.control.assembly
 
+    - match: '^#ORG'
+      scope: keyword.control.assembly
+
     - match: '^(\s)*(%INSTRUCTIONS%)\b'
       scope: keyword.control.assembly
       push: commandArgs

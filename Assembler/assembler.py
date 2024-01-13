@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys
 import re
 import AssemblerDefs
@@ -34,6 +35,17 @@ class assembler:
 		if stringLine:
 			print(line)
 		return outLine.strip()
+
+	def resolveORG(self, line):
+		if not line.startswith("#ORG"):
+			return line
+		else:
+			newPos = eval(line.replace("#ORG", "").strip())
+			if (newPos < self.position):
+				print(f"\nX Error resolving #ORG: new position ({newPos}) is less than current ({self.position}), on line {self.lineNumber+1}")
+				sys.exit()
+			outLine = "#DATA " + "0x0000 " * (newPos - self.position)
+			return outLine
 
 	def replaceChars(self, line):
 		if "'" not in line:
@@ -251,6 +263,7 @@ class assembler:
 			self.lineNumber = lineN
 			line = line.strip()
 			line = self.clearComments(line)
+			line = self.resolveORG(line)
 			line = self.replaceChars(line)
 			line = self.resolveData(line)
 			line = self.resolveIncludes(line)
