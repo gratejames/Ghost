@@ -3,402 +3,336 @@ Instructions = {
         "Binary": "0b00000000",
         "Arguments": "None"
     },
-    "MVAA": {
-        "Binary": "0b00000001",
-        "Arguments": "Address Address"
-    },
-    "DDV": {
-        "Binary": "0b00000010",
-        "Arguments": "Value"
-    },
-    "DDA": {
-        "Binary": "0b00000011",
-        "Arguments": "Address"
-    },
-    "DDR": {
-        "Binary": "0b000001RR",
-        "Arguments": "Register"
-    },
-    "LDV": {
-        "Binary": "0b000010RR",
-        "Arguments": "Register Value"
-    },
-    "LDA": {
-        "Binary": "0b000011RR",
-        "Arguments": "Register Address"
-    },
-    "LDD": {
-        "Binary": "0b000100RR",
-        "Arguments": "Register"
-    },
-    "STR": {
-        "Binary": "0b000101RR",
-        "Arguments": "Register Address"
-    },
-    "STAR": {
-        "Binary": "0b000110RR",
-        "Arguments": "Register Value"
-    },
     "STV": {
-        "Binary": "0b00011100",
+        "Binary": "0b00000010",
         "Arguments": "Value Address"
     },
-    "STDV": {
-        "Binary": "0b00011101",
-        "Arguments": "Value"
-    },
-    "MVDD": {
-        "Binary": "0b00011110",
-        "Arguments": "Address"
-    },
-    "INT": {
-        "Binary": "0b00011111",
-        "Arguments": "Value"
-    },
-    "STDR": {
-        "Binary": "0b001000RR",
-        "Arguments": "Register"
-    },
-    "SHLV": {
-        "Binary": "0b001001RR",
-        "Arguments": "Register Value"
-    },
-    "SHLA": {
-        "Binary": "0b001010RR",
-        "Arguments": "Register Address"
-    },
-    "SHLR": {
-        "Binary": "0b001011RR",
-        "Arguments": "Register"
-    },
-    "SHRV": {
-        "Binary": "0b001100RR",
-        "Arguments": "Register Value"
-    },
-    "SHRA": {
-        "Binary": "0b001101RR",
-        "Arguments": "Register Address"
-    },
-    "SHRR": {
-        "Binary": "0b001110RR",
-        "Arguments": "Register"
-    },
-    "ADDV": {
-        "Binary": "0b001111RR",
-        "Arguments": "Register Value"
-    },
-    "ADDA": {
-        "Binary": "0b010000RR",
-        "Arguments": "Register Address"
-    },
-    "ADDR": {
-        "Binary": "0b010001RR",
-        "Arguments": "Register"
-    },
-    "SUBV": {
-        "Binary": "0b010010RR",
-        "Arguments": "Register Value"
-    },
-    "SUBA": {
-        "Binary": "0b010011RR",
-        "Arguments": "Register Address"
-    },
-    "SUBR": {
-        "Binary": "0b010100RR",
-        "Arguments": "Register"
-    },
-    "SBRV": {
-        "Binary": "0b010101RR",
-        "Arguments": "Register Value"
-    },
-    "SBRA": {
-        "Binary": "0b010110RR",
-        "Arguments": "Register Address"
-    },
-    "SBRR": {
-        "Binary": "0b010111RR",
-        "Arguments": "Register"
-    },
-    "NOT": {
-        "Binary": "0b011000RR",
-        "Arguments": "Register"
-    },
-    "NEG": {
-        "Binary": "0b011001RR",
-        "Arguments": "Register"
-    },
-    "INC": {
-        "Binary": "0b011010RR",
-        "Arguments": "Register"
-    },
-    "DEC": {
-        "Binary": "0b011011RR",
-        "Arguments": "Register"
-    },
-    "SHLO": {
-        "Binary": "0b011100RR",
-        "Arguments": "Register"
-    },
-    "SHRO": {
-        "Binary": "0b011101RR",
-        "Arguments": "Register"
-    },
-    "ANDV": {
-        "Binary": "0b011110RR",
-        "Arguments": "Register Value"
-    },
-    "ANDA": {
-        "Binary": "0b011111RR",
-        "Arguments": "Register Address"
-    },
-    "ANDR": {
-        "Binary": "0b100000RR",
-        "Arguments": "Register"
-    },
-    "ORV": {
-        "Binary": "0b100001RR",
-        "Arguments": "Register Value"
-    },
-    "ORA": {
-        "Binary": "0b100010RR",
-        "Arguments": "Register Address"
-    },
-    "ORR": {
-        "Binary": "0b100011RR",
-        "Arguments": "Register"
-    },
-    "XORV": {
-        "Binary": "0b100100RR",
-        "Arguments": "Register Value"
-    },
-    "XORA": {
-        "Binary": "0b100101RR",
-        "Arguments": "Register Address"
-    },
-    "XORR": {
-        "Binary": "0b100110RR",
-        "Arguments": "Register"
-    },
-    "PSHR": {
-        "Binary": "0b100111RR",
-        "Arguments": "Register"
-    },
-    "POPR": {
-        "Binary": "0b101000RR",
-        "Arguments": "Register"
+    "STA": {
+        "Binary": "0b00000011",
+        "Arguments": "Address Address"
     },
     "PSHA": {
-        "Binary": "0b10100100",
+        "Binary": "0b00000100",
         "Arguments": "None"
     },
     "POPA": {
-        "Binary": "0b10100101",
+        "Binary": "0b00000101",
         "Arguments": "None"
     },
     "CEZA": {
-        "Binary": "0b10100110",
+        "Binary": "0b00000110",
         "Arguments": "Address"
     },
     "CNZA": {
-        "Binary": "0b10100111",
-        "Arguments": "Address"
-    },
-    "CEZR": {
-        "Binary": "0b101010RR",
-        "Arguments": "Register"
-    },
-    "CNZR": {
-        "Binary": "0b101011RR",
-        "Arguments": "Register"
-    },
-    "CEV": {
-        "Binary": "0b101100RR",
-        "Arguments": "Register Value"
-    },
-    "CEA": {
-        "Binary": "0b101101RR",
-        "Arguments": "Register Address"
-    },
-    "CNV": {
-        "Binary": "0b101110RR",
-        "Arguments": "Register Value"
-    },
-    "CNA": {
-        "Binary": "0b101111RR",
-        "Arguments": "Register Address"
-    },
-    "CLTV": {
-        "Binary": "0b110000RR",
-        "Arguments": "Register Value"
-    },
-    "CLTA": {
-        "Binary": "0b110001RR",
-        "Arguments": "Register Address"
-    },
-    "CGTV": {
-        "Binary": "0b110010RR",
-        "Arguments": "Register Value"
-    },
-    "CGTA": {
-        "Binary": "0b110011RR",
-        "Arguments": "Register Address"
-    },
-    "JMPA": {
-        "Binary": "0b11010000",
-        "Arguments": "Value"
-    },
-    "JMPD": {
-        "Binary": "0b11010001",
-        "Arguments": "None"
-    },
-    "CALA": {
-        "Binary": "0b11010010",
-        "Arguments": "Value"
-    },
-    "CALD": {
-        "Binary": "0b11010011",
-        "Arguments": "None"
-    },
-    "RET": {
-        "Binary": "0b11010100",
-        "Arguments": "None"
-    },
-    "JPCA": {
-        "Binary": "0b11010101",
-        "Arguments": "Value"
-    },
-    "JPCD": {
-        "Binary": "0b11010110",
-        "Arguments": "None"
-    },
-    "CLCA": {
-        "Binary": "0b11010111",
-        "Arguments": "Value"
-    },
-    "CLCD": {
-        "Binary": "0b11011000",
-        "Arguments": "None"
-    },
-    "RETC": {
-        "Binary": "0b11011001",
-        "Arguments": "None"
-    },
-    "BRK": {
-        "Binary": "0b11011010",
-        "Arguments": "None"
-    },
-    "HLT": {
-        "Binary": "0b11011011",
-        "Arguments": "None"
-    },
-    "DBGR": {
-        "Binary": "0b110111RR",
-        "Arguments": "Register"
-    },
-    "DBGV": {
-        "Binary": "0b11100000",
-        "Arguments": "Value"
-    },
-    "DBGA": {
-        "Binary": "0b11100001",
+        "Binary": "0b00000111",
         "Arguments": "Address"
     },
     "DBCA": {
-        "Binary": "0b11100010",
+        "Binary": "0b00001000",
+        "Arguments": "Address"
+    },
+    "DBGA": {
+        "Binary": "0b00001001",
         "Arguments": "Address"
     },
     "DBCV": {
-        "Binary": "0b11100011",
+        "Binary": "0b00001010",
         "Arguments": "Value"
     },
+    "DBGV": {
+        "Binary": "0b00001011",
+        "Arguments": "Value"
+    },
+    "STR": {
+        "Binary": "0b000011RR",
+        "Arguments": "Register Address"
+    },
     "DBCR": {
+        "Binary": "0b000100RR",
+        "Arguments": "Register"
+    },
+    "DBGR": {
+        "Binary": "0b000101RR",
+        "Arguments": "Register"
+    },
+    "CEZR": {
+        "Binary": "0b000110RR",
+        "Arguments": "Register"
+    },
+    "CNZR": {
+        "Binary": "0b000111RR",
+        "Arguments": "Register"
+    },
+    "LDV": {
+        "Binary": "0b001000RR",
+        "Arguments": "Register Value"
+    },
+    "LDA": {
+        "Binary": "0b001001RR",
+        "Arguments": "Register Address"
+    },
+    "PSHR": {
+        "Binary": "0b001010RR",
+        "Arguments": "Register"
+    },
+    "POPR": {
+        "Binary": "0b001011RR",
+        "Arguments": "Register"
+    },
+    "ST0AR": {
+        "Binary": "0b001100RR",
+        "Arguments": "Register"
+    },
+    "ST1AR": {
+        "Binary": "0b001101RR",
+        "Arguments": "Register"
+    },
+    "ST2AR": {
+        "Binary": "0b001110RR",
+        "Arguments": "Register"
+    },
+    "ST3AR": {
+        "Binary": "0b001111RR",
+        "Arguments": "Register"
+    },
+    "CEA": {
+        "Binary": "0b010000RR",
+        "Arguments": "Register Address"
+    },
+    "CNA": {
+        "Binary": "0b010001RR",
+        "Arguments": "Register Address"
+    },
+    "CLTA": {
+        "Binary": "0b010010RR",
+        "Arguments": "Register Address"
+    },
+    "CGTA": {
+        "Binary": "0b010011RR",
+        "Arguments": "Register Address"
+    },
+    "CEV": {
+        "Binary": "0b010100RR",
+        "Arguments": "Register Value"
+    },
+    "CNV": {
+        "Binary": "0b010101RR",
+        "Arguments": "Register Value"
+    },
+    "CLTV": {
+        "Binary": "0b010110RR",
+        "Arguments": "Register Value"
+    },
+    "CGTV": {
+        "Binary": "0b010111RR",
+        "Arguments": "Register Value"
+    },
+    "JPRD": {
+        "Binary": "0b011000RR",
+        "Arguments": "Register"
+    },
+    "JPRC": {
+        "Binary": "0b011001RR",
+        "Arguments": "Register"
+    },
+    "CLRD": {
+        "Binary": "0b011010RR",
+        "Arguments": "Register"
+    },
+    "CLRC": {
+        "Binary": "0b011011RR",
+        "Arguments": "Register"
+    },
+    "JPVD": {
+        "Binary": "0b01110000",
+        "Arguments": "Value"
+    },
+    "INTD": {
+        "Binary": "0b01110001",
+        "Arguments": "Value"
+    },
+    "RETD": {
+        "Binary": "0b01110010",
+        "Arguments": "None"
+    },
+    "HLTD": {
+        "Binary": "0b01110011",
+        "Arguments": "None"
+    },
+    "JPVC": {
+        "Binary": "0b01110100",
+        "Arguments": "Value"
+    },
+    "INTC": {
+        "Binary": "0b01110101",
+        "Arguments": "Value"
+    },
+    "RETC": {
+        "Binary": "0b01110110",
+        "Arguments": "None"
+    },
+    "HLTC": {
+        "Binary": "0b01110111",
+        "Arguments": "None"
+    },
+    "CLVD": {
+        "Binary": "0b01111000",
+        "Arguments": "Value"
+    },
+    "BRKD": {
+        "Binary": "0b01111011",
+        "Arguments": "None"
+    },
+    "CLVC": {
+        "Binary": "0b01111100",
+        "Arguments": "Value"
+    },
+    "BRKC": {
+        "Binary": "0b01111111",
+        "Arguments": "None"
+    },
+    "ADDA": {
+        "Binary": "0b100000RR",
+        "Arguments": "Register Address"
+    },
+    "SUBA": {
+        "Binary": "0b100001RR",
+        "Arguments": "Register Address"
+    },
+    "SHLA": {
+        "Binary": "0b100010RR",
+        "Arguments": "Register Address"
+    },
+    "SHRA": {
+        "Binary": "0b100011RR",
+        "Arguments": "Register Address"
+    },
+    "ANDA": {
+        "Binary": "0b100100RR",
+        "Arguments": "Register Address"
+    },
+    "SBRA": {
+        "Binary": "0b100101RR",
+        "Arguments": "Register Address"
+    },
+    "ORA": {
+        "Binary": "0b100110RR",
+        "Arguments": "Register Address"
+    },
+    "XORA": {
+        "Binary": "0b100111RR",
+        "Arguments": "Register Address"
+    },
+    "ADDV": {
+        "Binary": "0b101000RR",
+        "Arguments": "Register Value"
+    },
+    "SUBV": {
+        "Binary": "0b101001RR",
+        "Arguments": "Register Value"
+    },
+    "SHLV": {
+        "Binary": "0b101010RR",
+        "Arguments": "Register Value"
+    },
+    "SHRV": {
+        "Binary": "0b101011RR",
+        "Arguments": "Register Value"
+    },
+    "ANDV": {
+        "Binary": "0b101100RR",
+        "Arguments": "Register Value"
+    },
+    "SBRV": {
+        "Binary": "0b101101RR",
+        "Arguments": "Register Value"
+    },
+    "ORV": {
+        "Binary": "0b101110RR",
+        "Arguments": "Register Value"
+    },
+    "XORV": {
+        "Binary": "0b101111RR",
+        "Arguments": "Register Value"
+    },
+    "ADDR": {
+        "Binary": "0b110000RR",
+        "Arguments": "Register"
+    },
+    "SUBR": {
+        "Binary": "0b110001RR",
+        "Arguments": "Register"
+    },
+    "SHLR": {
+        "Binary": "0b110010RR",
+        "Arguments": "Register"
+    },
+    "SHRR": {
+        "Binary": "0b110011RR",
+        "Arguments": "Register"
+    },
+    "ANDR": {
+        "Binary": "0b110100RR",
+        "Arguments": "Register"
+    },
+    "SBRR": {
+        "Binary": "0b110101RR",
+        "Arguments": "Register"
+    },
+    "ORR": {
+        "Binary": "0b110110RR",
+        "Arguments": "Register"
+    },
+    "XORR": {
+        "Binary": "0b110111RR",
+        "Arguments": "Register"
+    },
+    "INC": {
+        "Binary": "0b111000RR",
+        "Arguments": "Register"
+    },
+    "DEC": {
         "Binary": "0b111001RR",
         "Arguments": "Register"
     },
-    "ADOR": {
+    "SHLO": {
         "Binary": "0b111010RR",
         "Arguments": "Register"
     },
-    "ADOV": {
-        "Binary": "0b11101100",
-        "Arguments": "Value"
+    "SHRO": {
+        "Binary": "0b111011RR",
+        "Arguments": "Register"
     },
-    "ADOA": {
-        "Binary": "0b11101101",
-        "Arguments": "Address"
+    "ZERO": {
+        "Binary": "0b111100RR",
+        "Arguments": "Register"
+    },
+    "NEG": {
+        "Binary": "0b111101RR",
+        "Arguments": "Register"
+    },
+    "FULL": {
+        "Binary": "0b111110RR",
+        "Arguments": "Register"
+    },
+    "NOT": {
+        "Binary": "0b111111RR",
+        "Arguments": "Register"
     }
 }
 Shorthand = {
-    "MV": {
-        "Address Address": "MVAA",
-        "Address": "MVDD"
-    },
-    "DD": {
-        "Value": "DDV",
-        "Address": "DDA",
-        "Register": "DDR"
-    },
-    "LD": {
-        "Register Value": "LDV",
-        "Register Address": "LDA",
-        "Register": "LDD"
-    },
     "ST": {
-        "Register Address": "STR",
-        "Register Value": "STAR",
-        "Value Address": "STV"
-    },
-    "STD": {
-        "Value": "STDV",
-        "Register": "STDR"
-    },
-    "SHL": {
-        "Register Value": "SHLV",
-        "Register Address": "SHLA",
-        "Register": "SHLR"
-    },
-    "SHR": {
-        "Register Value": "SHRV",
-        "Register Address": "SHRA",
-        "Register": "SHRR"
-    },
-    "ADD": {
-        "Register Value": "ADDV",
-        "Register Address": "ADDA",
-        "Register": "ADDR"
-    },
-    "SUB": {
-        "Register Value": "SUBV",
-        "Register Address": "SUBA",
-        "Register": "SUBR"
-    },
-    "SBR": {
-        "Register Value": "SBRV",
-        "Register Address": "SBRA",
-        "Register": "SBRR"
-    },
-    "AND": {
-        "Register Value": "ANDV",
-        "Register Address": "ANDA",
-        "Register": "ANDR"
-    },
-    "OR": {
-        "Register Value": "ORV",
-        "Register Address": "ORA",
-        "Register": "ORR"
-    },
-    "XOR": {
-        "Register Value": "XORV",
-        "Register Address": "XORA",
-        "Register": "XORR"
+        "Value Address": "STV",
+        "Address Address": "STA",
+        "Register Address": "STR"
     },
     "PSH": {
-        "Register": "PSHR",
-        "None": "PSHA"
+        "None": "PSHA",
+        "Register": "PSHR"
     },
     "POP": {
-        "Register": "POPR",
-        "None": "POPA"
+        "None": "POPA",
+        "Register": "POPR"
     },
     "CEZ": {
         "Address": "CEZA",
@@ -408,51 +342,108 @@ Shorthand = {
         "Address": "CNZA",
         "Register": "CNZR"
     },
-    "CE": {
-        "Register Value": "CEV",
-        "Register Address": "CEA"
-    },
-    "CNE": {
-        "Register Value": "CNV",
-        "Register Address": "CNA"
-    },
-    "CLT": {
-        "Register Value": "CLTV",
-        "Register Address": "CLTA"
-    },
-    "CGT": {
-        "Register Value": "CGTV",
-        "Register Address": "CGTA"
-    },
-    "JMP": {
-        "Value": "JMPA",
-        "None": "JMPD"
-    },
-    "CALL": {
-        "Value": "CALA",
-        "None": "CALD"
-    },
-    "JMPC": {
-        "Value": "JPCA",
-        "None": "JPCD"
-    },
-    "CALLC": {
-        "Value": "CLCA",
-        "None": "CLCD"
-    },
-    "DBG": {
-        "Register": "DBGR",
-        "Value": "DBGV",
-        "Address": "DBGA"
-    },
     "DBGC": {
         "Address": "DBCA",
         "Value": "DBCV",
         "Register": "DBCR"
     },
-    "ADO": {
-        "Register": "ADOR",
-        "Value": "ADOV",
-        "Address": "ADOA"
+    "DBG": {
+        "Address": "DBGA",
+        "Value": "DBGV",
+        "Register": "DBGR"
+    },
+    "LD": {
+        "Register Value": "LDV",
+        "Register Address": "LDA"
+    },
+    "STRR": {
+        "Register": "ST3AR"
+    },
+    "CE": {
+        "Register Address": "CEA",
+        "Register Value": "CEV"
+    },
+    "CNE": {
+        "Register Address": "CNA",
+        "Register Value": "CNV"
+    },
+    "CLE": {
+        "Register Address": "CLTA",
+        "Register Value": "CLTV"
+    },
+    "CGE": {
+        "Register Address": "CGTA",
+        "Register Value": "CGTV"
+    },
+    "JMP": {
+        "Register": "JPRD",
+        "Value": "JPVD"
+    },
+    "JMPC": {
+        "Register": "JPRC",
+        "Value": "JPVC"
+    },
+    "CALL": {
+        "Register": "CLRD",
+        "Value": "CLVD"
+    },
+    "CALLC": {
+        "Register": "CLRC",
+        "Value": "CLVC"
+    },
+    "INT": {
+        "Value": "INTD"
+    },
+    "RET": {
+        "None": "RETD"
+    },
+    "HLT": {
+        "None": "HLTD"
+    },
+    "BRK": {
+        "None": "BRKD"
+    },
+    "ADD": {
+        "Register Address": "ADDA",
+        "Register Value": "ADDV",
+        "Register": "ADDR"
+    },
+    "SUB": {
+        "Register Address": "SUBA",
+        "Register Value": "SUBV",
+        "Register": "SUBR"
+    },
+    "SHL": {
+        "Register Address": "SHLA",
+        "Register Value": "SHLV",
+        "Register": "SHLR"
+    },
+    "SHR": {
+        "Register Address": "SHRA",
+        "Register Value": "SHRV",
+        "Register": "SHRR"
+    },
+    "AND": {
+        "Register Address": "ANDA",
+        "Register Value": "ANDV",
+        "Register": "ANDR"
+    },
+    "SBR": {
+        "Register Address": "SBRA",
+        "Register Value": "SBRV",
+        "Register": "SBRR"
+    },
+    "OR": {
+        "Register Address": "ORA",
+        "Register Value": "ORV",
+        "Register": "ORR"
+    },
+    "XOR": {
+        "Register Address": "XORA",
+        "Register Value": "XORV",
+        "Register": "XORR"
+    },
+    "INC": {
+        "Register": "INC"
     }
 }

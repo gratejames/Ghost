@@ -17,6 +17,11 @@ def formatNumbers():
 		return
 
 	if "Register" in items[6]:
+		while (Index % 0b100) != 0:
+			# print(f"| 0b{Index:08b} | 0x{Index:02x} " + "|  " * (len(titles) - 2) + "|")
+			if EDITMODE:
+				dest.write(f"| 0b{Index:08b} | 0x{Index:02x} " + "|  " * (len(titles) - 2) + "|\n")
+			Index += 1
 		items[0] = f"0b{Index:08b}"
 		items[0] = items[0][:-2] + "RR"
 		items[1] = f"0x{Index:02x}"
@@ -100,8 +105,8 @@ with open("Instruction Set.md", "r+" if EDITMODE else "r") as dest:
 		if "|" not in line:
 			continue
 		items = [x.strip() for x in line.split("|")[1:-1]]
-		# if "0b" in items[0] and "0x" in items[1] and all(x == "" for x in items[2:4]):
-		# 	continue
+		if "0b" in items[0] and "0x" in items[1] and all(x == "" for x in items[2:4]):
+			continue
 
 		formatNumbers()
 		checkCommands()
@@ -217,79 +222,27 @@ with open("cppDefs", "w+") as f:
 		content = ""
 		if mne == "NOP" or mne == "Unused":
 			pass
-		elif mne == "STV":
-			content = setValue(getArgument()) + setAtAddress(getArgument())
-		elif mne == "STA":
+		elif mne == "MVAA":
 			content = setValue(getAtArgument()) + setAtAddress(getArgument())
-		elif mne == "PSHA":
-			content = pushStack("R0") + pushStack("R1") + pushStack("R2") + pushStack("R3")
-		elif mne == "POPA":
-			content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
-		elif mne == "CEZA":
-			content = cond(getAtArgument(), "==", "0")
-		elif mne == "CNZA":
-			content = cond(getAtArgument(), "!=", "0")
-		elif mne == "DBCA":
-			content = debugOutChar(getAtArgument())
-		elif mne == "DBGA":
-			content = debugOut(getAtArgument())
-		elif mne == "DBCV":
-			content = debugOutChar(getArgument())
-		elif mne == "DBGV":
-			content = debugOut(getArgument())
-		elif mne.startswith("STR"):
-			content = setAtAddress(getArgument(), RR())
-		elif mne.startswith("DBCR"):
-			content = debugOutChar(RR())
-		elif mne.startswith("DBGR"):
-			content = debugOut(RR())
-		elif mne.startswith("CEZR"):
-			content = cond("==", "0")
-		elif mne.startswith("CNZR"):
-			content = cond("!=", "0")
 		elif mne.startswith("LDV"):
 			content = setRR(getArgument())
 		elif mne.startswith("LDA"):
 			content = setRR(getAtArgument())
-		elif mne.startswith("PSHR"):
-			content = pushStack(RR())
-		elif mne.startswith("POPR"):
-			content = setRR(popStack())
-		elif mne.startswith("ST0AR"):
+		elif mne.startswith("STR0R"):
 			content = setAtAddress(RR(), R0)
-		elif mne.startswith("ST1AR"):
+		elif mne.startswith("STR1R"):
 			content = setAtAddress(RR(), R1)
-		elif mne.startswith("ST2AR"):
+		elif mne.startswith("STR2R"):
 			content = setAtAddress(RR(), R2)
-		elif mne.startswith("ST3AR"):
+		elif mne.startswith("STR3R"):
 			content = setAtAddress(RR(), R3)
-		elif mne.startswith("CEA"):
-			content = cond("==", getAtArgument())
-		elif mne.startswith("CNA"):
-			content = cond("!=", getAtArgument())
-		elif mne.startswith("CLTA"):
-			content = cond("<", getAtArgument())
-		elif mne.startswith("CGTA"):
-			content = cond(">", getAtArgument())
-		elif mne.startswith("CEV"):
-			content = cond("==", getArgument())
-		elif mne.startswith("CNV"):
-			content = cond("!=", getArgument())
-		elif mne.startswith("CLTV"):
-			content = cond("<", getArgument())
-		elif mne.startswith("CGTV"):
-			content = cond(">", getArgument())
-		elif mne.startswith("JPRD"):
-			content = jumpTo(RR())
-		elif mne.startswith("JPRC"):
-			content = conditional(jumpTo(RR()))
-		elif mne.startswith("CLRD"):
-			content = pushStack("PC") + jumpTo(RR())
-		elif mne.startswith("CLRC"):
-			content = conditional(pushStack("PC") + jumpTo(RR()))
-		elif mne == "JPVD":
-			content = jumpTo(getArgument())
-		elif mne == "INTD":
+		elif mne.startswith("STR"):
+			content = setAtAddress(getArgument(), RR())
+		elif mne.startswith("STAR"):
+			content = setAtAddress(RR(), getArgument())
+		elif mne == "STV":
+			content = setValue(getArgument()) + setAtAddress(getArgument())
+		elif mne == "INT":
 			content = setValue(getArgument()) + """\t\tif (value > 0x5f || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
 			std::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
 			halted = true;
@@ -298,85 +251,40 @@ with open("cppDefs", "w+") as f:
 			PC = MEMORY[0xaf00 + value]-1;
 		}
 """
-		elif mne == "RETD":
-			content = jumpTo(popStack(), noAdd=True)
-		elif mne == "HLTD":
-			content = "\t\tstd::cout << \"\\nCPU HALT\" << std::endl;\n"
-			content += "\t\thalted = true;\n"
-		elif mne == "JPVC":
-			content = setValue(getArgument()) + conditional(jumpTo(getValue()))
-		elif mne == "INTC":
-			content = setValue(getArgument()) + """\t\tif (value > 0x5f || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
-			std::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
-			halted = true;
-		} else {
-			if (jump) {
-				pushToStack(PC);
-				PC = MEMORY[0xaf00 + value]-1;
-			}
-		}
-"""
-		elif mne == "RETC":
-			content = conditional(jumpTo(popStack(), noAdd=True))
-		elif mne == "HLTC":
-			content = conditional("\t\tstd::cout << \"\\nCPU HALT\" << std::endl;\n" + "\t\thalted = true;\n")
-		elif mne == "CLVD":
-			content = pushStack("PC") + jumpTo(getArgument())
-		elif mne == "BRKD":
-			content = "\t\tstd::cout << \"\\nCPU BREAK\" << std::endl;\n"
-			content += "\t\tbroken = true;\n"
-		elif mne == "CLVC":
-			content = setValue(getArgument()) + conditional(pushStack("PC") + jumpTo(getValue()))
-		elif mne == "BRKC":
-			content = conditional("\t\tstd::cout << \"\\nCPU BREAK\" << std::endl;\n" + "\t\tbroken = true;\n")
-		elif mne.startswith("ADDA"):
-			content = math("+", getAtArgument())
-		elif mne.startswith("SUBA"):
-			content = math("-", getAtArgument())
-		elif mne.startswith("SHLA"):
-			content = math("<<", getAtArgument())
-		elif mne.startswith("SHRA"):
-			content = math(">>", getAtArgument())
-		elif mne.startswith("ANDA"):
-			content = math("&", getAtArgument())
-		elif mne.startswith("SBRA"):
-			content = math(RR(), getAtArgument(), "-", RR())
-		elif mne.startswith("ORA"):
-			content = math("|", getAtArgument())
-		elif mne.startswith("XORA"):
-			content = math("^", getAtArgument())
-		elif mne.startswith("ADDV"):
-			content = math("+", getArgument())
-		elif mne.startswith("SUBV"):
-			content = math("-", getArgument())
 		elif mne.startswith("SHLV"):
 			content = math("<<", getArgument())
-		elif mne.startswith("SHRV"):
-			content = math(">>", getArgument())
-		elif mne.startswith("ANDV"):
-			content = math("&", getArgument())
-		elif mne.startswith("SBRV"):
-			content = math(RR(), getArgument(), "-", RR())
-		elif mne.startswith("ORV"):
-			content = math("|", getArgument())
-		elif mne.startswith("XORV"):
-			content = math("^", getArgument())
-		elif mne.startswith("ADDR"):
-			content = math(R0, "+", RR())
-		elif mne.startswith("SUBR"):
-			content = math(R0, "-", RR())
+		elif mne.startswith("SHLA"):
+			content = math("<<", getAtArgument())
 		elif mne.startswith("SHLR"):
 			content = math(R0, "<<", RR())
+		elif mne.startswith("SHRV"):
+			content = math(">>", getArgument())
+		elif mne.startswith("SHRA"):
+			content = math(">>", getAtArgument())
 		elif mne.startswith("SHRR"):
 			content = math(R0, ">>", RR())
-		elif mne.startswith("ANDR"):
-			content = math(R0, RR(), "&", R0)
+		elif mne.startswith("ADDV"):
+			content = math("+", getArgument())
+		elif mne.startswith("ADDA"):
+			content = math("+", getAtArgument())
+		elif mne.startswith("ADDR"):
+			content = math(R0, "+", RR())
+		elif mne.startswith("SUBV"):
+			content = math("-", getArgument())
+		elif mne.startswith("SUBA"):
+			content = math("-", getAtArgument())
+		elif mne.startswith("SUBR"):
+			content = math(R0, "-", RR())
+		elif mne.startswith("SBRV"):
+			content = math(RR(), getArgument(), "-", RR())
+		elif mne.startswith("SBRA"):
+			content = math(RR(), getAtArgument(), "-", RR())
 		elif mne.startswith("SBRR"):
 			content = math(R0, RR(), "-", R0)
-		elif mne.startswith("ORR"):
-			content = math(R0, RR(), "|", R0)
-		elif mne.startswith("XORR"):
-			content = math(R0, RR(), "^", R0)
+		elif mne.startswith("NOT"):
+			content = f"		{RR()} = ~{RR()};"
+		elif mne.startswith("NEG"):
+			content = f"		{RR()} = -{RR()};"
 		elif mne.startswith("INC"):
 			content = f"		{RR()}++;\n"
 		elif mne.startswith("DEC"):
@@ -385,24 +293,100 @@ with open("cppDefs", "w+") as f:
 			content = math("<<", "1")
 		elif mne.startswith("SHRO"):
 			content = math(">>", "1")
-		elif mne.startswith("ZERO"):
-			content = setRR(0)
-		elif mne.startswith("NEG"):
-			content = f"		{RR()} = -{RR()};"
-		elif mne.startswith("FULL"):
-			content = setRR(0xff)
-		elif mne.startswith("NOT"):
-			content = f"		{RR()} = ~{RR()};"
-# 		elif mne.startswith("STAR"):
-# 			content = setAtAddress(RR(), getArgument())
-# 		elif mne == "PSHA":
-# 			content = pushStack("R0") + pushStack("R1") + pushStack("R2") + pushStack("R3")
-# 		elif mne == "POPA":
-# 			content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
-# 		elif mne.startswith("JMPR"):
-# 			content = jumpTo(RR())
-# 		elif mne.startswith("CALR"):
-# 			content = pushStack("PC") + jumpTo(RR())
+		elif mne.startswith("ANDV"):
+			content = math("&", getArgument())
+		elif mne.startswith("ANDA"):
+			content = math("&", getAtArgument())
+		elif mne.startswith("ANDR"):
+			content = math(R0, RR(), "&", R0)
+		elif mne.startswith("ORV"):
+			content = math("|", getArgument())
+		elif mne.startswith("ORA"):
+			content = math("|", getAtArgument())
+		elif mne.startswith("ORR"):
+			content = math(R0, RR(), "|", R0)
+		elif mne.startswith("XORV"):
+			content = math("^", getArgument())
+		elif mne.startswith("XORA"):
+			content = math("^", getAtArgument())
+		elif mne.startswith("XORR"):
+			content = math(R0, RR(), "^", R0)
+		elif mne.startswith("PSHR"):
+			content = pushStack(RR())
+		elif mne.startswith("POPR"):
+			content = setRR(popStack())
+		elif mne == "PSHA":
+			content = pushStack("R0") + pushStack("R1") + pushStack("R2") + pushStack("R3")
+		elif mne == "POPA":
+			content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
+		elif mne == "CEZA":
+			content = cond(getAtArgument(), "==", "0")
+		elif mne == "CNZA":
+			content = cond(getAtArgument(), "!=", "0")
+		elif mne.startswith("CEZR"):
+			content = cond("==", "0")
+		elif mne.startswith("CNZR"):
+			content = cond("!=", "0")
+		elif mne.startswith("CEV"):
+			content = cond("==", getArgument())
+		elif mne.startswith("CEA"):
+			content = cond("==", getAtArgument())
+		elif mne.startswith("CNV"):
+			content = cond("!=", getArgument())
+		elif mne.startswith("CNA"):
+			content = cond("!=", getAtArgument())
+		elif mne.startswith("CLTV"):
+			content = cond("<", getArgument())
+		elif mne.startswith("CLTA"):
+			content = cond("<", getAtArgument())
+		elif mne.startswith("CGTV"):
+			content = cond(">", getArgument())
+		elif mne.startswith("CGTA"):
+			content = cond(">", getAtArgument())
+		elif mne == "JMPA":
+			content = jumpTo(getArgument())
+		elif mne.startswith("JMPR"):
+			content = jumpTo(RR())
+		elif mne == "CALA":
+			content = pushStack("PC") + jumpTo(getArgument())
+		elif mne.startswith("CALR"):
+			content = pushStack("PC") + jumpTo(RR())
+		elif mne == "RET":
+			content = jumpTo(popStack(), noAdd=True)
+		elif mne == "JPCA":
+			content = setValue(getArgument()) + conditional(jumpTo(getValue()))
+		elif mne.startswith("JPCR"):
+			content = conditional(jumpTo(RR()))
+		elif mne == "CLCA":
+			content = setValue(getArgument()) + conditional(pushStack("PC") + jumpTo(getValue()))
+		elif mne.startswith("CLCR"):
+			content = conditional(pushStack("PC") + jumpTo(RR()))
+		elif mne == "RETC":
+			content = conditional(jumpTo(popStack(), noAdd=True))
+		elif mne == "BRK":
+			content = "\t\tstd::cout << \"\\nCPU BREAK\" << std::endl;\n"
+			content += "\t\tbroken = true;\n"
+		elif mne == "HLT":
+			content = "\t\tstd::cout << \"\\nCPU HALT\" << std::endl;\n"
+			content += "\t\thalted = true;\n"
+		elif mne.startswith("DBGR"):
+			content = debugOut(RR())
+		elif mne == "DBGV":
+			content = debugOut(getArgument())
+		elif mne == "DBGA":
+			content = debugOut(getAtArgument())
+		elif mne == "DBCA":
+			content = debugOutChar(getAtArgument())
+		elif mne == "DBCV":
+			content = debugOutChar(getArgument())
+		elif mne.startswith("DBCR"):
+			content = debugOutChar(RR())
+		elif mne.startswith("ADOR"):
+			content = setOffset(RR())
+		elif mne == "ADOV":
+			content = setOffset(getArgument())
+		elif mne == "ADOA":
+			content = setOffset(getAtArgument())
 		else:
 			print(mne)
 			raise NotImplementedError
