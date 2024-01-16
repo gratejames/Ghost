@@ -15,11 +15,11 @@
 
 bool init();
 void deinit();
-void DrawerFunc();
+void EventsFunc();
 void TickerFunc();
 unsigned char asciiFromKeycode(SDL_Keycode kc);
 
-std::thread Drawer;
+std::thread Events;
 std::thread Ticker;
 
 SDL_Window *window = NULL;
@@ -77,9 +77,90 @@ int main (int argc, char **argv) {
   processor->flushDebugChar = result.count("flush");
   bool success = init();
   if (!success) {
+    std::cout << "Failed to init" << std::endl;
     return 1;
   }
 
+  while (!processor->closed) {
+    SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
+
+    for (int pos = 0; pos < WINSIZESqr; pos++) {
+      pixels[pos] = processor->getColorAt(pos);
+    }
+
+    SDL_UnlockTexture(texture);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    SDL_RenderPresent(renderer);
+  }
+  deinit();
+
+  return 0;
+}
+
+void deinit() {
+  Events.join();
+  Ticker.join();
+  
+  /* Frees memory */
+  SDL_DestroyTexture(texture);
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+
+  /* Shuts down all SDL subsystems */
+  SDL_Quit(); 
+}
+
+bool init() {
+  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
+    return false;
+  }
+
+  window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
+			    SDL_WINDOWPOS_CENTERED, /* Position x of the window */
+			    SDL_WINDOWPOS_CENTERED, /* Position y of the window */
+			    WINSIZE*scale, /* Width of the window in pixels */
+			    WINSIZE*scale, /* Height of the window in pixels */
+			    0); /* Additional flag(s) */
+
+  if (window == NULL) {
+    fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
+    return false;
+  }
+
+  renderer = SDL_CreateRenderer(window, -1, 0);
+  
+  if (renderer == NULL) {
+    std::cout << "Failed to Initialize Renderer" << std::endl;
+    std::cout << SDL_GetError() << std::endl;
+    return false;
+  }
+
+  SDL_SetRenderDrawColor(renderer, 255, 0, 255, 1);
+
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WINSIZE, WINSIZE);
+
+  if (texture == NULL) {
+    std::cout << "Failed to Initialize Texture" << std::endl;
+    std::cout << SDL_GetError() << std::endl;
+    return false;
+  }
+
+  std::cout << "Engine Initialized" << std:: endl;
+
+  Events = std::thread(EventsFunc);
+  Ticker = std::thread(TickerFunc);
+  return true;
+}
+
+void TickerFunc () {
+  while (!processor->closed) {
+    processor->tick();
+  }
+}
+
+void EventsFunc() {
   while (!processor->closed) {
     if(SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -105,84 +186,6 @@ int main (int argc, char **argv) {
           break;
       }
     }
-  }
-  deinit();
-  
-  return 0;
-}
-
-void deinit() {
-  Drawer.join();
-  Ticker.join();
-  
-  /* Frees memory */
-  SDL_DestroyTexture(texture);
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-
-  /* Shuts down all SDL subsystems */
-  SDL_Quit(); 
-}
-
-bool init() {
-  /*
-  * Initialises the SDL video subsystem (as well as the events subsystem).
-  * Returns 0 on success or a negative error code on failure using SDL_GetError().
-  */
-  if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-    fprintf(stderr, "SDL failed to initialise: %s\n", SDL_GetError());
-    return false;
-  }
-
-  /* Creates a SDL window */
-  window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
-			    SDL_WINDOWPOS_UNDEFINED, /* Position x of the window */
-			    SDL_WINDOWPOS_UNDEFINED, /* Position y of the window */
-			    WINSIZE*scale, /* Width of the window in pixels */
-			    WINSIZE*scale, /* Height of the window in pixels */
-			    0); /* Additional flag(s) */
-
-
-  /* Checks if window has been created; if not, exits program */
-  if (window == NULL) {
-    fprintf(stderr, "SDL window failed to initialise: %s\n", SDL_GetError());
-    return false;
-  }
-
-  surface = SDL_GetWindowSurface(window);
-
-  SDL_UpdateWindowSurface(window);
-
-  renderer = SDL_CreateRenderer(window, -1, 0);
-  SDL_SetRenderDrawColor(renderer, 255, 0, 255, 1);
-
-  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WINSIZE, WINSIZE);
-
-  std::cout << "Engine Initialized" << std:: endl;
-
-  Drawer = std::thread(DrawerFunc);
-  Ticker = std::thread(TickerFunc);
-  return true;
-}
-
-void TickerFunc () {
-  while (!processor->closed) {
-    processor->tick();
-  }
-}
-
-void DrawerFunc() {
-  while (!processor->closed) {
-    SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
-
-    for (int pos = 0; pos < WINSIZESqr; pos++) {
-      pixels[pos] = processor->getColorAt(pos);
-    }
-
-    SDL_UnlockTexture(texture);
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-    SDL_RenderPresent(renderer);
   }
 }
 
