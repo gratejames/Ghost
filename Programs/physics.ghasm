@@ -1,0 +1,160 @@
+#DEF ScreenAddress 0xb000
+#DEF Newline 0x0a
+
+ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
+ST 1 $0xaffe					;; Display mode
+
+CALL drawScreen
+here:
+	JMP here
+HLT
+
+DrawBar:
+	PSH R0
+	ADD R0
+	ST R0 0x1111
+	POP R0
+	RET
+
+BarColor: 		.dh 0x1111
+
+Value: .dd 0
+CursorTime: .dd 0
+
+DoPhysics: ; R0 is the x pos of the equation
+	PSH
+	ST R0 $xPos
+	CALL Square
+	; SHL R0 $Value
+	ST R0 $yPos
+	CALL drawPixel
+	POP
+	RET
+
+Multiply: ; R1*R2 -> R0
+	CEZ R1
+	JMPC MultiplyZero
+	CEZ R2
+	JMPC MultiplyZero
+	LD R0 0
+	MultiplyLoop:
+		ADD R1
+		DEC R2
+		CNZ R2
+		JMPC MultiplyLoop
+	RET
+	MultiplyZero:
+	LD R0 0
+	RET
+
+Square: ; R0*R0 -> R0
+	PSH R0
+	PSH R0
+	POP R1
+	POP R2
+	CALL Multiply
+	RET
+
+NewValue: .dd 0
+
+drawScreen:
+	ST 0 $ActiveColor
+	LD R0 0
+	; DBGC 'A'
+	drawScreenLoop:
+		; DBGC 'a'
+		CALL DoPhysics
+		INC R0
+		CNE R0 0x5
+		JMPC drawScreenLoop
+	MV $NewValue $Value
+	MV $PlotColor $ActiveColor
+	LD R0 0
+	; DBGC 'B'
+	drawScreenLoop2:
+		; DBGC 'b'
+		CE R0 $CursorTime
+		JMPC drawScreenCursorColor
+			MV $PlotColor $ActiveColor
+			JMP drawScreenCursorColorDone
+			drawScreenCursorColor:
+			MV $CursorColor $ActiveColor
+			CALL DrawBar
+			drawScreenCursorColorDone:
+		CALL DoPhysics
+		INC R0
+		CNE R0 0x5
+		JMPC drawScreenLoop2
+	RET
+
+drawPixel:
+	PSH R0
+	PSH R1
+	PSH R2
+	LD R0 $yPos				; y
+	SBR R0 0xff				; ymax-y
+	SHL R0 6				; 64(ymax-y)
+	LD R1 $xPos				; x
+	SHR R1 2				; x/4
+	ADD R1					; 64(ymax-y) + x/4
+	ADD R0 ScreenAddress	; 64(ymax-y) + x/4 + Screen
+	DD R0  					; $64(ymax-y) + x/4 + Screen
+	LDD R2					; Existing Pixels
+	LD R1 $xPos				; x
+	AND R1 0b11				; x%4
+	SHL R1 2				; (x%4)*4
+	LD R0 0xf000			; 0xf000
+	SHR R1					; 0xf000 >> (x%4)*4
+	NOT R0					; A Mask ~(0xf000 >> (x%4)*4)
+	AND R2					; Existing Pixels & A Mask
+	PSH R0					; Masked Existing Pixels
+	LD R0 $ActiveColor		; 0x?000
+	SHR R1					; 0x?000 >> (x%4)*4
+	POP R1					; Masked Existing Pixels
+	OR R1					; 0x?000 >> (x%4)*4 OR Masked Existing Pixels
+	STD R0 					; 0x?000 >> (x%4)*4 OR Masked Existing Pixels $64(ymax-y) + x/4 + Screen
+	POP R2
+	POP R1
+	POP R0
+	RET
+
+xPos:			.dd 0
+yPos:			.dd 0
+ActiveColor:	.dh 0x4000
+PlotColor:		.dh 0x4000
+CursorColor:	.dh 0x2000
+
+KeyboardInterrupt:
+	PSH R0
+	LD R0 $0xaf71
+	CEZ R0						; Key up
+	JMPC KeyboardInterruptEnd
+
+	LD R0 $0xaf70
+	CE R0 'P'
+	JMPC LeftArrow
+	CE R0 'O'
+	JMPC RightArrow
+	JMP KeyboardInterruptEnd
+
+	LeftArrow:
+		LD R0 $CursorTime
+		DEC R0
+		DBG R0
+		ST R0 $CursorTime
+		CALL drawScreen
+		JMP KeyboardInterruptEnd
+	RightArrow:
+		LD R0 $CursorTime
+		INC R0
+		DBG R0
+		ST R0 $CursorTime
+		CALL drawScreen
+		JMP KeyboardInterruptEnd
+	KeyboardInterruptEnd:
+	; ST R0 $xPos
+	; ST R0 $yPos
+	; CALL drawPixel
+	; CALL DoPhysics
+	POP R0
+	RET

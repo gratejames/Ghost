@@ -1,0 +1,78 @@
+ST 0b0000000000000010 $0xaf80	;; Background
+ST 0b1111101010000000 $0xaf81	;; Forground
+
+ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
+ST 3 $0xaffe					;; Display mode
+
+ST printString $0xaf5e			;; Register printString as the string printing interrupt
+ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
+
+ST buffer $0xaf70
+ST 0 $0xaf71					;; Set the X position to 1
+ST 0 $0xaf72					;; Set the Y position to 1
+ST Font $0xaf73					;; Set the font to the font address
+INT 0x5e
+here:
+	JMP here
+HLT
+
+KeyboardInterrupt:
+POP R0						; Get key state
+CEZ R0						; 
+JMPC KeyboardInterruptExit	; Return if key up event
+POP R1 						; Load the new character
+CE R1 0x0008 				; Backspace
+JMPC Keyboard_Backspace		;
+JMP Keyboard_Char			; Normal Char
+KeyboardResume:				;
+ST buffer $0xaf70			; Set the string to the buffer
+ST 0 $0xaf71				; Set the X position to 1
+ST 0 $0xaf72				; Set the Y position to 1
+INT 0x5e					; Print string
+POP
+RET
+KeyboardInterruptExit:
+	POP R0
+	POP
+	RET
+
+Keyboard_Char:
+	LD R0 $bufferLength		; Load, Increment, and Store bufferLength
+	INC R0 					; |
+	ST R0 $bufferLength		; |
+	DEC R0					; restore bufferLength to its old value
+	ADD R0 buffer			; Add the address of the buffer, R0 has the address of the terminator
+	DD R0					; Store the next position to the address register
+	DBG R1
+	STD R1					; Store the new character to the buffer+size
+	INC R0					; |
+	DD R0					; |
+	STD 0 					; Null terminate
+	JMP KeyboardResume
+
+Keyboard_Backspace:
+	LD R0 $bufferLength		; Load, Decrement, and Store bufferLength
+	DEC R0 					; |
+	ST R0 $bufferLength		; |
+	ADD R0 buffer			; Add the address of the buffer, R0 has the address of the char to be deleted
+	DD R0					; At the position of the last character
+	STD ' '					; Overwrite the old character on the display
+	INC R0					; |
+	DD R0					; |
+	STD 0 					; Null terminate
+	JMP KeyboardResume
+
+
+printString:
+#INC ./interrupts/stringPrint.ghasm
+printChar:
+#INC ./interrupts/charPrint.ghasm
+Font:
+#INC ./fontGen/font.hex
+
+bufferLength:
+.dd 1
+
+buffer:
+.ds ">"
+.dd 0
