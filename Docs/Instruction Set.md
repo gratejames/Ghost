@@ -48,49 +48,51 @@
 | 0b100100RR   | 0x90 | Register XOR Value                                | Register XOR Value                  | XORV | XOR   | Register, Value   |        |
 | 0b100101RR   | 0x94 | Register XOR Address                              | Register XOR Address                | XORA | XOR   | Register, Address |        |
 | 0b100110RR   | 0x98 | Register XOR Address                              | R0 = Register XOR R0                | XORR | XOR   | Register          |        |
+| 0b100111RR   | 0x9c | From R0 to RR                                     | RR = R0                             | LDZ  |       | Register          |        |
+| 0b101000RR   | 0xa0 | From RR to R0                                     | R0 = RR                             | STZ  |       | Register          |        |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Stack        |      |                                                   |                                     |      |       |                   |        |
-| 0b100111RR   | 0x9c | Push Register to stack                            | Push Register                       | PSHR | PSH   | Register          |        |
-| 0b101000RR   | 0xa0 | Pop register to stack                             | Pop Register                        | POPR | POP   | Register          |        |
-| 0b10100100   | 0xa4 | Push all registers to stack                       | Push All                            | PSHA | PSH   | None              | PASS   |
-| 0b10100101   | 0xa5 | Pop all registers from stack                      | Pop All                             | POPA | POP   | None              | PASS   |
+| 0b101001RR   | 0xa4 | Push Register to stack                            | Push Register                       | PSHR | PSH   | Register          |        |
+| 0b101010RR   | 0xa8 | Pop register to stack                             | Pop Register                        | POPR | POP   | Register          |        |
+| 0b10101100   | 0xac | Push all registers to stack                       | Push All                            | PSHA | PSH   | None              | PASS   |
+| 0b10101101   | 0xad | Pop all registers from stack                      | Pop All                             | POPA | POP   | None              | PASS   |
 |              |      |                                                   |                                     |      |       |                   |        |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Conditionals |      |                                                   |                                     |      |       |                   |        |
-| 0b10100110   | 0xa6 |                                                   | Cond Address=0                      | CEZA | CEZ   | Address           |        |
-| 0b10100111   | 0xa7 |                                                   | Cond Address!=0                     | CNZA | CNZ   | Address           |        |
-| 0b101010RR   | 0xa8 |                                                   | Cond Register=0                     | CEZR | CEZ   | Register          | PASS   |
-| 0b101011RR   | 0xac |                                                   | Cond Register!=0                    | CNZR | CNZ   | Register          | PASS   |
-| 0b101100RR   | 0xb0 |                                                   | Cond Register=Value                 | CEV  | CE    | Register, Value   |        |
-| 0b101101RR   | 0xb4 |                                                   | Cond Register=Address               | CEA  | CE    | Register, Address |        |
-| 0b101110RR   | 0xb8 |                                                   | Cond Register!=Value                | CNV  | CNE   | Register, Value   |        |
-| 0b101111RR   | 0xbc |                                                   | Cond Register!=Address              | CNA  | CNE   | Register, Address |        |
-| 0b110000RR   | 0xc0 |                                                   | Cond Register<Value                 | CLTV | CLT   | Register, Value   |        |
-| 0b110001RR   | 0xc4 |                                                   | Cond Register<Address               | CLTA | CLT   | Register, Address |        |
-| 0b110010RR   | 0xc8 |                                                   | Cond Register>Value                 | CGTV | CGT   | Register, Value   |        |
-| 0b110011RR   | 0xcc |                                                   | Cond Register>Address               | CGTA | CGT   | Register, Address |        |
+| 0b10101110   | 0xae |                                                   | Cond Address=0                      | CEZA | CEZ   | Address           |        |
+| 0b10101111   | 0xaf |                                                   | Cond Address!=0                     | CNZA | CNZ   | Address           |        |
+| 0b101100RR   | 0xb0 |                                                   | Cond Register=0                     | CEZR | CEZ   | Register          | PASS   |
+| 0b101101RR   | 0xb4 |                                                   | Cond Register!=0                    | CNZR | CNZ   | Register          | PASS   |
+| 0b101110RR   | 0xb8 |                                                   | Cond Register=Value                 | CEV  | CE    | Register, Value   |        |
+| 0b101111RR   | 0xbc |                                                   | Cond Register=Address               | CEA  | CE    | Register, Address |        |
+| 0b110000RR   | 0xc0 |                                                   | Cond Register!=Value                | CNV  | CNE   | Register, Value   |        |
+| 0b110001RR   | 0xc4 |                                                   | Cond Register!=Address              | CNA  | CNE   | Register, Address |        |
+| 0b110010RR   | 0xc8 |                                                   | Cond Register<Value                 | CLTV | CLT   | Register, Value   |        |
+| 0b110011RR   | 0xcc |                                                   | Cond Register<Address               | CLTA | CLT   | Register, Address |        |
+| 0b110100RR   | 0xd0 |                                                   | Cond Register>Value                 | CGTV | CGT   | Register, Value   |        |
+| 0b110101RR   | 0xd4 |                                                   | Cond Register>Address               | CGTA | CGT   | Register, Address |        |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Control Flow |      |                                                   |                                     |      |       |                   |        |
-| 0b11010000   | 0xd0 |                                                   | Jump Address                        | JMPA | JMP   | Value             |        |
-| 0b11010001   | 0xd1 |                                                   | Jump AddressRegister                | JMPD | JMP   | None              | PASS   |
-| 0b11010010   | 0xd2 |                                                   | Routine Address                     | CALA | CALL  | Value             | PASS   |
-| 0b11010011   | 0xd3 |                                                   | Routine AddressRegister             | CALD | CALL  | None              |        |
-| 0b11010100   | 0xd4 |                                                   | Return                              | RET  |       | None              | PASS   |
-| 0b11010101   | 0xd5 |                                                   | Jump Conditional Address            | JPCA | JMPC  | Value             | PASS   |
-| 0b11010110   | 0xd6 |                                                   | Jump Conditional AddressRegister    | JPCD | JMPC  | None              |        |
-| 0b11010111   | 0xd7 |                                                   | Routine Conditional Address         | CLCA | CALLC | Value             | PASS   |
-| 0b11011000   | 0xd8 |                                                   | Routine Conditional AddressRegister | CLCD | CALLC | None              |        |
-| 0b11011001   | 0xd9 |                                                   | Return Conditional                  | RETC |       | None              |        |
-| 0b11011010   | 0xda |                                                   | Break                               | BRK  |       | None              |        |
-| 0b11011011   | 0xdb |                                                   | Halt                                | HLT  |       | None              | PASS   |
+| 0b11011000   | 0xd8 |                                                   | Jump Address                        | JMPA | JMP   | Value             |        |
+| 0b11011001   | 0xd9 |                                                   | Jump AddressRegister                | JMPD | JMP   | None              | PASS   |
+| 0b11011010   | 0xda |                                                   | Routine Address                     | CALA | CALL  | Value             | PASS   |
+| 0b11011011   | 0xdb |                                                   | Routine AddressRegister             | CALD | CALL  | None              |        |
+| 0b11011100   | 0xdc |                                                   | Return                              | RET  |       | None              | PASS   |
+| 0b11011101   | 0xdd |                                                   | Jump Conditional Address            | JPCA | JMPC  | Value             | PASS   |
+| 0b11011110   | 0xde |                                                   | Jump Conditional AddressRegister    | JPCD | JMPC  | None              |        |
+| 0b11011111   | 0xdf |                                                   | Routine Conditional Address         | CLCA | CALLC | Value             | PASS   |
+| 0b11100000   | 0xe0 |                                                   | Routine Conditional AddressRegister | CLCD | CALLC | None              |        |
+| 0b11100001   | 0xe1 |                                                   | Return Conditional                  | RETC |       | None              |        |
+| 0b11100010   | 0xe2 |                                                   | Break                               | BRK  |       | None              |        |
+| 0b11100011   | 0xe3 |                                                   | Halt                                | HLT  |       | None              | PASS   |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Extended     |      |                                                   |                                     |      |       |                   |        |
-| 0b110111RR   | 0xdc | Send register to the debugging terminal           | Register → DBG                      | DBGR | DBG   | Register          |        |
-| 0b11100000   | 0xe0 | Output value to the debugging terminal            | Value → DBG                         | DBGV | DBG   | Value             | PASS   |
-| 0b11100001   | 0xe1 | Output address to the debugging terminal          | Address → DBG                       | DBGA | DBG   | Address           |        |
-| 0b11100010   | 0xe2 | Output address to the debugging terminal as char  | Address → DBG (Char)                | DBCA | DBGC  | Address           |        |
-| 0b11100011   | 0xe3 | Output value to the debugging terminal as char    | Value → DBG (Char)                  | DBCV | DBGC  | Value             | PASS   |
-| 0b111001RR   | 0xe4 | Send register to the debugging terminal as char   | Register → DBG (Char)               | DBCR | DBGC  | Register          |        |
-| 0b111010RR   | 0xe8 | Load register to AddressOffset                    | Register → AddressOffset            | ADOR | ADO   | Register          |        |
-| 0b11101100   | 0xec | Load value to AddressOffset                       | Value → AddressOffset               | ADOV | ADO   | Value             |        |
-| 0b11101101   | 0xed | Load address to AddressOffset                     | Address → AddressOffset             | ADOA | ADO   | Address           |        |
+| 0b111001RR   | 0xe4 | Send register to the debugging terminal           | Register → DBG                      | DBGR | DBG   | Register          |        |
+| 0b11101000   | 0xe8 | Output value to the debugging terminal            | Value → DBG                         | DBGV | DBG   | Value             | PASS   |
+| 0b11101001   | 0xe9 | Output address to the debugging terminal          | Address → DBG                       | DBGA | DBG   | Address           |        |
+| 0b11101010   | 0xea | Output address to the debugging terminal as char  | Address → DBG (Char)                | DBCA | DBGC  | Address           |        |
+| 0b11101011   | 0xeb | Output value to the debugging terminal as char    | Value → DBG (Char)                  | DBCV | DBGC  | Value             | PASS   |
+| 0b111011RR   | 0xec | Send register to the debugging terminal as char   | Register → DBG (Char)               | DBCR | DBGC  | Register          |        |
+| 0b111100RR   | 0xf0 | Load register to AddressOffset                    | Register → AddressOffset            | ADOR | ADO   | Register          |        |
+| 0b11110100   | 0xf4 | Load value to AddressOffset                       | Value → AddressOffset               | ADOV | ADO   | Value             |        |
+| 0b11110101   | 0xf5 | Load address to AddressOffset                     | Address → AddressOffset             | ADOA | ADO   | Address           |        |

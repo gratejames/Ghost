@@ -179,152 +179,160 @@ Instructions = {
         "Binary": "0b100110RR",
         "Arguments": "Register"
     },
-    "PSHR": {
+    "LDZ": {
         "Binary": "0b100111RR",
         "Arguments": "Register"
     },
-    "POPR": {
+    "STZ": {
         "Binary": "0b101000RR",
         "Arguments": "Register"
     },
-    "PSHA": {
-        "Binary": "0b10100100",
-        "Arguments": "None"
+    "PSHR": {
+        "Binary": "0b101001RR",
+        "Arguments": "Register"
     },
-    "POPA": {
-        "Binary": "0b10100101",
-        "Arguments": "None"
-    },
-    "CEZA": {
-        "Binary": "0b10100110",
-        "Arguments": "Address"
-    },
-    "CNZA": {
-        "Binary": "0b10100111",
-        "Arguments": "Address"
-    },
-    "CEZR": {
+    "POPR": {
         "Binary": "0b101010RR",
         "Arguments": "Register"
     },
+    "PSHA": {
+        "Binary": "0b10101100",
+        "Arguments": "None"
+    },
+    "POPA": {
+        "Binary": "0b10101101",
+        "Arguments": "None"
+    },
+    "CEZA": {
+        "Binary": "0b10101110",
+        "Arguments": "Address"
+    },
+    "CNZA": {
+        "Binary": "0b10101111",
+        "Arguments": "Address"
+    },
+    "CEZR": {
+        "Binary": "0b101100RR",
+        "Arguments": "Register"
+    },
     "CNZR": {
-        "Binary": "0b101011RR",
+        "Binary": "0b101101RR",
         "Arguments": "Register"
     },
     "CEV": {
-        "Binary": "0b101100RR",
-        "Arguments": "Register Value"
-    },
-    "CEA": {
-        "Binary": "0b101101RR",
-        "Arguments": "Register Address"
-    },
-    "CNV": {
         "Binary": "0b101110RR",
         "Arguments": "Register Value"
     },
-    "CNA": {
+    "CEA": {
         "Binary": "0b101111RR",
         "Arguments": "Register Address"
     },
-    "CLTV": {
+    "CNV": {
         "Binary": "0b110000RR",
         "Arguments": "Register Value"
     },
-    "CLTA": {
+    "CNA": {
         "Binary": "0b110001RR",
         "Arguments": "Register Address"
     },
-    "CGTV": {
+    "CLTV": {
         "Binary": "0b110010RR",
         "Arguments": "Register Value"
     },
-    "CGTA": {
+    "CLTA": {
         "Binary": "0b110011RR",
         "Arguments": "Register Address"
     },
+    "CGTV": {
+        "Binary": "0b110100RR",
+        "Arguments": "Register Value"
+    },
+    "CGTA": {
+        "Binary": "0b110101RR",
+        "Arguments": "Register Address"
+    },
     "JMPA": {
-        "Binary": "0b11010000",
+        "Binary": "0b11011000",
         "Arguments": "Value"
     },
     "JMPD": {
-        "Binary": "0b11010001",
-        "Arguments": "None"
-    },
-    "CALA": {
-        "Binary": "0b11010010",
-        "Arguments": "Value"
-    },
-    "CALD": {
-        "Binary": "0b11010011",
-        "Arguments": "None"
-    },
-    "RET": {
-        "Binary": "0b11010100",
-        "Arguments": "None"
-    },
-    "JPCA": {
-        "Binary": "0b11010101",
-        "Arguments": "Value"
-    },
-    "JPCD": {
-        "Binary": "0b11010110",
-        "Arguments": "None"
-    },
-    "CLCA": {
-        "Binary": "0b11010111",
-        "Arguments": "Value"
-    },
-    "CLCD": {
-        "Binary": "0b11011000",
-        "Arguments": "None"
-    },
-    "RETC": {
         "Binary": "0b11011001",
         "Arguments": "None"
     },
-    "BRK": {
+    "CALA": {
         "Binary": "0b11011010",
-        "Arguments": "None"
+        "Arguments": "Value"
     },
-    "HLT": {
+    "CALD": {
         "Binary": "0b11011011",
         "Arguments": "None"
     },
-    "DBGR": {
-        "Binary": "0b110111RR",
-        "Arguments": "Register"
+    "RET": {
+        "Binary": "0b11011100",
+        "Arguments": "None"
     },
-    "DBGV": {
+    "JPCA": {
+        "Binary": "0b11011101",
+        "Arguments": "Value"
+    },
+    "JPCD": {
+        "Binary": "0b11011110",
+        "Arguments": "None"
+    },
+    "CLCA": {
+        "Binary": "0b11011111",
+        "Arguments": "Value"
+    },
+    "CLCD": {
         "Binary": "0b11100000",
-        "Arguments": "Value"
+        "Arguments": "None"
     },
-    "DBGA": {
+    "RETC": {
         "Binary": "0b11100001",
-        "Arguments": "Address"
+        "Arguments": "None"
     },
-    "DBCA": {
+    "BRK": {
         "Binary": "0b11100010",
-        "Arguments": "Address"
+        "Arguments": "None"
     },
-    "DBCV": {
+    "HLT": {
         "Binary": "0b11100011",
-        "Arguments": "Value"
+        "Arguments": "None"
     },
-    "DBCR": {
+    "DBGR": {
         "Binary": "0b111001RR",
         "Arguments": "Register"
     },
+    "DBGV": {
+        "Binary": "0b11101000",
+        "Arguments": "Value"
+    },
+    "DBGA": {
+        "Binary": "0b11101001",
+        "Arguments": "Address"
+    },
+    "DBCA": {
+        "Binary": "0b11101010",
+        "Arguments": "Address"
+    },
+    "DBCV": {
+        "Binary": "0b11101011",
+        "Arguments": "Value"
+    },
+    "DBCR": {
+        "Binary": "0b111011RR",
+        "Arguments": "Register"
+    },
     "ADOR": {
-        "Binary": "0b111010RR",
+        "Binary": "0b111100RR",
         "Arguments": "Register"
     },
     "ADOV": {
-        "Binary": "0b11101100",
+        "Binary": "0b11110100",
         "Arguments": "Value"
     },
     "ADOA": {
-        "Binary": "0b11101101",
+        "Binary": "0b11110101",
         "Arguments": "Address"
     }
 }

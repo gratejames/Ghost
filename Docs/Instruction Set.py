@@ -132,7 +132,7 @@ genSyntaxData = genSyntaxData.replace(r"%SHORTHAND%", '|'.join(shortcutResolver.
 with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-syntax"), 'w+') as f:
 	f.write(genSyntaxData)
 with open("GHASM.tmPreferences", 'r') as f1:
-	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences", 'w+')) as f2:
+	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences"), 'w+') as f2:
 		f2.write(f1.read())
 
 print("Done Reading" + (" and Revising!" if EDITMODE else "!"))
@@ -217,6 +217,26 @@ def debugOutChar(value):
 def setOffset(value):
 	return f"\t\toffsetRegister = {value};\n"
 
+cppFilePath = "/home/flicker/Desktop/Ghost/Simulator/src/cpu.cpp"
+
+with open(cppFilePath, 'r') as f:
+	cppFile = f.read()
+
+debuggingString1 = "const std::string InstructionDebugging[0x100] {"
+debuggingString1Pos = cppFile.find(debuggingString1) + len(debuggingString1)
+debuggingString1End = cppFile[debuggingString1Pos:].find("}") + debuggingString1Pos
+
+cppFile = cppFile[:debuggingString1Pos] + (", ".join('"' + instructions.get(i, "Unused") + '"' for i in range(0x100))) + cppFile[debuggingString1End:]
+
+debuggingString2 = "const int InstructionDebuggingNumArgs[0x100] {"
+debuggingString2Pos = cppFile.find(debuggingString2) + len(debuggingString2)
+debuggingString2End = cppFile[debuggingString2Pos:].find("}") + debuggingString2Pos
+
+cppFile = cppFile[:debuggingString2Pos] + (", ".join([str(len([y for y in x if y not in ["Register", "None"]])) for x in [allArguments.get(i, ['None']) for i in range(0x100)]])) + cppFile[debuggingString2End:]
+print(cppFile)
+
+with open(cppFilePath, 'w+') as f:
+	f.write(cppFile)
 
 with open("cppDefs", "w+") as f:
 	f.write("{" + ", ".join('"' + instructions.get(i, "Unused") + '"' for i in range(0x100)) + "}\n")
@@ -293,13 +313,13 @@ with open("cppDefs", "w+") as f:
 		elif mne.startswith("SBRR"):
 			content = math(R0, RR(), "-", R0)
 		elif mne.startswith("NOT"):
-			content = f"		{RR()} = ~{RR()};"
+			content = f"\t\t{RR()} = ~{RR()};\n"
 		elif mne.startswith("NEG"):
-			content = f"		{RR()} = -{RR()};"
+			content = f"\t\t{RR()} = -{RR()};\n"
 		elif mne.startswith("INC"):
-			content = f"		{RR()}++;\n"
+			content = f"\t\t{RR()}++;\n"
 		elif mne.startswith("DEC"):
-			content = f"		{RR()}--;\n"
+			content = f"\t\t{RR()}--;\n"
 		elif mne.startswith("SHLO"):
 			content = math("<<", "1")
 		elif mne.startswith("SHRO"):
@@ -322,6 +342,10 @@ with open("cppDefs", "w+") as f:
 			content = math("^", getAtArgument())
 		elif mne.startswith("XORR"):
 			content = math(R0, RR(), "^", R0)
+		elif mne.startswith("LDZ"):
+			content = f"\t\tR0 = {RR()};\n"
+		elif mne.startswith("STZ"):
+			content = f"\t\t{RR()} = R0;\n"
 		elif mne.startswith("PSHR"):
 			content = pushStack(RR())
 		elif mne.startswith("POPR"):
@@ -359,7 +383,7 @@ with open("cppDefs", "w+") as f:
 		elif mne == "JMPD":
 			content = jumpTo(getDD())
 		elif mne == "CALA":
-			content = pushStack("PC") + jumpTo(getArgument())
+			content = pushStack("PC+1") + jumpTo(getArgument())
 		elif mne == "CALD":
 			content = pushStack("PC") + jumpTo(getDD())
 		elif mne == "RET":
