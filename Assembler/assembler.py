@@ -9,8 +9,8 @@ class assembler:
 	def __init__(self):
 		self.fileContents = ""
 		self.fileName = "String Input"
-		self.labels = {}
 		self.definitions = {}
+		self.shares = []
 		self.macros = {}
 		self.position = 0
 		self.lineNumber = 0
@@ -37,15 +37,15 @@ class assembler:
 			if not stringMode and char == ';':
 				break
 			outLine += char
-		if stringLine:
-			print(line)
+		# if stringLine:
+		# 	print(line)
 		return outLine.strip()
 
 	def resolveORG(self, line):
 		if not line.startswith("#ORG"):
 			return line
 		else:
-			newPos = eval(line.replace("#ORG", "").strip())
+			newPos = eval(line.replace("#ORG", "").strip(), {**self.definitions})
 			if (newPos < self.position):
 				self.die(f"\nX Error resolving #ORG: new position ({newPos}) is less than current ({self.position}), on line {self.lineNumber+1}")
 			outLine = "#DATA " + "0x0000 " * (newPos - self.position)
@@ -91,11 +91,11 @@ class assembler:
 				self.die(f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}")
 			val = "".join(line.split(" ")[1:])
 			if dataType == "Bin":
-				line = self.intToHexString(eval(val))
+				line = self.intToHexString(eval(val, {**self.definitions}))
 			if dataType == "Dec":
-				line = self.intToHexString(eval(val))
+				line = self.intToHexString(eval(val, {**self.definitions}))
 			if dataType == "Hex":
-				line = self.intToHexString(eval(val))
+				line = self.intToHexString(eval(val, {**self.definitions}))
 			if dataType == "Str":
 				line = self.parseString(line[3:].strip())
 			line = "#DATA " + line
@@ -121,6 +121,7 @@ class assembler:
 			subAssembler = assembler()
 			subAssembler.loadFile(fileName)
 			line = " ".join(subAssembler.assemble(org=self.position, warnHLT=-1, nested=self.nested+1).split())
+			self.definitions = {**self.definitions, **subAssembler.getShared()}
 		else:
 			self.die(f"X Error including {fileName}: file extension not supported {self.lineNumber+1}")
 		return "#DATA " + line
@@ -204,16 +205,31 @@ class assembler:
 	def recordDefs(self, line):
 		if line.startswith("#DEF"):
 			words = line.split()
+			if words[1] in self.definitions.keys():
+				self.die(f"X Error recording definitions: the definitions '{line.split(':')[0]}' was encountered earlier at position {self.definitions[line.split(':')[0]]}")
 			self.definitions[words[1]] = int(words[2], 0)
+			# self.definitions[words[1]] = eval(words[2], {**self.definitions})
 			return ""
 		return line
 
+	def recordShares(self, line):
+		if line.startswith("#SHARE"):
+			words = line.split()
+			self.shares.append(words[1])
+			return ""
+		return line
+
+	def getShared(self):
+		outDict = {}
+		for share in self.shares:
+			outDict[share] = self.definitions[share]
+		return outDict
+
 	def recordLabels(self, line):
 		if ':' in line:
-			if line.split(':')[0] in self.labels.keys():
-				self.die(f"X Error recording labels: the label '{line.split(':')[0]}' was encountered earlier at position {self.labels[line.split(':')[0]]}")
-			self.labels[line.split(':')[0]] = self.position
-			# print(f"Found Label {line.split(':')[0]} in line {line} and replaced the line with {':'.join(line.split(':')[1:]).strip()}")
+			if line.split(':')[0] in self.definitions.keys():
+				self.die(f"X Error recording definitions: the definitions '{line.split(':')[0]}' was encountered earlier at position {self.definitions[line.split(':')[0]]}")
+			self.definitions[line.split(':')[0]] = self.position
 			return ':'.join(line.split(':')[1:]).strip()
 		return line
 
@@ -286,6 +302,9 @@ class assembler:
 			line = self.clearComments(line)
 			line = self.resolveORG(line)
 			line = self.resolveMacros(line)
+			line = self.recordLabels(line)
+			line = self.recordDefs(line)
+			line = self.recordShares(line)
 			subLinesList = line.split("\n")
 			for subLineN, subLine in enumerate(subLinesList):
 				# print("-SL", subLine)
@@ -293,8 +312,6 @@ class assembler:
 				subLine = self.resolveData(subLine)
 				subLine = self.resolveIncludes(subLine)
 				subLine = self.resolveShorthand(subLine)
-				subLine = self.recordLabels(subLine)
-				subLine = self.recordDefs(subLine)
 				self.validateArguments(subLine)
 				# print("+SL", subLine)
 
@@ -307,11 +324,11 @@ class assembler:
 			# print("+L", line)
 			linesList[lineN] = line
 
-		for k, v in self.labels.items():
-			print("\t" * self.nested + "-", k, hex(v))
+		# for k, v in self.definitions.items():
+		# 	print("\t" * self.nested + "-", "(D)", k, hex(v))
 
-		for k, v in self.definitions.items():
-			print("\t" * self.nested + "-", k, hex(v))
+		for k in self.shares:
+			print("\t" * self.nested + "-", "(S)", k)
 
 		# print("\t" * self.nested + "- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, Force hexadecimal")
 
@@ -321,11 +338,6 @@ class assembler:
 			self.lineNumber = lineN
 			if line.strip() == "":
 				continue
-				
-			for label in self.labels.keys():
-				if label in line:
-					pat = r"(\s\$?)(" + label + r")(?=[\s+\-\/*]|$)"
-					line = re.sub(pat, r"\g<1>" + str(self.intToHexString(self.labels[label])), line)
 				
 			for definition in self.definitions.keys():
 				if definition in line:
