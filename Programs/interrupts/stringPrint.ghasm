@@ -1,5 +1,12 @@
 PSH
 
+
+;; Char Print Routine (5e)
+; 0xaf70: String Address
+; 0xaf71: X Pos
+; 0xaf72: Y Pos
+; 0xaf73: Font Address
+
 LD R0 $0xaf70		; The address of the string
 LD R1 $0xaf71 		; The X position
 

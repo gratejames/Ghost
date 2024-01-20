@@ -1,10 +1,15 @@
 #DEF ScreenAddress 0xb000
 
+;; Char Print Routine (5f)
+; 0xaf70: Character
+; 0xaf71: X Pos
+; 0xaf72: Y Pos
+; 0xaf73: Font Address
 
 PSH
 LD R1 $0xaf70				; Load the character
 PSH R1
-DBGC R1
+; DBGC R1
 
 SUB R1 ' '
 SHL R1 2 					; Multiply by 4 because each font character takes 4 bytes
