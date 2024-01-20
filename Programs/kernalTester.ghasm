@@ -1,0 +1,160 @@
+#INC ./kernel.ghasm
+#ORG PROG_START
+
+ST 0b0000000000000001 $0xaf80	;; Background
+ST 0b0000011111001000 $0xaf81	;; Forground
+
+ST 3 $0xaffe					;; Display mode
+
+ST printString $0xaf5e			;; Register printString as the string printing interrupt
+ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
+
+MemoryAddr:
+.dd 0
+.dd 0
+.dd 0
+
+LD R0 $heap 	; Remaining Heap Size
+PSH R0
+
+CALL dbgHeap
+LD R0 2
+CALL malloc
+ST R0 $MemoryAddr+0
+
+LD R0 0x8002	; Check that the first header/footer is allocated with 3 bytes
+CE R0 $heap
+CALL DisplayCompareOutput
+CE R0 $heap+3
+CALL DisplayCompareOutput
+POP R0
+SUB R0 4
+PSH R0
+CE R0 $heap+4
+CALL DisplayCompareOutput
+
+CALL dbgHeap
+LD R0 3
+CALL malloc
+ST R0 $MemoryAddr+1
+
+LD R0 0x8003	; Check that the first header/footer is allocated with 3 bytes
+CE R0 $heap+4
+CALL DisplayCompareOutput
+CE R0 $heap+8
+CALL DisplayCompareOutput
+POP R0
+SUB R0 5
+PSH R0
+CE R0 $heap+9
+CALL DisplayCompareOutput
+
+CALL dbgHeap
+LD R0 4
+CALL malloc
+ST R0 $MemoryAddr+2
+
+LD R0 0x8004	; Check that the first header/footer is allocated with 3 bytes
+CE R0 $heap+9
+CALL DisplayCompareOutput
+CE R0 $heap+14
+CALL DisplayCompareOutput
+POP R0
+SUB R0 6
+PSH R0
+CE R0 $heap+15
+CALL DisplayCompareOutput
+
+CALL dbgHeap
+LD R0 $MemoryAddr+1
+CALL free
+
+LD R0 0x0003	; Check that the first header/footer is allocated with 3 bytes
+CE R0 $heap+4
+CALL DisplayCompareOutput
+CE R0 $heap+8
+CALL DisplayCompareOutput
+
+CALL dbgHeap
+LD R0 $MemoryAddr+2
+CALL free
+
+POP R0
+ADD R0 6+5
+PSH R0
+CE R0 $heap+4
+CALL DisplayCompareOutput
+
+CALL dbgHeap
+LD R0 $MemoryAddr+0
+CALL free
+
+POP R0
+ADD R0 4
+PSH R0
+CE R0 $heap
+CALL DisplayCompareOutput
+
+CALL dbgHeap
+HLT
+
+
+; R0 -> Pointer
+; R1 -> Size
+; Destroys R0,R1
+dbgMemRegion:
+DD R0
+LDD R2
+DBG R2
+DEC R1
+INC R0
+CNZ R1
+JMPC dbgMemRegion
+RET
+
+; Destroys R0,R1
+dbgHeap:
+DBGC '<'
+LD R0 heap
+LD R1 17
+CALL dbgMemRegion
+DBGC '.'
+DBG $PROG_START-1
+DBGC '>'
+RET
+
+; Destroys R1
+DisplayCompareOutput: ; Display whether the latest compare succeeded
+ST goodString $0xaf70
+ST 0 $0xaf71
+LD R1 $YCursor
+ST R1 $0xaf72
+INC R1
+ST R1 $YCursor
+ADD R1 '0'
+ST R1 $goodString
+ST R1 $badString	; Set the first char of either to be the test number/y cursor
+ST Font $0xaf73
+JMPC DisplayCompareOutput_End
+ST badString $0xaf70
+ST 0b1111100000000000 $0xaf81
+DisplayCompareOutput_End:
+INT 0x5e
+RET
+
+YCursor:
+.dd 0
+goodString:
+.ds "# Success!"
+.dd 0
+badString:
+.ds "# Failure."
+.dd 0
+
+
+printString:
+#INC ./interrupts/stringPrint.ghasm
+printChar:
+#INC ./interrupts/charPrint.ghasm
+Font:
+#INC ./fontGen/font.hex

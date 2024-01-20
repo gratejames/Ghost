@@ -1,0 +1,202 @@
+#DEF PROG_START 0x1000
+#SHARE PROG_START
+JMP PROG_START
+
+; R0 -> Size
+; R0 <- Pointer or 0 if fail
+; Destroys R1,R2,R3
+#SHARE malloc
+malloc:
+	; DBGC 'M'
+	STR R0 $malloc_targetSize		; Since the size is going to be used for comparison, and we can't compare two registers, lets just leave it there to use later
+	LD R0 heap						; Start with the first header on the heap
+	malloc_CheckBlock:
+	CGT R0 PROG_START
+	JMPC malloc_Fail
+	CE R0 PROG_START
+	JMPC malloc_Fail
+	DD R0							; Address of header
+	LDD R1
+	PSH R1
+	AND R1 0x8000					; Mask the 'allocated' bit
+	CEZ R1
+	POP R1
+	AND R1 0x7fff					; Mask to the length of the block
+	JMPC malloc_BlockUnallocated
+	JMP malloc_FailedAllocate
+	;
+	malloc_BlockUnallocated:		; If the block is unallocated, we need to check its size.
+		; DBGC 'U'
+		CLT R1 $malloc_targetSize
+		JMPC malloc_FailedAllocate	; If it's too small, fail
+		CGT R1 $malloc_targetSize
+		JMPC malloc_Resize			; If it's too big, partition and resize
+		DD R0						; If it's the right size, mark it as allocated and go!
+		LD R1 $malloc_targetSize
+		ADD R1 0x8000				; Set the allocated bit
+		STD R1						; Store it back to the header
+		PSH R0
+		ADD R0 $malloc_targetSize
+		INC R0
+		STD R1						; And store it to the footer as well
+		POP R0
+		JMP malloc_Done		
+		;
+	malloc_FailedAllocate:			; If the block is allocated or too small we need to jump to get to the next header, and try again.
+		; DBGC 'F'
+		ADD R1						; Add the length of the block to the address of the header
+		ADD R0 2					; and increment it through the footer to point at the next header
+		JMP malloc_CheckBlock
+		;
+	malloc_Resize:					; We need to store the desired length + allocated bit here, and the remaining size (which is original size - target - 2) + deallocated bit after the last entry
+		; DBGC 'P'
+		;DBG R0						; Pointer of found block
+		;DBG R1						; Size of found block
+		PSH R0
+		DD R0
+		LD R2 $malloc_targetSize
+		ADD R2 0x8000				; Set the allocated bit
+		STD R2						; Store the target size to the found header.
+		ADD R0 $malloc_targetSize
+		INC R0
+		DD R0
+		STD R2  					; Store the footer
+									; Now the current block is resize and allocated. We just need to mark up the free space after it!
+		INC R0
+		SUB R1 $malloc_targetSize
+		SUB R1 2					; The size of the new block will be what's left over, with room for the new footer/header combo
+		DBGC 'R'
+		; DBG R0						; Pointer of second header
+		; DBG R1						; Size of second block
+		DD R0
+		STD R1						; Store the new size (deallocated) to the new pointer
+		ADD R1
+		INC R0
+		DD R0
+		STD R1						; And the footer as well...
+		POP R0						; Restore the pointer of the block we just resized, the found block
+		JMP malloc_Done
+		;
+	malloc_Done:					; Now that we have a single block of the proper size, and it's marked as allocated, just return. That's all!
+		; DBGC 'D'
+		INC R0
+		; DBG R0
+		RET
+	malloc_Fail:
+		; DBGC 'A'
+		LD R0 0
+		RET
+
+malloc_targetSize: .dd 0
+
+
+; R0 -> Pointer
+; Destroys R0,R1,R2,R3
+#SHARE free
+free:
+	; DBGC 'F'
+	DEC R0
+	DD R0
+	LDD R1
+	AND R1 0x8000
+	CEZ R1
+	JMPC free_Unallocated			; Assert block is allocated
+	LDD R1
+	AND R1 0x7fff
+	PSH R0
+	POP R2
+	ADD R1
+	INC R0
+	PSH R0
+	POP R3							; R1: size, R2: header, R3: footer
+	; DBG R1
+	; DBG R2
+	; DBG R3
+	CALL free_left					; Check left, update R2 (and R1)
+	CALL free_right					; Check Right, update R0 (and R1)
+	; DBG R1
+	; DBG R2
+	; DBG R3
+	DD R2
+	STD R1
+	DD R3
+	STD R1
+	RET								; Store the header and footer. Deallocated!
+
+	free_left:
+		; DBGC 'L'
+		CE R2 heap
+		RETC						; If the header is at the heap, we're done!
+		PSH R2
+		DEC R2
+		DD R2
+		LDD R2						; Previous footer contents
+		PSH R2
+		AND R2 0x8000
+		CEZ R2
+		JMPC free_CollapseLeft		; If the left is unallocated, go collapse it. Otherwise, clean up and go home.
+		POP R2
+		POP R2
+		RET
+	free_CollapseLeft:
+		; DBGC 'C'
+		POP R2						; Restore to footer contents
+		POP R0						; Current header pointer
+		SUB R2
+		SUB R0 2					; New header = old header - size block before - header - footer
+		PSH R0
+		PSH R1
+		POP R0
+		ADD R2
+		ADD R0 2					; New size = old size + size of block before + header + footer
+		PSH R0
+		POP R1
+		POP R2
+		RET							; Rearange so that R1 is size, R2 is header pointer
+	free_right:
+		; DBGC 'R'
+		CE R3 PROG_START
+		RETC						; If the header is at the end, we're done!
+		PSH R3
+		INC R3
+		DD R3
+		LDD R3						; Next header contents
+		PSH R3
+		AND R3 0x8000
+		CEZ R3
+		JMPC free_CollapseRight		; If the right is unallocated, go collapse it. Otherwise, clean up and go home.
+		POP R3
+		POP R3
+		RET
+	free_CollapseRight:
+		; DBGC 'C'
+		POP R3						; Restore to header contents
+		POP R0						; Current footer pointer
+		ADD R3
+		ADD R0 2					; New footer = old footer - size block after - header - footer
+		PSH R0
+		PSH R1
+		POP R0
+		ADD R3
+		ADD R0 2					; New size = old size + size of block after + header + footer
+		PSH R0
+		POP R1
+		POP R3
+		RET							; Rearange so that R1 is size, R3 is footer pointer
+	free_Unallocated:				; If it's unallocated, fail
+		; DBGC 'A'
+		; DBG R0
+		DD R0
+		LDD R0
+		; DBG R0
+		LD R0 0
+		RET
+
+; Heap is a linked list where each header points to the next block
+; First bit of header is 1 if allocated, 0 if not. The rest is the size of the block.
+; #SHARE heap ; DEBUGGING ONLY
+heap:
+.dd (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
+
+;#MACRO pushHeap
+;#ENDM
