@@ -61,9 +61,9 @@ KeyboardInterruptExit:
 	RET
 
 TextInput: .ds "        " ; 8
-TextInputCursor: .dd 0
+TextInputCursor: .db 0
 
-Cursor: .dh 0x0000 ; (ypos, xpos)
+Cursor: .db 0x0000 ; (ypos, xpos)
 
 printString:
 #INC ./interrupts/stringPrint.ghasm

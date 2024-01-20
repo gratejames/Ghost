@@ -86,17 +86,13 @@ class assembler:
 			line = ":".join(line.split(':')[1:]).strip()
 		if line.strip()[0] == '.':
 			dataTypeWord = line.split(" ")[0].strip()
-			dataType = {".db": "Bin", ".dh": "Hex", ".dd": "Dec", ".ds": "Str"}.get(dataTypeWord, None)
+			dataType = {".db": "Byte", ".ds": "String"}.get(dataTypeWord, None)
 			if dataType is None:
 				self.die(f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}")
 			val = "".join(line.split(" ")[1:])
-			if dataType == "Bin":
+			if dataType == "Byte":
 				line = self.intToHexString(eval(val, {**self.definitions}))
-			if dataType == "Dec":
-				line = self.intToHexString(eval(val, {**self.definitions}))
-			if dataType == "Hex":
-				line = self.intToHexString(eval(val, {**self.definitions}))
-			if dataType == "Str":
+			if dataType == "String":
 				line = self.parseString(line[3:].strip())
 			line = "#DATA " + line
 		return prefix + line

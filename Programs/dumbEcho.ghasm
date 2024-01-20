@@ -71,8 +71,8 @@ Font:
 #INC ./fontGen/font.hex
 
 bufferLength:
-.dd 1
+.db 1
 
 buffer:
 .ds ">"
-.dd 0
+.db 0

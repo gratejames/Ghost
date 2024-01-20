@@ -87,7 +87,7 @@ malloc:
 		LD R0 0
 		RET
 
-malloc_targetSize: .dd 0
+malloc_targetSize: .db 0
 
 
 ; R0 -> Pointer
@@ -196,7 +196,7 @@ free:
 ; First bit of header is 1 if allocated, 0 if not. The rest is the size of the block.
 ; #SHARE heap ; DEBUGGING ONLY
 heap:
-.dd (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
+.db (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
 
 ;#MACRO pushHeap
 ;#ENDM

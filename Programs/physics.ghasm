@@ -16,10 +16,10 @@ DrawBar:
 	POP R0
 	RET
 
-BarColor: 		.dh 0x1111
+BarColor: 		.db 0x1111
 
-Value: .dd 0
-CursorTime: .dd 0
+Value: .db 0
+CursorTime: .db 0
 
 DoPhysics: ; R0 is the x pos of the equation
 	PSH
@@ -55,7 +55,7 @@ Square: ; R0*R0 -> R0
 	CALL Multiply
 	RET
 
-NewValue: .dd 0
+NewValue: .db 0
 
 drawScreen:
 	ST 0 $ActiveColor
@@ -118,11 +118,11 @@ drawPixel:
 	POP R0
 	RET
 
-xPos:			.dd 0
-yPos:			.dd 0
-ActiveColor:	.dh 0x4000
-PlotColor:		.dh 0x4000
-CursorColor:	.dh 0x2000
+xPos:			.db 0
+yPos:			.db 0
+ActiveColor:	.db 0x4000
+PlotColor:		.db 0x4000
+CursorColor:	.db 0x2000
 
 KeyboardInterrupt:
 	PSH R0

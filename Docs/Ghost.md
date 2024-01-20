@@ -1,6 +1,6 @@
 # TODO
 + [x] Add project to git(hub)
-+ [ ] Have .data prefixes make any sense please
++ [x] Have .data prefixes make any sense please
 + [ ] Text modes?
 + [ ] To and from R0 for better math
 # Glossary

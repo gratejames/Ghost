@@ -16,7 +16,7 @@ HLT
 
 string:
 .ds "Hello World!"
-.dd 0
+.db 0
 
 printString:
 #INC ./interrupts/stringPrint.ghasm

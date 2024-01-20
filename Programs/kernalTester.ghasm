@@ -10,9 +10,9 @@ ST printString $0xaf5e			;; Register printString as the string printing interrup
 ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
 
 MemoryAddr:
-.dd 0
-.dd 0
-.dd 0
+.db 0
+.db 0
+.db 0
 
 LD R0 $heap 	; Remaining Heap Size
 PSH R0
@@ -142,14 +142,13 @@ DisplayCompareOutput_End:
 INT 0x5e
 RET
 
-YCursor:
-.dd 0
+YCursor: .db 0
 goodString:
 .ds "# Success!"
-.dd 0
+.db 0
 badString:
 .ds "# Failure."
-.dd 0
+.db 0
 
 
 printString:
