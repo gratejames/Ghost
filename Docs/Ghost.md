@@ -1,5 +1,8 @@
 # TODO
 + [x] Add project to git(hub)
++ [ ] Have .data prefixes make any sense please
++ [ ] Text modes?
++ [ ] To and from R0 for better math
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
 \$Register:          The value that the register points to   , store at
