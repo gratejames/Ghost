@@ -543,21 +543,29 @@ void cpu::executeFunction(unsigned short instruction) {
 		R0 = R3 - R0;
 		break;
 	case 0x60: // NOT0
-		R0 = ~R0;		break;
+		R0 = ~R0;
+		break;
 	case 0x61: // NOT1
-		R1 = ~R1;		break;
+		R1 = ~R1;
+		break;
 	case 0x62: // NOT2
-		R2 = ~R2;		break;
+		R2 = ~R2;
+		break;
 	case 0x63: // NOT3
-		R3 = ~R3;		break;
+		R3 = ~R3;
+		break;
 	case 0x64: // NEG0
-		R0 = -R0;		break;
+		R0 = -R0;
+		break;
 	case 0x65: // NEG1
-		R1 = -R1;		break;
+		R1 = -R1;
+		break;
 	case 0x66: // NEG2
-		R2 = -R2;		break;
+		R2 = -R2;
+		break;
 	case 0x67: // NEG3
-		R3 = -R3;		break;
+		R3 = -R3;
+		break;
 	case 0x68: // INC0
 		R0++;
 		break;
