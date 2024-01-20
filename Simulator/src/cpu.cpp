@@ -187,18 +187,18 @@ void cpu::setValueAtAddress(unsigned short value, unsigned short address) {
 void cpu::pushToStack(unsigned short value) {
 	unsigned short addr = ++MEMORY[StackMemory];
 	MEMORY[StackMemory + addr] = value;
-	if (MEMORY[StackMemory] == 0) {
+	if (MEMORY[StackMemory] == 0x1000) {
 		std::cout << "ERR: Stack Overflow. Pushed to stack and pointer overflowed to 0" << std::endl;
 		halted = true;
 	}
 }
 unsigned short cpu::popFromStack() {
 	unsigned short addr = MEMORY[StackMemory]--;
-	return MEMORY[StackMemory + addr];
-	if (MEMORY[StackMemory] == 0xfff) {
-		std::cout << "ERR: Stack Underflow. Popped from stack and pointer under flowed to 0xfff" << std::endl;
+	if (MEMORY[StackMemory] == 0xffff) {
+		std::cout << "ERR: Stack Underflow. Popped from stack and pointer under flowed to 0xffff" << std::endl;
 		halted = true;
 	}
+	return MEMORY[StackMemory + addr];
 }
 
 void cpu::callInterrupt(unsigned short interrupt) {
