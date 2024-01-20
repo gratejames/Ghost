@@ -1,0 +1,226 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"mi",
+				"micVolLeft"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"console":
+	{
+		"height": 0.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/flicker/Desktop/Ghost"
+	],
+	"file_history":
+	[
+		"/home/flicker/.config/polybar/volume.py",
+		"/home/flicker/PortableConfigs/player-mpris-tail.py",
+		"/home/flicker/PortableConfigs/micVolumeUp.sh",
+		"/home/flicker/.config/polybar/launch.sh",
+		"/home/flicker/PortableConfigs/config.ini",
+		"/home/flicker/.config/i3/config",
+		"/home/flicker/Desktop/Mouse/mainProfile.py",
+		"/home/flicker/PortableConfigs/MyNewCoolSetupScript.sh",
+		"/home/flicker/Where Is.txt",
+		"/home/flicker/PortableConfigs/scriptDatabase.hmm",
+		"/home/flicker/PortableConfigs/InstallManager.py",
+		"/home/flicker/Music/Sylva/chapters.py",
+		"/home/flicker/Music/Sylva/chapters.txt",
+		"/home/flicker/Downloads/BeatSaber/bplistSplitter.py",
+		"/home/flicker/.bash_history",
+		"/home/flicker/Music/LumaFYNN/audioTagger.py",
+		"/home/flicker/Music/SylvaFYNN/audioTagger.py",
+		"/home/flicker/Music/Sylva/audioTagger.py",
+		"/home/flicker/Downloads/bplistSplitter.py",
+		"/home/flicker/.config/polybar/player-mpris-tail.py",
+		"/home/flicker/PortableConfigs/ConfigManager.py",
+		"/home/flicker/PortableConfigs/kitty.conf",
+		"/home/flicker/PortableConfigs/launch.sh",
+		"/home/flicker/PortableConfigs/Default.sublime-mousemap",
+		"/home/flicker/PortableConfigs/Default (Linux).sublime-keymap",
+		"/home/flicker/PortableConfigs/config",
+		"/home/flicker/PortableConfigs/battery-combined-udev.sh",
+		"/home/flicker/PortableConfigs/95-battery.rules",
+		"/home/flicker/PortableConfigs/Preferences.sublime-settings",
+		"/home/flicker/PortableConfigs/SublimeLinter.sublime-settings",
+		"/home/flicker/PortableConfigs/Where Is.txt",
+		"/home/flicker/.profile"
+	],
+	"find":
+	{
+		"height": 24.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"scrollbar_highlights": true,
+		"show_context": true,
+		"use_buffer2": true,
+		"use_gitignore": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 24.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 108.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "ghost.sublime-project",
+	"replace":
+	{
+		"height": 44.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 194.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 592.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

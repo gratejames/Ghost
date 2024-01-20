@@ -12,11 +12,21 @@ contexts:
 
     - match: '^#DEF'
       scope: keyword.control.assembly
+      push: definitionScope
 
     - match: '^#INC'
       scope: keyword.control.assembly
 
     - match: '^#ORG'
+      scope: keyword.control.assembly
+
+    - match: '^#MACRO'
+      scope: keyword.control.assembly
+
+    - match: '^#ENDM'
+      scope: keyword.control.assembly
+
+    - match: '^#SHARE'
       scope: keyword.control.assembly
 
     - match: '^(\s)*(%INSTRUCTIONS%)\b'
@@ -59,6 +69,26 @@ contexts:
 
     - match: '^\b[a-zA-Z]+'
       scope: invalid.deprecated
+
+  definitionScope:
+    - match: $
+      pop: true
+
+    - match: ';'
+      scope: punctuation.definition.comment.assembly
+      push: line_comment
+
+    - match: '\b0x[0-9a-fA-F]+\b'
+      scope: constant.numeric.integer.hexadecimal.assembly
+
+    - match: '\b0b[01\s]+\b'
+      scope: constant.numeric.integer.binary.assembly
+
+    - match: '\b[0-9]+\b'
+      scope: constant.numeric.integer.decimal.assembly
+
+    - match: '\b[a-zA-Z0-9_]+\b'
+      scope: variable
 
   addressStart:
     - match: '\b0x[0-9abcdefABCDEF]{2}+\b'

@@ -1,4 +1,5 @@
 import json
+import os
 EDITMODE = True
 
 unique_mnemonics = []  # Lists all unique mnemonics
@@ -128,8 +129,11 @@ with open(genSyntaxPath, 'r') as f:
 genSyntaxData = genSyntaxData.replace(r"%INSTRUCTIONS%", '|'.join(unique_mnemonics))
 genSyntaxData = genSyntaxData.replace(r"%SHORTHAND%", '|'.join(shortcutResolver.keys()))
 
-with open(genSyntaxPath.replace('.template', ''), 'w+') as f:
+with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-syntax"), 'w+') as f:
 	f.write(genSyntaxData)
+with open("GHASM.tmPreferences", 'r') as f1:
+	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences", 'w+')) as f2:
+		f2.write(f1.read())
 
 print("Done Reading" + (" and Revising!" if EDITMODE else "!"))
 
