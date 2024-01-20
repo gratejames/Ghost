@@ -139,7 +139,7 @@ bool init() {
 
   SDL_SetRenderDrawColor(renderer, 255, 0, 255, 1);
 
-  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, WINSIZE, WINSIZE);
+  texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, WINSIZE, WINSIZE);
 
   if (texture == NULL) {
     std::cout << "Failed to Initialize Texture" << std::endl;
