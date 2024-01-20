@@ -233,199 +233,207 @@ debuggingString2Pos = cppFile.find(debuggingString2) + len(debuggingString2)
 debuggingString2End = cppFile[debuggingString2Pos:].find("}") + debuggingString2Pos
 
 cppFile = cppFile[:debuggingString2Pos] + (", ".join([str(len([y for y in x if y not in ["Register", "None"]])) for x in [allArguments.get(i, ['None']) for i in range(0x100)]])) + cppFile[debuggingString2End:]
-print(cppFile)
+
+instructionsStartString = "void cpu::executeFunction(unsigned short instruction) {\n\tswitch (instruction) {\n"
+instructionsStart = cppFile.find(instructionsStartString) + len(instructionsStartString)
+instructionsEndString = "\n\tdefault:"
+instructionsEnd = cppFile[instructionsStart:].find(instructionsEndString) + instructionsStart+1
+
+allInstrutions = ""
+
+for i in range(0, 0x100):
+	mne = instructions.get(i, "Unused")
+	allInstrutions += f"\t// case 0x{i:02x}:\n" if mne == 'Unused' else f"\tcase 0x{i:02x}: // {mne}\n"
+	content = ""
+	if mne == "NOP" or mne == "Unused":
+		pass
+	elif mne == "MVAA":
+		content = setValue(getAtArgument()) + setAtAddress(getArgument())
+	elif mne == "DDV":
+		content = setDD(getArgument())
+	elif mne == "DDA":
+		content = setDD(getAtArgument())
+	elif mne.startswith("DDR"):
+		content = setDD(RR())
+	elif mne.startswith("LDV"):
+		content = setRR(getArgument())
+	elif mne.startswith("LDA"):
+		content = setRR(getAtArgument())
+	elif mne.startswith("LDD"):
+		content = setRR(getAtDD())
+	elif mne.startswith("STR"):
+		content = setAtAddress(getArgument(), RR())
+	elif mne.startswith("STAR"):
+		content = setAtAddress(RR(), getArgument())
+	elif mne == "STV":
+		content = setValue(getArgument()) + setAtAddress(getArgument()) 
+	elif mne == "STDV":
+		content = setAtDD(getArgument())
+	elif mne == "MVDD":
+		content = setAtAddress(getArgument(), getAtDD())  # setAtAddress(address, value="value"):
+	elif mne == "INT":
+		content = setValue(getArgument()) + """\t\tif (value > 0x5f || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
+\t\t\tstd::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
+\t\t\thalted = true;
+\t\t} else {
+\t\t\tpushToStack(PC);
+\t\t\tPC = MEMORY[0xaf00 + value]-1;
+\t\t}
+"""
+	elif mne.startswith("STDR"):
+		content = setAtDD(RR())
+	elif mne.startswith("SHLV"):
+		content = math("<<", getArgument())
+	elif mne.startswith("SHLA"):
+		content = math("<<", getAtArgument())
+	elif mne.startswith("SHLR"):
+		content = math(R0, "<<", RR())
+	elif mne.startswith("SHRV"):
+		content = math(">>", getArgument())
+	elif mne.startswith("SHRA"):
+		content = math(">>", getAtArgument())
+	elif mne.startswith("SHRR"):
+		content = math(R0, ">>", RR())
+	elif mne.startswith("ADDV"):
+		content = math("+", getArgument())
+	elif mne.startswith("ADDA"):
+		content = math("+", getAtArgument())
+	elif mne.startswith("ADDR"):
+		content = math(R0, "+", RR())
+	elif mne.startswith("SUBV"):
+		content = math("-", getArgument())
+	elif mne.startswith("SUBA"):
+		content = math("-", getAtArgument())
+	elif mne.startswith("SUBR"):
+		content = math(R0, "-", RR())
+	elif mne.startswith("SBRV"):
+		content = math(RR(), getArgument(), "-", RR())
+	elif mne.startswith("SBRA"):
+		content = math(RR(), getAtArgument(), "-", RR())
+	elif mne.startswith("SBRR"):
+		content = math(R0, RR(), "-", R0)
+	elif mne.startswith("NOT"):
+		content = f"\t\t{RR()} = ~{RR()};\n"
+	elif mne.startswith("NEG"):
+		content = f"\t\t{RR()} = -{RR()};\n"
+	elif mne.startswith("INC"):
+		content = f"\t\t{RR()}++;\n"
+	elif mne.startswith("DEC"):
+		content = f"\t\t{RR()}--;\n"
+	elif mne.startswith("SHLO"):
+		content = math("<<", "1")
+	elif mne.startswith("SHRO"):
+		content = math(">>", "1")
+	elif mne.startswith("ANDV"):
+		content = math("&", getArgument())
+	elif mne.startswith("ANDA"):
+		content = math("&", getAtArgument())
+	elif mne.startswith("ANDR"):
+		content = math(R0, RR(), "&", R0)
+	elif mne.startswith("ORV"):
+		content = math("|", getArgument())
+	elif mne.startswith("ORA"):
+		content = math("|", getAtArgument())
+	elif mne.startswith("ORR"):
+		content = math(R0, RR(), "|", R0)
+	elif mne.startswith("XORV"):
+		content = math("^", getArgument())
+	elif mne.startswith("XORA"):
+		content = math("^", getAtArgument())
+	elif mne.startswith("XORR"):
+		content = math(R0, RR(), "^", R0)
+	elif mne.startswith("LDZ"):
+		content = f"\t\tR0 = {RR()};\n"
+	elif mne.startswith("STZ"):
+		content = f"\t\t{RR()} = R0;\n"
+	elif mne.startswith("PSHR"):
+		content = pushStack(RR())
+	elif mne.startswith("POPR"):
+		content = setRR(popStack())
+	elif mne == "PSHA":
+		content = pushStack("R0") + pushStack("R1") + pushStack("R2") + pushStack("R3")
+	elif mne == "POPA":
+		content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
+	elif mne == "CEZA":
+		content = cond(getAtArgument(), "==", "0")
+	elif mne == "CNZA":
+		content = cond(getAtArgument(), "!=", "0")
+	elif mne.startswith("CEZR"):
+		content = cond("==", "0")
+	elif mne.startswith("CNZR"):
+		content = cond("!=", "0")
+	elif mne.startswith("CEV"):
+		content = cond("==", getArgument())
+	elif mne.startswith("CEA"):
+		content = cond("==", getAtArgument())
+	elif mne.startswith("CNV"):
+		content = cond("!=", getArgument())
+	elif mne.startswith("CNA"):
+		content = cond("!=", getAtArgument())
+	elif mne.startswith("CLTV"):
+		content = cond("<", getArgument())
+	elif mne.startswith("CLTA"):
+		content = cond("<", getAtArgument())
+	elif mne.startswith("CGTV"):
+		content = cond(">", getArgument())
+	elif mne.startswith("CGTA"):
+		content = cond(">", getAtArgument())
+	elif mne == "JMPA":
+		content = jumpTo(getArgument())
+	elif mne == "JMPD":
+		content = jumpTo(getDD())
+	elif mne == "CALA":
+		content = pushStack("PC+1") + jumpTo(getArgument())
+	elif mne == "CALD":
+		content = pushStack("PC") + jumpTo(getDD())
+	elif mne == "RET":
+		content = jumpTo(popStack(), noAdd=True)
+	elif mne == "JPCA":
+		content = setValue(getArgument()) + conditional(jumpTo(getValue()))
+	elif mne == "JPCD":
+		content = conditional(jumpTo(getDD()))
+	elif mne == "CLCA":
+		content = setValue(getArgument()) + conditional(pushStack("PC") + jumpTo(getValue()))
+	elif mne == "CLCD":
+		content = conditional(pushStack("PC") + jumpTo(getDD()))
+	elif mne == "RETC":
+		content = conditional(jumpTo(popStack(), noAdd=True))
+	elif mne == "BRK":
+		content = "\t\tstd::cout << \"\\nCPU BREAK\" << std::endl;\n"
+		content += "\t\tbroken = true;\n"
+	elif mne == "HLT":
+		content = "\t\tstd::cout << \"\\nCPU HALT\" << std::endl;\n"
+		content += "\t\thalted = true;\n"
+	elif mne.startswith("DBGR"):
+		content = debugOut(RR())
+	elif mne == "DBGV":
+		content = debugOut(getArgument())
+	elif mne == "DBGA":
+		content = debugOut(getAtArgument())
+	elif mne == "DBCA":
+		content = debugOutChar(getAtArgument())
+	elif mne == "DBCV":
+		content = debugOutChar(getArgument())
+	elif mne.startswith("DBCR"):
+		content = debugOutChar(RR())
+	elif mne.startswith("ADOR"):
+		content = setOffset(RR())
+	elif mne == "ADOV":
+		content = setOffset(getArgument())
+	elif mne == "ADOA":
+		content = setOffset(getAtArgument())
+	else:
+		print(mne)
+		raise NotImplementedError
+	# f.write(content)
+	# f.write("" if mne == 'Unused' else "		break;\n")
+	allInstrutions += content
+	allInstrutions += "" if mne == 'Unused' else "		break;\n"
+
+
+cppFile = cppFile[:instructionsStart] + allInstrutions + cppFile[instructionsEnd:]
 
 with open(cppFilePath, 'w+') as f:
 	f.write(cppFile)
-
-with open("cppDefs", "w+") as f:
-	f.write("{" + ", ".join('"' + instructions.get(i, "Unused") + '"' for i in range(0x100)) + "}\n")
-	f.write("{" + ", ".join([str(len([y for y in x if y not in ["Register", "None"]])) for x in [allArguments.get(i, ['None']) for i in range(0x100)]]) + "}\n")
-	for i in range(0, 0x100):
-		mne = instructions.get(i, "Unused")
-		f.write(f"\t// case 0x{i:02x}:\n" if mne == 'Unused' else f"\tcase 0x{i:02x}: // {mne}\n")
-		content = ""
-		if mne == "NOP" or mne == "Unused":
-			pass
-		elif mne == "MVAA":
-			content = setValue(getAtArgument()) + setAtAddress(getArgument())
-		elif mne == "DDV":
-			content = setDD(getArgument())
-		elif mne == "DDA":
-			content = setDD(getAtArgument())
-		elif mne.startswith("DDR"):
-			content = setDD(RR())
-		elif mne.startswith("LDV"):
-			content = setRR(getArgument())
-		elif mne.startswith("LDA"):
-			content = setRR(getAtArgument())
-		elif mne.startswith("LDD"):
-			content = setRR(getAtDD())
-		elif mne.startswith("STR"):
-			content = setAtAddress(getArgument(), RR())
-		elif mne.startswith("STAR"):
-			content = setAtAddress(RR(), getArgument())
-		elif mne == "STV":
-			content = setValue(getArgument()) + setAtAddress(getArgument()) 
-		elif mne == "STDV":
-			content = setAtDD(getArgument())
-		elif mne == "MVDD":
-			content = setAtAddress(getArgument(), getAtDD())  # setAtAddress(address, value="value"):
-		elif mne == "INT":
-			content = setValue(getArgument()) + """\t\tif (value > 0x5f || AllowedInterrupts.find(value) == AllowedInterrupts.end()) {
-			std::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
-			halted = true;
-		} else {
-			pushToStack(PC);
-			PC = MEMORY[0xaf00 + value]-1;
-		}
-"""
-		elif mne.startswith("STDR"):
-			content = setAtDD(RR())
-		elif mne.startswith("SHLV"):
-			content = math("<<", getArgument())
-		elif mne.startswith("SHLA"):
-			content = math("<<", getAtArgument())
-		elif mne.startswith("SHLR"):
-			content = math(R0, "<<", RR())
-		elif mne.startswith("SHRV"):
-			content = math(">>", getArgument())
-		elif mne.startswith("SHRA"):
-			content = math(">>", getAtArgument())
-		elif mne.startswith("SHRR"):
-			content = math(R0, ">>", RR())
-		elif mne.startswith("ADDV"):
-			content = math("+", getArgument())
-		elif mne.startswith("ADDA"):
-			content = math("+", getAtArgument())
-		elif mne.startswith("ADDR"):
-			content = math(R0, "+", RR())
-		elif mne.startswith("SUBV"):
-			content = math("-", getArgument())
-		elif mne.startswith("SUBA"):
-			content = math("-", getAtArgument())
-		elif mne.startswith("SUBR"):
-			content = math(R0, "-", RR())
-		elif mne.startswith("SBRV"):
-			content = math(RR(), getArgument(), "-", RR())
-		elif mne.startswith("SBRA"):
-			content = math(RR(), getAtArgument(), "-", RR())
-		elif mne.startswith("SBRR"):
-			content = math(R0, RR(), "-", R0)
-		elif mne.startswith("NOT"):
-			content = f"\t\t{RR()} = ~{RR()};\n"
-		elif mne.startswith("NEG"):
-			content = f"\t\t{RR()} = -{RR()};\n"
-		elif mne.startswith("INC"):
-			content = f"\t\t{RR()}++;\n"
-		elif mne.startswith("DEC"):
-			content = f"\t\t{RR()}--;\n"
-		elif mne.startswith("SHLO"):
-			content = math("<<", "1")
-		elif mne.startswith("SHRO"):
-			content = math(">>", "1")
-		elif mne.startswith("ANDV"):
-			content = math("&", getArgument())
-		elif mne.startswith("ANDA"):
-			content = math("&", getAtArgument())
-		elif mne.startswith("ANDR"):
-			content = math(R0, RR(), "&", R0)
-		elif mne.startswith("ORV"):
-			content = math("|", getArgument())
-		elif mne.startswith("ORA"):
-			content = math("|", getAtArgument())
-		elif mne.startswith("ORR"):
-			content = math(R0, RR(), "|", R0)
-		elif mne.startswith("XORV"):
-			content = math("^", getArgument())
-		elif mne.startswith("XORA"):
-			content = math("^", getAtArgument())
-		elif mne.startswith("XORR"):
-			content = math(R0, RR(), "^", R0)
-		elif mne.startswith("LDZ"):
-			content = f"\t\tR0 = {RR()};\n"
-		elif mne.startswith("STZ"):
-			content = f"\t\t{RR()} = R0;\n"
-		elif mne.startswith("PSHR"):
-			content = pushStack(RR())
-		elif mne.startswith("POPR"):
-			content = setRR(popStack())
-		elif mne == "PSHA":
-			content = pushStack("R0") + pushStack("R1") + pushStack("R2") + pushStack("R3")
-		elif mne == "POPA":
-			content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
-		elif mne == "CEZA":
-			content = cond(getAtArgument(), "==", "0")
-		elif mne == "CNZA":
-			content = cond(getAtArgument(), "!=", "0")
-		elif mne.startswith("CEZR"):
-			content = cond("==", "0")
-		elif mne.startswith("CNZR"):
-			content = cond("!=", "0")
-		elif mne.startswith("CEV"):
-			content = cond("==", getArgument())
-		elif mne.startswith("CEA"):
-			content = cond("==", getAtArgument())
-		elif mne.startswith("CNV"):
-			content = cond("!=", getArgument())
-		elif mne.startswith("CNA"):
-			content = cond("!=", getAtArgument())
-		elif mne.startswith("CLTV"):
-			content = cond("<", getArgument())
-		elif mne.startswith("CLTA"):
-			content = cond("<", getAtArgument())
-		elif mne.startswith("CGTV"):
-			content = cond(">", getArgument())
-		elif mne.startswith("CGTA"):
-			content = cond(">", getAtArgument())
-		elif mne == "JMPA":
-			content = jumpTo(getArgument())
-		elif mne == "JMPD":
-			content = jumpTo(getDD())
-		elif mne == "CALA":
-			content = pushStack("PC+1") + jumpTo(getArgument())
-		elif mne == "CALD":
-			content = pushStack("PC") + jumpTo(getDD())
-		elif mne == "RET":
-			content = jumpTo(popStack(), noAdd=True)
-		elif mne == "JPCA":
-			content = setValue(getArgument()) + conditional(jumpTo(getValue()))
-		elif mne == "JPCD":
-			content = conditional(jumpTo(getDD()))
-		elif mne == "CLCA":
-			content = setValue(getArgument()) + conditional(pushStack("PC") + jumpTo(getValue()))
-		elif mne == "CLCD":
-			content = conditional(pushStack("PC") + jumpTo(getDD()))
-		elif mne == "RETC":
-			content = conditional(jumpTo(popStack(), noAdd=True))
-		elif mne == "BRK":
-			content = "\t\tstd::cout << \"\\nCPU BREAK\" << std::endl;\n"
-			content += "\t\tbroken = true;\n"
-		elif mne == "HLT":
-			content = "\t\tstd::cout << \"\\nCPU HALT\" << std::endl;\n"
-			content += "\t\thalted = true;\n"
-		elif mne.startswith("DBGR"):
-			content = debugOut(RR())
-		elif mne == "DBGV":
-			content = debugOut(getArgument())
-		elif mne == "DBGA":
-			content = debugOut(getAtArgument())
-		elif mne == "DBCA":
-			content = debugOutChar(getAtArgument())
-		elif mne == "DBCV":
-			content = debugOutChar(getArgument())
-		elif mne.startswith("DBCR"):
-			content = debugOutChar(RR())
-		elif mne.startswith("ADOR"):
-			content = setOffset(RR())
-		elif mne == "ADOV":
-			content = setOffset(getArgument())
-		elif mne == "ADOA":
-			content = setOffset(getAtArgument())
-		else:
-			print(mne)
-			raise NotImplementedError
-		f.write(content)
-		f.write("" if mne == 'Unused' else "		break;\n")
 
 print("Done Writing!")
