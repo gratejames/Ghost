@@ -1,8 +1,8 @@
-;#INC ./kernel.ghasm
-#ORG 0x1000
+#INC ./interrupts/kernel.ghasm
+#ORG PROG_START
 
-ST 0b0000000000000010 $0xaf80	;; Background
-ST 0b1111101010000000 $0xaf81	;; Forground
+ST 0b0000000000000001 $0xaf80	;; Background
+ST 0b0000011111001000 $0xaf81	;; Forground
 
 ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
 ST 3 $0xaffe					;; Display mode

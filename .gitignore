@@ -11,3 +11,4 @@ Simulator/build/cmake_install.cmake
 Simulator/src/cxxopts-*/
 Simulator/Simulator.code-workspace
 *.hex
+ghost.sublime-workspace
