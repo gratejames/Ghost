@@ -24,7 +24,6 @@ malloc:
 	AND R1 0x7fff					; Mask to the length of the block
 	JMPC malloc_BlockUnallocated
 	JMP malloc_FailedAllocate
-	;
 	malloc_BlockUnallocated:		; If the block is unallocated, we need to check its size.
 		; DBGC 'U'
 		CLT R1 $malloc_targetSize
@@ -41,13 +40,11 @@ malloc:
 		STD R1						; And store it to the footer as well
 		POP R0
 		JMP malloc_Done		
-		;
 	malloc_FailedAllocate:			; If the block is allocated or too small we need to jump to get to the next header, and try again.
 		; DBGC 'F'
 		ADD R1						; Add the length of the block to the address of the header
 		ADD R0 2					; and increment it through the footer to point at the next header
 		JMP malloc_CheckBlock
-		;
 	malloc_Resize:					; We need to store the desired length + allocated bit here, and the remaining size (which is original size - target - 2) + deallocated bit after the last entry
 		; DBGC 'P'
 		;DBG R0						; Pointer of found block
@@ -66,8 +63,8 @@ malloc:
 		SUB R1 $malloc_targetSize
 		SUB R1 2					; The size of the new block will be what's left over, with room for the new footer/header combo
 		DBGC 'R'
-		; DBG R0						; Pointer of second header
-		; DBG R1						; Size of second block
+		;DBG R0						; Pointer of second header
+		;DBG R1						; Size of second block
 		DD R0
 		STD R1						; Store the new size (deallocated) to the new pointer
 		ADD R1
@@ -76,11 +73,9 @@ malloc:
 		STD R1						; And the footer as well...
 		POP R0						; Restore the pointer of the block we just resized, the found block
 		JMP malloc_Done
-		;
 	malloc_Done:					; Now that we have a single block of the proper size, and it's marked as allocated, just return. That's all!
 		; DBGC 'D'
 		INC R0
-		; DBG R0
 		RET
 	malloc_Fail:
 		; DBGC 'A'
@@ -107,20 +102,13 @@ free:
 	ADD R1
 	INC R0
 	STZ R3							; R1: size, R2: header, R3: footer
-	; DBG R1
-	; DBG R2
-	; DBG R3
 	CALL free_left					; Check left, update R2 (and R1)
 	CALL free_right					; Check Right, update R0 (and R1)
-	; DBG R1
-	; DBG R2
-	; DBG R3
 	DD R2
 	STD R1
 	DD R3
 	STD R1
 	RET								; Store the header and footer. Deallocated!
-
 	free_left:
 		; DBGC 'L'
 		CE R2 heap
@@ -179,10 +167,8 @@ free:
 		RET							; Rearange so that R1 is size, R3 is footer pointer
 	free_Unallocated:				; If it's unallocated, fail
 		; DBGC 'A'
-		; DBG R0
 		DD R0
 		LDD R0
-		; DBG R0
 		LD R0 0
 		RET
 
@@ -192,5 +178,3 @@ free:
 heap:
 .db (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
 
-;#MACRO pushHeap
-;#ENDM

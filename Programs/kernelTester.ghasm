@@ -1,4 +1,4 @@
-#INC ./kernel.ghasm
+#INC ./interrupts/kernel.ghasm
 #ORG PROG_START
 
 ST 0b0000000000000001 $0xaf80	;; Background
@@ -131,7 +131,7 @@ LD R1 $YCursor
 ST R1 $0xaf72
 INC R1
 ST R1 $YCursor
-ADD R1 '0'
+ADD R1 '`'
 ST R1 $goodString
 ST R1 $badString	; Set the first char of either to be the test number/y cursor
 ST Font $0xaf73

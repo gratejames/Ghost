@@ -19,6 +19,7 @@ contexts:
 
     - match: '^#ORG'
       scope: keyword.control.assembly
+      push: data_byte
 
     - match: '^#MACRO'
       scope: keyword.control.assembly
