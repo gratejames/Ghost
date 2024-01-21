@@ -103,12 +103,10 @@ free:
 	JMPC free_Unallocated			; Assert block is allocated
 	LDD R1
 	AND R1 0x7fff
-	PSH R0
-	POP R2
+	STZ R2
 	ADD R1
 	INC R0
-	PSH R0
-	POP R3							; R1: size, R2: header, R3: footer
+	STZ R3							; R1: size, R2: header, R3: footer
 	; DBG R1
 	; DBG R2
 	; DBG R3
@@ -145,12 +143,10 @@ free:
 		SUB R2
 		SUB R0 2					; New header = old header - size block before - header - footer
 		PSH R0
-		PSH R1
-		POP R0
+		LDZ R1
 		ADD R2
 		ADD R0 2					; New size = old size + size of block before + header + footer
-		PSH R0
-		POP R1
+		STZ R1
 		POP R2
 		RET							; Rearange so that R1 is size, R2 is header pointer
 	free_right:
@@ -175,12 +171,10 @@ free:
 		ADD R3
 		ADD R0 2					; New footer = old footer - size block after - header - footer
 		PSH R0
-		PSH R1
-		POP R0
+		LDZ R1
 		ADD R3
 		ADD R0 2					; New size = old size + size of block after + header + footer
-		PSH R0
-		POP R1
+		STZ R1
 		POP R3
 		RET							; Rearange so that R1 is size, R3 is footer pointer
 	free_Unallocated:				; If it's unallocated, fail
@@ -194,7 +188,7 @@ free:
 
 ; Heap is a linked list where each header points to the next block
 ; First bit of header is 1 if allocated, 0 if not. The rest is the size of the block.
-; #SHARE heap ; DEBUGGING ONLY
+#SHARE heap ; DEBUGGING ONLY
 heap:
 .db (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
 
