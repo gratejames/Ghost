@@ -62,7 +62,7 @@ malloc:
 		INC R0
 		SUB R1 $malloc_targetSize
 		SUB R1 2					; The size of the new block will be what's left over, with room for the new footer/header combo
-		DBGC 'R'
+		; DBGC 'R'
 		;DBG R0						; Pointer of second header
 		;DBG R1						; Size of second block
 		DD R0

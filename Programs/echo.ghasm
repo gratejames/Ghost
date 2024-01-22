@@ -22,48 +22,88 @@ ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
 ; 0xaf72: Y Pos
 ; 0xaf73: Font Address
 
+LD R0 8
+ST R0 $TextInputSize
+CALL malloc
+ST R0 $TextInput
+
 here:
 	JMP here
 HLT
 
 KeyboardInterrupt:
-POP R0						; Get key state
-CEZ R0						; 
-JMPC KeyboardInterruptExit	; Return if key up event
-LD R0 $TextInputCursor		; Load the cursor within the textinput memory
-INC R0						; Increment it
-CGT R0 8					; If it's greater than 8
-JMPC KeyboardInterruptExit	; - don't want to overflow
-ST R0 $TextInputCursor		; Store it
-DEC R0						; Restore it to its correct value
-ADD R0 TextInput			; Add the address of the textinput memory
-DD R0						; The address of the next character
-POP R0 						; Load the new character
-STD R0						; Store it to the textinput memory
-ST R0 $0xaf70				; Store it to the character to be drawn
-LD R0 $Cursor				; /
-AND R0 0x00ff				; |
-ST R0 $0xaf71				; The lower 8 bits of the cursor to the Xpos
-LD R0 $Cursor				; /
-SHR R0 8					; |
-ST R0 $0xaf72				; The upper 8 become the Ypos
-ST Font $0xaf73				; Set the font to the font address
-INT 0x5f					; Draw the character
-LD R0 $Cursor				; /
-INC R0 						; |
-ST R0 $Cursor				; Increment the cursor
-POP
-RET
-
-KeyboardInterruptExit:
-	POP R0
+	POP R0						; Get key state
+	CEZ R0						; 
+	JMPC KeyboardInterruptExit	; Return if key up event
+	LD R0 $TextInputCursor		; Load the cursor within the textinput memory
+	INC R0						; Increment it
+	ST R0 $TextInputCursor		; Store it
+	CGT R0 $TextInputSize		; If it's greater than we have
+	CALLC AllocMoreMemory		; - don't want to overflow
+	LD R0 $TextInputCursor		; 
+	DEC R0						; Restore it to its correct value
+	ADD R0 $TextInput			; Add the address of the textinput memory
+	DD R0						; The address of the next character
+	POP R0 						; Load the new character
+	STD R0						; Store it to the textinput memory
+	ST R0 $0xaf70				; Store it to the character to be drawn
+	LD R0 $Cursor				; /
+	AND R0 0x00ff				; |
+	ST R0 $0xaf71				; The lower 8 bits of the cursor to the Xpos
+	LD R0 $Cursor				; /
+	SHR R0 8					; |
+	ST R0 $0xaf72				; The upper 8 become the Ypos
+	ST Font $0xaf73				; Set the font to the font address
+	INT 0x5f					; Draw the character
+	LD R0 $Cursor				; /
+	INC R0 						; |
+	ST R0 $Cursor				; Increment the cursor
 	POP
 	RET
 
-TextInput: .ds "        " ; 8
-TextInputCursor: .db 0
+	KeyboardInterruptExit:
+		POP R0
+		POP
+		RET
 
-Cursor: .db 0x0000 ; (ypos, xpos)
+	AllocMoreMemory:
+		DBGC 'A'
+		LD R0 $TextInputSize
+		; DBG R0
+		PSH R0					; Save the size of the old memory location to R2 
+		ADD R0 8
+		ST R0 $TextInputSize	; Increase the memory size by 8
+		; DBG R0
+		CALL malloc				; Allocate new mem
+		LD R1 $TextInput		; Load the old mem pointer
+		POP R2
+		PSH R1
+		ST R0 $TextInput		; Store the new memory pointer
+
+		MoveByte:
+			; DBGC 'M'
+			DD R1
+			LDD R3
+			DD R0
+			STD R3
+			; DBG R3
+			DEC R2
+			INC R1
+			INC R0
+			CNZ R2
+			JMPC MoveByte
+
+
+		POP R0					; Move the old mem pointer to R0
+		CALL free				; free the old memory
+		RET
+
+
+TextInput: 			.db 0 ; Pointer to memory of string
+TextInputSize: 		.db 0 ; Length of memory allocated
+TextInputCursor: 	.db 0
+
+Cursor: 			.db 0x0000 ; (ypos, xpos)
 
 printString:
 #INC ./interrupts/stringPrint.ghasm
