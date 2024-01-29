@@ -86,7 +86,7 @@ class assembler:
 			line = ":".join(line.split(':')[1:]).strip()
 		if line.strip()[0] == '.':
 			dataTypeWord = line.split(" ")[0].strip()
-			dataType = {".db": "Byte", ".ds": "String"}.get(dataTypeWord, None)
+			dataType = {".db": "Byte", ".ds": "String", ".dz": "Zeroes"}.get(dataTypeWord, None)
 			if dataType is None:
 				self.die(f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}")
 			val = "".join(line.split(" ")[1:])
@@ -94,6 +94,8 @@ class assembler:
 				line = self.intToHexString(eval(val, {**self.definitions}))
 			if dataType == "String":
 				line = self.parseString(line[3:].strip())
+			if dataType == "Zeroes":
+				line = "0x0000 " * eval(val, {**self.definitions})
 			line = "#DATA " + line
 		return prefix + line
 

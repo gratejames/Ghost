@@ -49,6 +49,10 @@ contexts:
       scope: entity.name.class.assembly 
       push: data_string
 
+    - match: '(\s)*.dz\b'
+      scope: entity.name.class.assembly
+      push: data_byte
+
     - match: '^\$'
       scope: keyword.operator
       push: addressStart
