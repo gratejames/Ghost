@@ -1,0 +1,23 @@
+#DEF rams_disk_table_size 4
+#DEF rams_disk_table_entry_size 2
+
+
+; R0 should be address of driver
+; R0 will return the number of the device
+; #SHARE vfs_add_disk
+
+
+; This functions should setup a ramfs at location R0 of size R1, and add it to the VFS's disk entry table
+#SHARE ramfs_init
+ramfs_init:
+	; Find an empty space in the ram disk table (check fail)
+	; Register disk with vfs (check fail)
+	; Store to ram disk table
+	; Create the fs!
+
+
+; Disk format:
+;  Address
+;  Disk number in vfs
+rams_disk_table:
+.dz rams_disk_table_size * rams_disk_table_entry_size

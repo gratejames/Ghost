@@ -10,12 +10,6 @@ ST 3 $0xaffe					;; Display mode
 ST printString $0xaf5e			;; Register printString as the string printing interrupt
 ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
 
-;ST buffer $0xaf70
-;ST 0 $0xaf71					;; Set the X position to 1
-;ST 0 $0xaf72					;; Set the Y position to 1
-;ST Font $0xaf73					;; Set the font to the font address
-;INT 0x5e
-
 ;; Char Print Routine (5f)
 ; 0xaf70: Character
 ; 0xaf71: X Pos

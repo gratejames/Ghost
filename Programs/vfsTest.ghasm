@@ -1,0 +1,54 @@
+#INC ./interrupts/kernel.ghasm
+#ORG PROG_START
+
+
+
+
+; This functions should setup a ramfs at location R0 of size R1, and add it to the VFS's disk entry table
+LD R0 0x9000
+LD R1 0x1000
+CALL ramfs_init
+
+
+; CALL mountFS
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#INC ./interrupts/vfs.ghasm
+#INC ./interrupts/ramfs.ghasm
+
+
+
+
+
+

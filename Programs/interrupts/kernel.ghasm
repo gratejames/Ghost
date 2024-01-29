@@ -174,7 +174,6 @@ free:
 
 ; Heap is a linked list where each header points to the next block
 ; First bit of header is 1 if allocated, 0 if not. The rest is the size of the block.
-#SHARE heap ; DEBUGGING ONLY
 heap:
 .db (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
 

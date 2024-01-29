@@ -1,0 +1,40 @@
+#DEF vfs_disk_table_size 8
+#DEF vfs_disk_table_entry_size 1
+
+#DEF E_NO_FREE_DISKS 0xffff
+#SHARE E_NO_FREE_DISKS
+
+
+
+; R0 should be address of driver
+; R0 will return the number of the device
+#SHARE vfs_add_disk
+vfs_add_disk:
+	LD R1 vfs_disk_table
+	vfs_add_disk_lp:
+		CGT R1 vfs_disk_table_size + vfs_disk_table			; If the pointer is greater than the last entry, fail
+		JMPC vfs_no_free_disks
+		DD R1
+		LDD R2
+		CNZ R2
+		ADD R1 vfs_disk_table_entry_size
+		JMPC vfs_add_disk_lp								; If the disk has a non-zero value at that entry, check the next
+		; We found an empty disk entry!
+		STD R0												; Store the driver address
+		SUB R1 vfs_disk_table + vfs_disk_table_entry_size	; Subtract to get the disk number (The 1 is from the premature increment earlier)
+		LDZ R1												; Move that into R0 as expected
+		RET
+
+	vfs_no_free_disks:
+		LD R0 E_NO_FREE_DISKS
+		RET
+
+
+
+
+
+vfs_current_disk: .db 0
+; Disk structure:
+;   Driver address (must not be 0)
+vfs_disk_table:
+.dz vfs_disk_table_size * vfs_disk_table_entry_size
