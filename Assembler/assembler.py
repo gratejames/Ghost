@@ -92,11 +92,17 @@ class assembler:
 				self.die(f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}")
 			val = "".join(line.split(" ")[1:])
 			if dataType == "Byte":
-				line = self.intToHexString(eval(val, {**self.definitions}))
+				try:
+					line = self.intToHexString(eval(val, {**self.definitions}))
+				except NameError as e:
+					self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}")
 			if dataType == "String":
 				line = self.parseString(line[3:].strip())
 			if dataType == "Zeroes":
-				line = "0x0000 " * eval(val, {**self.definitions})
+				try:
+					line = "0x0000 " * eval(val, {**self.definitions})
+				except NameError as e:
+					self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}")
 			line = "#DATA " + line
 		return prefix + line
 
@@ -119,7 +125,10 @@ class assembler:
 			print(f"- Subassembling {fileName}, org is {self.position} on line {self.lineNumber+1}")
 			subAssembler = assembler()
 			subAssembler.loadFile(fileName)
-			line = " ".join(subAssembler.assemble(org=self.position, warnHLT=-1, nested=self.nested+1).split())
+			line = " ".join(subAssembler.assemble(org=self.position, warnHLT=-1, nested=self.nested+1, definitions=self.definitions).split())
+			for k,v in subAssembler.getShared().items():
+				if k in self.definitions and v != self.definitions[k]:
+					die(f"\nX Subassembled program {fileName} changed definition {k} from {self.definitions[k]} to {v}")
 			self.definitions = {**self.definitions, **subAssembler.getShared()}
 		else:
 			self.die(f"X Error including {fileName}: file extension not supported {self.lineNumber+1}")
@@ -264,10 +273,11 @@ class assembler:
 		line = " ".join(self.intToHexString(ord(char)) for char in line[1:-1])
 		return line
 	
-	def assemble(self, org=0, warnHLT=1, nested=0):
+	def assemble(self, org=0, warnHLT=1, nested=0, definitions={}):
+		self.definitions = definitions
 		self.position = org
 		self.nested = nested
-		print(f"Assembling {self.fileName.split('/')[-1]}")
+		# print(f"Assembling {self.fileName.split('/')[-1]}")
 		if "HLT" not in self.fileContents and warnHLT == 1:
 			print("! No 'HLT' instruction found: may result in unpredictable behavior")
 		elif "HLT" in self.fileContents and warnHLT == -1:
@@ -360,7 +370,11 @@ class assembler:
 				if word.strip() == "":
 					continue
 				if any([(op in word) for op in "-+/*"]):
-					word = self.intToHexString(eval(word))
+					try:
+						word = self.intToHexString(eval(word, {**self.definitions}))
+					except NameError as e:
+						# self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
+						self.die(f"\nX Could not resolve name '{e.name}'")
 
 				if word in list(AssemblerDefs.Instructions.keys()):
 					Binary = AssemblerDefs.Instructions[word]["Binary"]
@@ -384,7 +398,7 @@ class assembler:
 			
 
 			linesList[self.lineNumber] = line
-		print(f"Assembled {self.fileName.split('/')[-1]}")
+		# print(f"Assembled {self.fileName.split('/')[-1]}")
 		return "\n".join(linesList)  # self.fileContents
 
 
