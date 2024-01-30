@@ -14,6 +14,7 @@ class assembler:
 		self.macros = {}
 		self.position = 0
 		self.lineNumber = 0
+		self.shareall = False
 		pass
 
 	def die(self, message):
@@ -213,11 +214,16 @@ class assembler:
 	def recordShares(self, line):
 		if line.startswith("#SHARE"):
 			words = line.split()
-			self.shares.append(words[1])
+			if words[1] == "*":
+				self.shareall = True
+			else:
+				self.shares.append(words[1])
 			return ""
 		return line
 
 	def getShared(self):
+		if self.shareall:
+			return self.definitions
 		outDict = {}
 		for share in self.shares:
 			outDict[share] = self.definitions[share]
