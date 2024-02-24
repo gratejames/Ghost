@@ -334,6 +334,14 @@ Instructions = {
     "ADOA": {
         "Binary": "0b11110101",
         "Arguments": "Address"
+    },
+    "INCD": {
+        "Binary": "0b11110110",
+        "Arguments": "None"
+    },
+    "DECD": {
+        "Binary": "0b11110111",
+        "Arguments": "None"
     }
 }
 Shorthand = {
