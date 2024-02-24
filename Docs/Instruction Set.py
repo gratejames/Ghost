@@ -1,6 +1,6 @@
 import json
 import os
-EDITMODE = True
+EDITMODE = False
 
 unique_mnemonics = []  # Lists all unique mnemonics
 shortcutResolver = {}  # Carries a dict {shortcut:{arguments:mnemonic, }, }
@@ -316,6 +316,10 @@ for i in range(0, 0x100):
 		content = f"\t\t{RR()} = ~{RR()};\n"
 	elif mne.startswith("NEG"):
 		content = f"\t\t{RR()} = -{RR()};\n"
+	elif mne == "INCD":
+		content = f"\t\tDD++;\n"
+	elif mne == "DECD":
+		content = f"\t\tDD--;\n"
 	elif mne.startswith("INC"):
 		content = f"\t\t{RR()}++;\n"
 	elif mne.startswith("DEC"):

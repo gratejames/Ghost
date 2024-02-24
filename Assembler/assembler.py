@@ -214,7 +214,7 @@ class assembler:
 		if line.startswith("#DEF"):
 			words = line.split()
 			if words[1] in self.definitions.keys():
-				self.die(f"X Error recording definitions: the definitions '{line.split(':')[0]}' was encountered earlier at position {self.definitions[line.split(':')[0]]}")
+				self.die(f"X Error recording definitions: the definition '{words[1]}' was encountered earlier at position {self.definitions[words[1]]} on line {self.lineNumber+1}")
 			self.definitions[words[1]] = int(words[2], 0)
 			# self.definitions[words[1]] = eval(words[2], {**self.definitions})
 			return ""
