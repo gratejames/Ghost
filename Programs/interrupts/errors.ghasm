@@ -1,0 +1,5 @@
+#SHARE *
+#DEF E_NO_ERROR 0xffff
+#DEF E_NO_FREE_DISKS_vfs 0xfffe
+#DEF E_NO_FREE_DISKS_ramfs 0xfffd
+#DEF E_NOT_ALIGNED_ramfs 0xfffc

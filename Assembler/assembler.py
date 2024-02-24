@@ -338,8 +338,8 @@ class assembler:
 			# print("+L", line)
 			linesList[lineN] = line
 
-		# for k, v in self.definitions.items():
-		# 	print("\t" * self.nested + "-", "(D)", k, hex(v))
+		for k, v in self.definitions.items():
+			print("\t" * self.nested + "-", "(D)", k, hex(v))
 
 		for k in self.shares:
 			print("\t" * self.nested + "-", "(S)", k)

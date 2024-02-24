@@ -1,3 +1,4 @@
+#INC ./interrupts/errors.ghasm
 #INC ./interrupts/kernel.ghasm
 #ORG PROG_START
 
@@ -7,17 +8,14 @@
 ; This functions should setup a ramfs at location R0 of size R1, and add it to the VFS's disk entry table
 LD R0 0x9000
 LD R1 0x1000
-CALL ramfs_init
+CALL ramfs_driver_init
+DBGC 'I'
+LD R0 folderName1
+CALL vfs_mkdir
+DBGC 'M'
+; CALL vfs_ls
 
-
-; CALL mountFS
-
-
-
-
-
-
-
+HLT
 
 
 
@@ -37,6 +35,15 @@ CALL ramfs_init
 
 
 
+folderName1:
+.ds "test1"
+.db 0
+folderName2:
+.ds "/test1/test2/"
+.db 0
+folderName3:
+.ds "0:/test3"
+.db 0
 
 
 
@@ -44,6 +51,11 @@ CALL ramfs_init
 
 
 
+
+
+
+
+#INC ./interrupts/device.ghasm
 #INC ./interrupts/vfs.ghasm
 #INC ./interrupts/ramfs.ghasm
 

@@ -1,8 +1,8 @@
 #DEF vfs_disk_table_size 8
 #DEF vfs_disk_table_entry_size 1
+#DEF vfs_path_size 32
+; #DEF vfs_name_size 8
 
-#DEF E_NO_FREE_DISKS 0xffff
-#SHARE E_NO_FREE_DISKS
 
 
 
@@ -10,9 +10,11 @@
 ; R0 will return the number of the device
 #SHARE vfs_add_disk
 vfs_add_disk:
+	PSH R1
+	PSH R2
 	LD R1 vfs_disk_table
 	vfs_add_disk_lp:
-		CGT R1 vfs_disk_table_size + vfs_disk_table			; If the pointer is greater than the last entry, fail
+		CGT R1 vfs_disk_table_size+vfs_disk_table			; If the pointer is greater than the last entry, fail
 		JMPC vfs_no_free_disks
 		DD R1
 		LDD R2
@@ -21,19 +23,72 @@ vfs_add_disk:
 		JMPC vfs_add_disk_lp								; If the disk has a non-zero value at that entry, check the next
 		; We found an empty disk entry!
 		STD R0												; Store the driver address
-		SUB R1 vfs_disk_table + vfs_disk_table_entry_size	; Subtract to get the disk number (The 1 is from the premature increment earlier)
+		SUB R1 vfs_disk_table+vfs_disk_table_entry_size		; Subtract to get the disk number (The vfs_disk_table_entry_size is from the premature increment earlier)
 		LDZ R1												; Move that into R0 as expected
+		POP R2
+		POP R1
 		RET
 
 	vfs_no_free_disks:
-		LD R0 E_NO_FREE_DISKS
+		LD R0 E_NO_FREE_DISKS_vfs
+		POP R2
+		POP R1
 		RET
 
+; R0 in is buffer pointer to the relative path in one of the following forms:
+; 0:/dir/file
+; /dir/file
+; file
+; Given disk 0 and relative path /dir/, these should all be the same
+; R1 out is the new path buffer including disk
+vfs_make_path_abs:
+	DD R0
+	INCD
+	LDD R1 ; Second character in buffer
+	CE R1 ':'
+	RETC ; If the second character is ':', then it's already absolute
+	DECD ; Now we return to the first character
+	LDD R1 ; First character in buffer
+	CE R1 '/'
+	JMPC vfs_make_path_abs_add_disk
+	; Here there we need to add the relative path
+	; The current path stored ends in a '/', and the relative path doesn't start with one. Combine!
+	LD R2 vfs_current_path
+	vfs_make_path_abs_scan_until_0:
+	DD R2 ; Load the path char
+	CNZ R2 ; Check if it's zero
+	INCD ; Advance for the loop
+	JMPC vfs_make_path_abs_scan_until_0 ; if it's not zero, loop
+	; Now we have the address of the first 0
+	
+
+	vfs_make_path_abs_add_disk:
+	; Here there we need to add the disk
+	RET
 
 
+#SHARE vfs_mkdir
+vfs_mkdir:
+	PSH R1
+	PSH R2
+	PSH R3
+	LD R3 $vfs_current_path ; First char of path is current disk
+	ADD R3 vfs_disk_table ; ASSUMES vfs_disk_table_entry_size == 1
+	DD R3
+	LDD R3	; Get the address stored in the disk table
+	DD R3
+	LDD R3  ; Get the address stored in the drivertable
+	DD R3
+	CALL vfs_make_path_abs
+	CALD	; Call that address
+	POP R3
+	POP R2
+	POP R1
+	RET
 
 
-vfs_current_disk: .db 0
+; vfs_current_cursor: .db 0
+vfs_current_path: .dz vfs_path_size ; MUST: START WITH DISK, END IN '/', PAD WITH 0
 ; Disk structure:
 ;   Driver address (must not be 0)
 vfs_disk_table:

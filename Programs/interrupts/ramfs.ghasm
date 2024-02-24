@@ -1,23 +1,166 @@
-#DEF rams_disk_table_size 4
-#DEF rams_disk_table_entry_size 2
-
-
-; R0 should be address of driver
-; R0 will return the number of the device
-; #SHARE vfs_add_disk
+#DEF ramfs_disk_table_size 4
+#DEF ramfs_disk_table_entry_size 2
 
 
 ; This functions should setup a ramfs at location R0 of size R1, and add it to the VFS's disk entry table
-#SHARE ramfs_init
-ramfs_init:
-	; Find an empty space in the ram disk table (check fail)
-	; Register disk with vfs (check fail)
-	; Store to ram disk table
-	; Create the fs!
+; Steps:
+; 1. Find an empty space in the ram disk table (check fail)
+; 2. Register disk with vfs (check fail)
+; 3. Store to ram disk table
+; 4. Create the fs!
+#SHARE ramfs_driver_init
+ramfs_driver_init:
+	PSH R2
+	PSH R1
+	PSH R0
+	; 1. Here we go
+	LD R1 ramfs_disk_table
+	ramfs_add_disk_lp:
+		CGT R1 ramfs_disk_table_size+ramfs_disk_table		; If the pointer is greater than the last entry, fail
+		JMPC ramfs_no_free_disks
+		DD R1
+		LDD R2
+		CNZ R2
+		ADD R1 ramfs_disk_table_entry_size
+		JMPC ramfs_add_disk_lp								; If the disk has a non-zero value at that entry, check the next
+		; We found an empty disk entry!
+		STD R0												; Store the driver address
+		SUB R1 ramfs_disk_table_entry_size					; The premature increment earlier
+	; 2. R1 is now a pointer to the disk entry in the ramfs_disk_table
+	LD R0 DRIVERTABLE
+	CALL vfs_add_disk 
+	CE R0 E_NO_FREE_DISKS_vfs
+	JMPC ramfs_driver_init_popret							; If the vfs couldn't load the disk, give up
+	; 3. Colleting info! R0 is the Disk number in vfs, and R1 is a pointer to the disk entry in the ramfs_disk_table
+	DD R1
+	POP R2
+	STD R2													; Store the location of the ramfs to the table
+	INC R1
+	DD R1
+	STD R0													; Store the disk entry in vfs (Will I even need this later?)
+	; 4. Create the fs!
+	; You know what? I'm tired. Lets just offload this and call it a day. R2 is the location of the disk, first value on stack -> R1 is the size.
+	POP R1
+	CALL ramfs_create_fs
 
+	ramfs_driver_init_popret:
+		POP R2
+		RET
+
+	ramfs_no_free_disks:
+		LD R0 E_NO_FREE_DISKS_ramfs
+		POP R2
+		RET
+
+; Does the actual creating of the ramfs
+; R2 is the location of the disk, R1 on stack is the size.
+ramfs_create_fs:
+	PSH R2
+	AND R2 0xff
+	CNZ R2
+	POP R2
+	JMPC ramfs_create_fs_fail_not_aligned
+	; CNZ R1
+	; JMPC ramfs_create_fs_fail_not_aligned
+	; R2 is the location of the disk, R1 is the size. Both are aligned to 0x100
+	; Implementing ZFS:
+	DD R2
+	STD 'Z'													; Magic Byte
+	INCD
+	STD 1													; Version number
+	INCD
+	SHR R1 8 ; How many pages are there?
+	STD R1 													; Number of total pages
+	INCD
+	STD R1 													; Number of free pages
+	INCD
+	SHR R1 4 ; How many bytes do we need for the bitmap? Divide by 16 bits per byte
+	STD R1													; Bitmap Size
+	ramfs_create_fs_bitmap_clear:
+	INCD
+	STD 0													; Zero the bitmap
+	DEC R1
+	CNZ R1
+	JMPC ramfs_create_fs_bitmap_clear
+	RET
+
+ramfs_create_fs_fail_not_aligned:
+	LD R0 E_NOT_ALIGNED_ramfs
+	RET
+
+; Modified ZealFS header: (Size: 256 bytes)
+; 0x00		Z
+; 0x01		Version
+; 0x02		Number of total pages
+; 0x03		Number of free pages
+; 0x04		Bitmap size in bytes
+; 0x05..1f	Bitmap space for up to (0x1f-4) 0x1b bytes, or (*16) 0x1b0 pages, or managing 0x1b000 bytes of storage. Fine for now...
+; 0x20..2f	Root Entry 1
+; 0x30..3f	Root Entry 2
+; 0x40..4f	Root Entry 3
+; 0x50..5f	Root Entry 4
+; 0x60..6f	Root Entry 5
+; 0x70..7f	Root Entry 6
+; 0x80..8f	Root Entry 7
+; 0x90..9f	Root Entry 8
+; 0xa0..af	Root Entry 9
+; 0xb0..bf	Root Entry a
+; 0xc0..cf	Root Entry b
+; 0xd0..df	Root Entry c
+; 0xe0..ef	Root Entry d
+; 0xf0..ff	Root Entry e
+
+
+; Directory Entry: (Size: 16 bytes)
+; 0x0		Flags
+; 0x1		Start Page
+; 0x2		Size
+; 0x3..a	Name (16 chars, 2 ber byte)
+; 0xb..f	Reserved
+
+;
+ramfs_find_reserve_free_page:
+	RET
+
+; R1 is the full path
+ramfs_get_disk_by_path:
+	RET
+
+; R1 is the path buffer, zero terminated
+; R2 is the disk
+ramfs_traverse_path:
+	CALL ramfs_get_disk_by_path
+	;; Repeat until at destination
+	CALL ramfs_pop_path_node
+	;;
+	RET
+
+; R0: Garbage
+; R1: Pointer to current path buffer
+; R2: Garbage
+; R3: Garbage
+ramfs_driver_mkdir:
+	DBGC 'm'
+	CALL ramfs_find_reserve_free_page
+	; We have the page and the path!
+	; Now to traverse the path
+	CALL ramfs_traverse_path
+	; Now we have the final directory entry and need to add this one to it
+	RET
+ramfs_driver_open:
+ramfs_driver_close:
+	RET
+
+; Will need to expand later, obv
+DRIVERTABLE:
+.db ramfs_driver_mkdir
+.db ramfs_driver_open
+.db ramfs_driver_read
+.db ramfs_driver_write
+.db ramfs_driver_close
 
 ; Disk format:
 ;  Address
 ;  Disk number in vfs
-rams_disk_table:
-.dz rams_disk_table_size * rams_disk_table_entry_size
+ramfs_disk_table:
+.dz ramfs_disk_table_size*ramfs_disk_table_entry_size
