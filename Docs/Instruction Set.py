@@ -134,6 +134,9 @@ with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime
 with open("GHASM.tmPreferences", 'r') as f1:
 	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences"), 'w+') as f2:
 		f2.write(f1.read())
+with open("GHASM.sublime-build", 'r') as f1:
+	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-build"), 'w+') as f2:
+		f2.write(f1.read())
 
 print("Done Reading" + (" and Revising!" if EDITMODE else "!"))
 

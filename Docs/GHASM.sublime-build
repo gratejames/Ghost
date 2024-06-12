@@ -1,0 +1,13 @@
+{
+    "cmd": ["/home/flicker/Desktop/Ghost/Assembler/assembler.py", "$file"],
+    "selector": "source.ghasm",
+    "file_patterns": ["*.ghasm"],
+
+	"variants":
+	[
+		{
+			"name": "Build and Run",
+			"shell_cmd": "/home/flicker/Desktop/Ghost/Assembler/assembler.py $file && /home/flicker/Desktop/Ghost/Simulator/build/Simulator -f $file_path/$file_base_name.hex",
+		}
+	]
+}
