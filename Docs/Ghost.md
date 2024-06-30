@@ -1,8 +1,13 @@
 # TODO
 + [x] Add project to git(hub)
 + [x] Have .data prefixes make any sense please
++ [x] To and from R0 for better math
 + [ ] Text modes?
-+ [ ] To and from R0 for better math
++ [ ] External video card?
++ [ ] Interrupts should probably queue...
++ [ ] vfs
+	+ [ ] ramdisk
+
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
 \$Register:          The value that the register points to   , store at
@@ -28,7 +33,7 @@ Stack: 0xf000 - 0xffff (  4096 Bytes )
 ### Interrupt Table
 #### 0x00: Key Status Change                     Done
 	Push all
-	Push key code. Refer [[Ghost Keycodes]]
+	Push key code: [https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html](SDLKEY)
 	Push event (0: up, 1: down)
 #### 0x01: Mouse Position Change                 NYI
 	Push all
