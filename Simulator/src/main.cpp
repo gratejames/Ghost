@@ -165,6 +165,7 @@ void EventsFunc() {
     if(SDL_PollEvent(&event)) {
       switch (event.type) {
         case SDL_QUIT:
+          processor->verbose = false;
           std::cout << "Engine Closing" << std::endl;
           processor->closed = true;
           break;
