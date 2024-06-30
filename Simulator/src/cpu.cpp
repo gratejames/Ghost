@@ -25,6 +25,9 @@ const int InstructionDebuggingNumArgs[0x100] {0, 2, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1
 const std::set <unsigned short> AllowedInterrupts {0x5e, 0x5f};
 unsigned short intArg0;
 unsigned short intArg1;
+
+std::string previousDebug;
+
 cpu::cpu(std::string romFile) {
 	std::cout << "CPU START" << std::endl;
 	romFileName = romFile;
@@ -71,37 +74,42 @@ void cpu::tick() {
 
 void cpu::debug() {
 	unsigned short instr = MEMORY[PC];
-	if (PC >= 0x100 || instr == 0xd0)
-		return;
-	std::cout << "CPU INSTRUCTION $" << std::hex << std::setw(4) << std::setfill('0') << PC;
+	// if (PC >= 0x100 || instr == 0xd0)
+	// 	return;
+	std::stringstream output;
+	output << "CPU INSTRUCTION $" << std::hex << std::setw(4) << std::setfill('0') << PC;
 	if (instr < 0x100) {
-		std::cout << ":" << std::setw(2) << std::setfill('0') << instr;
-		std::cout << " (" << std::setw(5) << std::setfill(' ') << InstructionDebugging[instr];
+		output << ":" << std::setw(2) << std::setfill('0') << instr;
+		output << " (" << std::setw(5) << std::setfill(' ') << InstructionDebugging[instr];
 		for (int i = 0; i < 2; i++) {
 			if (i < InstructionDebuggingNumArgs[instr]) {
-				std::cout << ":" << std::hex << std::setw(4) << std::setfill('0') << MEMORY[PC+i+1];
+				output << ":" << std::hex << std::setw(4) << std::setfill('0') << MEMORY[PC+i+1];
 			} else {
-				std::cout << "     ";
+				output << "     ";
 			}
 		}
-		std::cout << ")" ;
+		output << ")" ;
 	} else {
-		std::cout << ":" << std::setw(4) << std::setfill('0') << instr;
-		std::cout << " (ERR          )" ;
+		output << ":" << std::setw(4) << std::setfill('0') << instr;
+		output << " (ERR          )" ;
 	}
-	std::cout << " | " << std::setw(4) << std::setfill('0') << R0;
-	std::cout << " | " << std::setw(4) << std::setfill('0') << R1;
-	std::cout << " | " << std::setw(4) << std::setfill('0') << R2;
-	std::cout << " | " << std::setw(4) << std::setfill('0') << R3;
-	std::cout << " | Stack[" << MEMORY[StackMemory] << "]: ";
+	output << " | " << std::setw(4) << std::setfill('0') << R0;
+	output << " | " << std::setw(4) << std::setfill('0') << R1;
+	output << " | " << std::setw(4) << std::setfill('0') << R2;
+	output << " | " << std::setw(4) << std::setfill('0') << R3;
+	output << " | Stack[" << MEMORY[StackMemory] << "]: ";
 	if (MEMORY[StackMemory] > 0xfff) {
-		std::cout << " !!!!";
+		output << " !!!!";
 	} else {
 		for (int i = 1; i <= MEMORY[StackMemory]; i++) {
-			std::cout << " " << std::setw(4) << std::setfill('0') << MEMORY[StackMemory+i];
+			output << " " << std::setw(4) << std::setfill('0') << MEMORY[StackMemory+i];
 		}
 	}
-	std::cout << std::endl;
+	std::string outputString = output.str();
+	if (previousDebug != outputString) {
+		std::cout << outputString << std::endl;
+		previousDebug = outputString;
+	}
 	// std::cout << "VideoMode " << MEMORY[VideoSettings] << std::endl;
 	// std::cout << "Jump " << jump << std::endl;
 }
