@@ -60,5 +60,6 @@
         "shared_mutex": "cpp",
         "list": "cpp"
     },
-    "cmake.sourceDirectory": "/home/flicker/Desktop/Ghost/Simulator/build"
+    "cmake.sourceDirectory": "/home/flicker/Desktop/Ghost/Simulator/build",
+    "cmake.configureOnOpen": false
 }
