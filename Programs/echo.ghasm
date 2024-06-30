@@ -13,7 +13,7 @@ ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
 ;ST buffer $0xaf70
 ;ST 0 $0xaf71					;; Set the X position to 1
 ;ST 0 $0xaf72					;; Set the Y position to 1
-;ST Font $0xaf73					;; Set the font to the font address
+;ST Font $0xaf73				;; Set the font to the font address
 ;INT 0x5e
 
 ;; Char Print Routine (5f)
@@ -48,16 +48,18 @@ KeyboardInterrupt:
 	STD R0						; Store it to the textinput memory
 	ST R0 $0xaf70				; Store it to the character to be drawn
 	LD R0 $Cursor				; /
-	AND R0 0x00ff				; |
-	ST R0 $0xaf71				; The lower 8 bits of the cursor to the Xpos
+	AND R0 0x003f				; |
+	ST R0 $0xaf71				; The lower 6 bits of the cursor to the Xpos
 	LD R0 $Cursor				; /
-	SHR R0 8					; |
-	ST R0 $0xaf72				; The upper 8 become the Ypos
+	AND R0 0x0fc0				; |
+	SHR R0 0x6					; |
+	ST R0 $0xaf72				; The next 6 become the Ypos
 	ST Font $0xaf73				; Set the font to the font address
 	INT 0x5f					; Draw the character
 	LD R0 $Cursor				; /
 	INC R0 						; |
 	ST R0 $Cursor				; Increment the cursor
+	; DBG R0
 	POP
 	RET
 
@@ -67,7 +69,7 @@ KeyboardInterrupt:
 		RET
 
 	AllocMoreMemory:
-		DBGC 'A'
+		; DBGC 'A'
 		LD R0 $TextInputSize
 		; DBG R0
 		PSH R0					; Save the size of the old memory location to R2 
