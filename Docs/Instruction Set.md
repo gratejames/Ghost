@@ -1,3 +1,4 @@
+
 | Instruction  | Hex  | Description                                       | Action                              | Mnem | Shrt  | Arguments         | Status |
 | ------------ | ---- | ------------------------------------------------- | ----------------------------------- | ---- | ----- | ----------------- | ------ |
 | Basic        |      |                                                   |                                     |      |       |                   |        |
@@ -35,7 +36,7 @@
 | 0b010111RR   | 0x5c | Subtract R0 from register, store to R0            | R0 = Register - R0                  | SBRR | SBR   | Register          |        |
 | 0b011000RR   | 0x60 | NOT Register                                      | NOT                                 | NOT  |       | Register          |        |
 | 0b011001RR   | 0x64 | Negate Register (Twos Compliment)                 | Negate                              | NEG  |       | Register          |        |
-| 0b011010RR   | 0x68 | Increase Register                                 | Increase                            | INC  |       | Register          |        |
+| 0b011010RR   | 0x68 | Increase Register                                 | Increase                            | INC  |       | Register          | PASS   |
 | 0b011011RR   | 0x6c | Decrease Register                                 | Decrease                            | DEC  |       | Register          |        |
 | 0b011100RR   | 0x70 | Shift Register Left 1                             | Register << 1                       | SHLO |       | Register          |        |
 | 0b011101RR   | 0x74 | Shift Register Right 1                            | Register >> 1                       | SHRO |       | Register          |        |
@@ -48,8 +49,8 @@
 | 0b100100RR   | 0x90 | Register XOR Value                                | Register XOR Value                  | XORV | XOR   | Register, Value   |        |
 | 0b100101RR   | 0x94 | Register XOR Address                              | Register XOR Address                | XORA | XOR   | Register, Address |        |
 | 0b100110RR   | 0x98 | Register XOR Address                              | R0 = Register XOR R0                | XORR | XOR   | Register          |        |
-| 0b100111RR   | 0x9c | From R0 to RR                                     | RR = R0                             | LDZ  |       | Register          |        |
-| 0b101000RR   | 0xa0 | From RR to R0                                     | R0 = RR                             | STZ  |       | Register          |        |
+| 0b100111RR   | 0x9c | From RR to R0                                     | R0 = RR                             | LDZ  |       | Register          |        |
+| 0b101000RR   | 0xa0 | From R0 to RR                                     | RR = R0                             | STZ  |       | Register          |        |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Stack        |      |                                                   |                                     |      |       |                   |        |
 | 0b101001RR   | 0xa4 | Push Register to stack                            | Push Register                       | PSHR | PSH   | Register          |        |
@@ -83,7 +84,7 @@
 | 0b11011111   | 0xdf |                                                   | Routine Conditional Address         | CLCA | CALLC | Value             | PASS   |
 | 0b11100000   | 0xe0 |                                                   | Routine Conditional AddressRegister | CLCD | CALLC | None              |        |
 | 0b11100001   | 0xe1 |                                                   | Return Conditional                  | RETC |       | None              |        |
-| 0b11100010   | 0xe2 |                                                   | Break                               | BRK  |       | None              |        |
+| 0b11100010   | 0xe2 |                                                   | Break                               | BRK  |       | None              | NYI    |
 | 0b11100011   | 0xe3 |                                                   | Halt                                | HLT  |       | None              | PASS   |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Extended     |      |                                                   |                                     |      |       |                   |        |
@@ -93,8 +94,10 @@
 | 0b11101010   | 0xea | Output address to the debugging terminal as char  | Address → DBG (Char)                | DBCA | DBGC  | Address           |        |
 | 0b11101011   | 0xeb | Output value to the debugging terminal as char    | Value → DBG (Char)                  | DBCV | DBGC  | Value             | PASS   |
 | 0b111011RR   | 0xec | Send register to the debugging terminal as char   | Register → DBG (Char)               | DBCR | DBGC  | Register          |        |
-| 0b111100RR   | 0xf0 | Load register to AddressOffset                    | Register → AddressOffset            | ADOR | ADO   | Register          |        |
-| 0b11110100   | 0xf4 | Load value to AddressOffset                       | Value → AddressOffset               | ADOV | ADO   | Value             |        |
-| 0b11110101   | 0xf5 | Load address to AddressOffset                     | Address → AddressOffset             | ADOA | ADO   | Address           |        |
+| 0b111100RR   | 0xf0 | Load register to AddressOffset                    | Register → AddressOffset            | ADOR | ADO   | Register          | NYI    |
+| 0b11110100   | 0xf4 | Load value to AddressOffset                       | Value → AddressOffset               | ADOV | ADO   | Value             | NYI    |
+| 0b11110101   | 0xf5 | Load address to AddressOffset                     | Address → AddressOffset             | ADOA | ADO   | Address           | NYI    |
 | 0b11110110   | 0xf6 | Increment the addressRegister                     |                                     | INCD |       | None              |        |
 | 0b11110111   | 0xf7 | Decrement the addressRegister                     |                                     | DECD |       | None              |        |
+| 0b11111000   | 0xf8 | Disable Interrupts                                |                                     | IDIS |       | None              |        |
+| 0b11111001   | 0xf9 | Enable Interrupts                                 |                                     | IEN  |       | None              |        |

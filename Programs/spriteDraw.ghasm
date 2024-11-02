@@ -1,0 +1,61 @@
+#INC ./interrupts/kernel.ghasm
+#ORG KERNEL_END
+
+ST 0b0000000000000001 $0xaff0	;; Background
+ST 0b0000011111001000 $0xaff1	;; Forground
+
+ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
+ST 3 $0xafef					;; Display mode
+
+#DEF ScreenAddress 0xb000
+
+ST 31 $Pos
+CALL DrawSnek
+; Hold:
+; JMP Hold
+HLT
+
+
+KeyboardInterrupt:
+	RET
+
+DrawSnek:
+	LD R2 0
+	SnekLoop:
+		PSH R2
+			ADD R2 Sprite
+			DD R2
+			LDD R1
+		POP R2
+		PSH R2
+			SHL R2 5
+			ADD R2 $Pos
+			ADD R2 ScreenAddress
+			DD R2
+			STD R1
+		POP R2
+		INC R2
+		CLT R2 16
+		JMPC SnekLoop
+	RET
+
+Pos:
+.db 16
+
+Sprite:
+.db 0b0000011111100000
+.db 0b0001111111111000
+.db 0b0011111111111100
+.db 0b0111111111111110
+.db 0b0111111111111110
+.db 0b1111111111111111
+.db 0b1111111111111111
+.db 0b1111111111111111
+.db 0b1111111111111111
+.db 0b1111111111111111
+.db 0b1111111111111111
+.db 0b0111111111111110
+.db 0b0111111111111110
+.db 0b0011111111111100
+.db 0b0001111111111000
+.db 0b0000011111100000

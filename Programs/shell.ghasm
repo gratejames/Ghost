@@ -1,0 +1,479 @@
+JMP PROG_START
+#INC ./lib/kernel.ghasm
+#INC ./lib/vfs.ghasm
+#INC ./lib/ramdisk.ghasm
+#INC ./shellstrings.ghasm
+PROG_START:
+
+LD R0 RAMDISK
+LD R1 $RAMDISKSIZE
+CALL ramsdiskInit
+
+ST 0b0000000000000001 $0xaff0	;; Background
+ST 0b0000011111001000 $0xaff1	;; Forground
+
+ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
+ST 3 $0xafef					;; Display mode
+
+ST printString $0xaf5e			;; Register printString as the string printing interrupt
+ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
+
+;; Char Print Routine (5f)
+; 0xaf70: Character
+; 0xaf71: X Pos
+; 0xaf72: Y Pos
+; 0xaf73: Font Address
+
+CALL RefreshDisplay
+loop:
+	CALL blinkCursor
+	CALL delay
+	JMP loop
+HLT
+
+delay:
+	LD R0 0
+	delayLoop:
+		INC R0
+		CNE R0 0x200
+		JMPC delayLoop
+	RET
+
+blinkCursor:
+	LD R0 $Timer
+	; DBG R0
+	INC R0
+	ST R0 $Timer
+	CE R0 0
+	JMPC showCursor
+	CE R0 0x8000
+	JMPC hideCursor
+	RET
+
+	hideCursor:
+		LD R1 $Cursor
+		ADD R1 CharMem
+		DD R1
+		LDD R0
+		CALL SetAtCursor
+		RET
+
+	showCursor:
+		LD R0 '_' 			; Character
+		CALL SetAtCursor
+		RET
+
+KeyboardInterrupt:
+	IDIS
+	PSH
+	ST 0xffff $Timer
+	LD R1 $0xafd0					; Get key state
+	CE R1 0
+	LD R0 $0xafd1					; Load the new character
+	JMPC KI_Keyup
+
+	CE R0 0x0008 ; Backspace
+	JMPC KI_Backspace
+	CE R0 0x000d ; Enter
+	JMPC KI_Enter
+	CE R0 0x00e3 ; L_Win
+	JMPC KI_Win_Down
+	CE R0 0x00e2 ; L_Alt
+	JMPC KI_Alt_Down
+	CE R0 0x00e1 ; L_Shift
+	JMPC KI_Shift_Down
+	CE R0 0x00e0 ; L_Control
+	JMPC KI_Control_Down
+	
+	; DBG R0
+	CALL ApplyShift
+
+	LD R1 $Cursor
+	ADD R1 CharMem
+	DD R1
+	STD R0
+
+	CALL PrintAtCursor
+
+	KeyboardInterruptExit:
+	POP
+	IEN
+	RET
+
+	KI_Keyup:
+		CE R0 0x00e3 ; L_Win
+		JMPC KI_Win_Up
+		CE R0 0x00e2 ; L_Alt
+		JMPC KI_Alt_Up
+		CE R0 0x00e1 ; L_Shift
+		JMPC KI_Shift_Up
+		CE R0 0x00e0 ; L_Control
+		JMPC KI_Control_Up
+		JMP KeyboardInterruptExit
+		
+	KI_Win_Up:
+		LD R0 0
+		LD R1 3
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+	KI_Win_Down:
+		LD R0 1
+		LD R1 3
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+		
+	KI_Alt_Up:
+		LD R0 0
+		LD R1 2
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+	KI_Alt_Down:
+		LD R0 1
+		LD R1 2
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+
+	KI_Shift_Up:
+		LD R0 0
+		LD R1 0
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+	KI_Shift_Down:
+		LD R0 1
+		LD R1 0
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+		
+	KI_Control_Up:
+		LD R0 0
+		LD R1 1
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+	KI_Control_Down:
+		LD R0 1
+		LD R1 1
+		CALL SetModifier
+		JMP KeyboardInterruptExit
+
+	KI_Backspace:
+		LD R1 $Cursor
+		CLT R1 $Backstop
+		JMPC KeyboardInterruptExit
+		CE R1 $Backstop
+		JMPC KeyboardInterruptExit
+
+		LD R0 ' '
+		CALL SetAtCursor
+		LD R1 $Cursor
+		DEC R1
+		ST R1 $Cursor
+		ADD R1 CharMem
+		DD R1
+		STD ' '
+		LD R0 ' '
+		CALL SetAtCursor
+		JMP KeyboardInterruptExit
+
+	KI_Enter:
+		LD R1 $Cursor		; Load the cursor position
+		ADD R1 CharMem
+		DD R1
+		STD 0				; Draw a space in charmem
+		LD R0 ' '
+		CALL SetAtCursor	; Write a null terminator to the text memory
+
+		CALL CursorNewline
+
+		CALL handleUserInput
+
+		LD R1 $Cursor
+		ADD R1 CharMem
+		DD R1
+		STD '>'
+		LD R0 '>'
+		CALL SetAtCursor	; Write and draw the prompt character
+		LD R1 $Cursor		; Leave the cursor after the prompt
+		INC R1
+		ST R1 $Cursor
+
+		MV $Cursor $LastCursor
+
+		JMP KeyboardInterruptExit
+
+; No arguments, free to destroy all
+handleUserInput:
+	LD R1 $LastCursor
+	ADD R1 CharMem
+	; String Index into table of routine pointers
+	
+	LD R2 HUI_Table
+	HUI_LookupLoop:
+		DD R1
+		LDD R0
+		DD R2
+		LDD R3
+
+		; If the character in the input is a space, replace it with a 0 in the register states so that commands match even with arguments
+		CNE R0 ' '
+		JMPC HUI_NotASpace
+		LD R0 0
+		HUI_NotASpace:
+		
+		; R0 is character
+		; R1 is character address in user input
+		; R2 is the pointer to the string to compare to
+		; R3 is the table character
+		; DBGC R0
+		; DBGC R3
+		PSH R0
+			XOR R3 ; R0 XOR R3 => R0 (Checks if R0 and R3 are equal)
+			CEZ R0
+		POP R0
+		JMPC HUI_Match
+		HUI_NotMatch:
+			; DBGC 'N'
+			; DBGC 0x0a
+			; This string is a miss, we need to scan to the next one, skip over the pointer
+			; and prepare for the next search
+			HUI_NotMatchSkip:
+				CNZ R3
+				INC R2
+				DD R2
+				LDD R3
+				JMPC HUI_NotMatchSkip ; Scan through the table for the next zero
+
+			ADD R2 2 ; Since it was a miss, skip the pointer and the next zero
+			; Now, before we go back, lets reset the user input pointer as well
+			LD R1 $LastCursor
+			ADD R1 CharMem
+			; Better luck next time!
+
+			DD R2
+			LDD R3
+			CNZ R3
+			JMPC HUI_LookupLoop
+			; to check against is zero, then we've exhausted the table
+			JMP HUI_Exhausted ; If the first character in the string
+
+		HUI_Match:
+			; DBGC '!'
+			; DBGC 0x0a
+			; The current characters match. Scan to the next ones. If the current ones are both zeroes
+			; (We've reached the end of both strings) then we need to escape the loop and declare a match
+			INC R2
+			INC R1
+			CNZ R0
+			JMPC HUI_LookupLoop
+
+	; MATCH!!! Both strings have ended.
+	; DBGC 'M'
+	DD R2 ; Load the pointer to the function
+	LDD R3
+	DD R3
+	CALD ; Call that pointer
+
+	; DBGC 'R'
+	; DBGC 0x0a
+	RET
+	HUI_Exhausted:
+		LD R1 CMD_NOT_FOUND
+		CALL PrintLineAtCursor
+		RET
+
+; Destroys R1
+CursorNewline:
+	LD R1 $Cursor		; Load the cursor position
+	ADD R1 0x0040		; Reset the cursor to the next line
+	AND R1 0xffc0
+	ST R1 $Cursor
+	RET
+
+CMD_LS:
+	DBGC 'S'
+	RET
+
+CMD_HLT:
+	HLT
+
+; Table Format: string0ptr0...string0ptr00
+HUI_Table:
+.ds "ls"
+.db 0
+.db CMD_LS
+.db 0
+.ds "hlt"
+.db 0
+.db CMD_HLT
+.db 0
+.db 0
+
+; R0: Character
+ApplyShift:
+	PSH R1
+	LD R1 $KB_Mods
+	AND R1 0b0001
+	CEZ R1
+	POP R1
+	RETC
+	SUB R0 32
+	ADD R0 ShiftTable
+	DD R0
+	LDD R0
+	RET
+
+; R0: State
+; R1: Modifier Position
+SetModifier:
+	PSH R0
+	LD R0 1
+	SHL R1
+	NOT R0
+	AND R0 $KB_Mods ; Mask out the bit for the specific modifier
+	STZ R2
+	POP R0
+	SHL R1
+	ADD R2 ; Add masked to state
+	ST R0 $KB_Mods
+	; DBG R0
+	RET
+
+; R0: Character
+; Destroys R1
+SetAtCursor:
+	ST R0 $0xaf70		; Character
+	LD R1 $Cursor
+	AND R1 0x003f
+	ST R1 $0xaf71		; X Pos
+	LD R1 $Cursor
+	SHR R1 6
+	ST R1 $0xaf72		; Y Pos
+	ST Font $0xaf73		; Font Address
+	INT 0x5f
+	RET
+
+PrintAtCursor:
+	CALL SetAtCursor
+	LD R1 $Cursor
+	INC R1
+	ST R1 $Cursor
+	RET
+
+; R1->ptr
+PrintStringAtCursor:
+	DD R1
+	LDD R0
+	CEZ R0
+	JMPC PrintStringAtCursorEnd
+		PSH R1
+		CE R0 0x0a
+		CALLC CursorNewline
+		CNE R0 0x0a
+		CALLC PrintAtCursor
+	POP R1
+	INC R1
+	JMP PrintStringAtCursor
+	PrintStringAtCursorEnd:
+		RET
+
+PrintLineAtCursor:
+	CALL PrintStringAtCursor
+	CALL CursorNewline
+	RET
+
+RefreshDisplay:
+	ST CharMem $0xaf70
+	ST 0 $0xaf71				;; Set the X position to 0
+	ST 0 $0xaf72				;; Set the Y position to 0
+	ST Font $0xaf73				;; Set the font to the font address
+	INT 0x5e
+	RET
+
+Timer:				.db 0xffff
+Cursor: 			.db 0x0001 ; (ypos, xpos)
+LastCursor:			.db 0x0001 ; (ypos, xpos)
+Backstop:			.db 0x0001
+KB_Mods:			.db 0 ; 0000 0000 0000 win+alt+ctrl+shift
+
+printString:
+#INC ./lib/stringPrint.ghasm
+printChar:
+#INC ./lib/charPrint.ghasm
+Font:
+#INC ./fontGen/font.hex
+
+ShiftTable:
+.ds "       "    <_>?)!@#$%^&*( : +  "
+.ds "                           {|}  "
+.ds "~ABCDEFGHIJKLMNOPQRSTUVWXYZ     "
+
+CharMem:
+.ds ">"
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
+.db 0
+
+RAMDISKSIZE: .db 0x1000
+RAMDISK: .dz 0x1000

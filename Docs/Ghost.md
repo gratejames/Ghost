@@ -3,10 +3,18 @@
 + [x] Have .data prefixes make any sense please
 + [x] To and from R0 for better math
 + [ ] Text modes?
-+ [ ] External video card?
-+ [ ] Interrupts should probably queue...
++ [ ] Simulate external video card?
++ [x] Interrupts should probably queue...
+	+ [x] Nope! Also, get rid of Interupt data - read it in from IO!
 + [ ] vfs
-	+ [ ] ramdisk
+	+ [x] ramdisk
+	+ [ ] mkdir
+	+ [ ] rmdir
+	+ [ ] touch
+	+ [ ] rm
+	+ [ ] ls
+	+ [ ] subfolder/path handling
+	+ [ ] '..'
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
@@ -22,45 +30,45 @@ I/O:   0xaf00 - 0xafff (   256 Bytes )
 Video: 0xb000 - 0xefff ( 16384 Bytes )
 Stack: 0xf000 - 0xffff (  4096 Bytes )
 
-## I/O
+## I/O / Misc
 0x00-0x5f: Interrupt Table
-0x60-0x7f: Unused
-0x80-0x8f: Display Pallet
-0x90-0xfd: Unused
-0xfe: Display settings
-0xff: Random Number
+0x60-0xcf: Unused
+0xd0-0xdf: IO Data Buffer
+0xe0-0xee: Unused
+0xef: Display settings
+0xf0-0xff: Display Pallet
 
 ### Interrupt Table
-#### 0x00: Key Status Change                     Done
+#### 0x00: Key Status Change
 	Push all
-	Push key code: [https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html](SDLKEY)
-	Push event (0: up, 1: down)
+	IO 0: Key Event: (0: up, 1: down)
+	IO 1: Key Code: [https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html](SDLKEY)
 #### 0x01: Mouse Position Change                 NYI
 	Push all
-	Push MouseX position (absolute to window)
-	Push MouseY position (absolute to window)
+	IO 0: MouseX position in px, absolute to window
+	IO 1: MouseY position in px, absolute to window
 #### 0x02: Mouse Button Change                   NYI
 	Push all
-	Push button number
-	Push event (0: up, 1: down)
+	IO 0: Button Event (0: up, 1: down)
+	IO 1: Button Number
 #### 0x4f-5f: User defined, not called by hardware. Convention below.
 #### 0x5e: High Res. String Print
-	0x70: String Address
-	0x71: X Start Position
-	0x72: Y Position
-	0x73: Font Address
+	IO 0: String Address
+	IO 1: X Start Position
+	IO 2: Y Position
+	IO 3: Font Address
 #### 0x5f: High Res. Character Print
-	0x70: Char Value
-	0x71: X Position
-	0x72: Y Position
-	0x73: Font Address
+	IO 0: Char Value
+	IO 1: X Position
+	IO 2: Y Position
+	IO 3: Font Address
 ## Video
-Display settings:
+Display settings (only lower 2 bits used):
     + 00 Standard: Full color low res       128x128, 16 bit rgb565
     + 01 Mixed: Better res, drgb color      256x256,  4 bit drgb
     + 10 Pallet: Better res, pallet color   256x256,  4 bit pallet
     + 11 Sharp: Best res, no color          512x512,  1 bit pallet
 ## Stack
-0x000 is the stack pointer that points to the end of the stack. A value of 0 means empty, a value of 1 points to:
+0x000 is the stack pointer that points to the end of the stack. A value of 0 means empty, a value of 1 points to
 0x001, the first element that grows to a maximum of 0xfff
-Stack values can be address from a call or values from a push instruction
+Stack values can be addresses from a `CALL` or values from a `PSH` instruction

@@ -1,0 +1,454 @@
+; R0 -> address
+; R0 <- Disk Number
+; R1 size
+; Destroys R2
+ramsdiskInit:
+	PSH R0
+	PSH R1
+	LD R0 ramdisk_DriverTable
+	CALL vfs_register
+	POP R2
+	POP R1
+	CALL ramdisk_register
+	CALL ramdisk_format
+	RET
+
+
+; R0 -> Disk number
+; R0 <- Table entry on success, 0xffff on fail
+; R1 address
+; R2 size
+ramdisk_register:
+	; The disk number can be zero, 
+	; so we need to check the ramdisk address to verify empty
+	PSH
+	LD R2 0 ; Counter
+	ramdisk_register_loop:
+		CE R2 $ramdisk_TableSize
+		JMPC ramdisk_full
+		PSH R2
+		POP R1
+		SHL R1 2 ; Multiply by 4, the size of each table entry
+		ADD R1 ramdisk_Table
+		ADD R1 1 ; Read from the address instead
+		DD R1
+		LDD R1
+		CNZ R1
+		INC R2
+		JMPC ramdisk_register_loop
+	DEC R2
+	PSH R2
+	POP R0 ; Save the table entry for later
+
+	SHL R2 2 ; Multiply by 4, the size of each table entry
+	ADD R2 ramdisk_Table
+
+	POP R3 ; Recover R3 - unused, but not destroyed
+	POP R1 ; Size
+	ADD R2 2
+	DD R2
+	STD R1
+	POP R1 ; Address
+	SUB R2 1
+	DD R2
+	STD R1
+	POP R1 ; Disk Number
+	SUB R2 1
+	DD R2
+	STD R1
+
+	RET
+	ramdisk_full:
+		POP
+		LD R0 0xffff ; -1, no space in driver table
+		RET
+
+; R0 -> Table entry in ramdisk_Table
+ramdisk_format:
+	; DBG R0
+	SHL R0 2
+	ADD R0 ramdisk_Table
+	INC R0
+	DD R0
+	LDD R1 ; Disk address
+	INC R0
+	DD R0
+	LDD R0 ; Disk size
+
+	; DBG R0
+	SHR R0 7 ; Amount of pages = size / 128
+	; DBG R0
+
+	; Write the header:
+	DD R1
+	STD 'G' ; Magic byte
+	INCD
+	STD 0 ; Version number
+	INCD
+	STD 0 ; Bitmap size
+	INCD
+	STD R0 ; Free pages count
+	INCD
+	; Zero the bitmap
+	STD 0x8000 ; Except the first page is the header!
+	INCD
+	LD R0 1
+	ramdisk_format_bitmap_loop:
+		STD 0x0000
+		INCD
+		INC R0
+		CLT R0 32
+		JMPC ramdisk_format_bitmap_loop
+	ADD R1 12
+	RET
+
+; R0 Disk number
+; R1 ptr to path
+; R2 ptr to new folder name zero padded to 12 characters
+; Destroys: R3
+ramdisk_MKDIR:
+	CALL ramdisk_getinfo
+	CALL ramdisk_traverse
+	CE R1 0xffff
+	JMPC ramdisk_MKDIR_TraverseFail
+
+	; R0 is the pointer in the ramdisk table
+	; R1 has the page number
+	; R2 has the ptr to the new folder name
+
+	PSH R2
+
+	STZ R3		; Copy table pointer to R3
+	ADD R3 1 	; Get the second item in the table
+	DD R3
+	LDD R3		; Read the address of the fs
+
+	LD R2 0 ; Offset from beginning of page to 1st directory entry
+	CNE R1 0
+	JMPC ramdisk_MKDIR_SearchForDirLoop
+	LD R2 48 ; For the first page, the offset is 48
+	ramdisk_MKDIR_SearchForDirLoop:
+		CE R2 128
+		JMPC ramdisk_MKDIR_DirectoryFull
+
+		; R1 is the page number of the parent directory
+		; R2 is the offset within that page for the directory entry
+		; R3 is the address of the fs
+
+		LDZ R1 		; Copy page number to R0
+		SHL R0 7 	; Multiply by 128 to get page offset within fs
+		ADD R2		; Add the offset within the page
+		ADD R3 		; Add fs address to offset
+
+		PSH R0
+		DD R0
+		LDD R0		; Read that byte
+		CNZ R0		; If it's marked as allocated we need to check the next directory slot
+		POP R0
+		ADD R2 16	; Prepare for next interation	
+		JMPC ramdisk_MKDIR_SearchForDirLoop	
+
+	; R0 is the address of the directory entry
+	; R1 is the page number of the parent directory
+	; R2 is the offset within that page for the directory entry
+	; R3 is the address of the fs
+
+	DD R0
+	STD 0b11 ; Store the flags: Directory, allocated
+	
+	CALL ramdisk_allocateFreePage
+	CE R1 0xffff
+	JMPC ramdisk_MKDIR_AllocPageFail
+	; R1 is the new page for the new directory
+
+	INC R0
+	DD R0
+	STD R1 ; Store the page of the directory in its parent's entry
+
+	INC R0
+	POP R1 ; Ptr to new folder name
+	; R0 points to the filename field of the directory entry
+	; R1 has the ptr to the new folder name
+
+	; Now we need to copy the filename string into the folder
+	LD R2 0 ; A counter to make sure we don't overrun
+	ramdisk_MKDIR_copyname:
+		DD R1
+		LDD R3
+		DD R0
+		STD R3
+		INC R0
+		INC R1
+		INC R2
+		CNE R2 12
+		JMPC ramdisk_MKDIR_copyname
+
+	DBGC 'M'
+	DBGC 'K'
+	DBGC 0x0a
+	RET
+
+	ramdisk_MKDIR_AllocPageFail:
+		POP R2
+		POP R0
+		DBGC 'm'
+		DBGC 'a'
+		DBGC 0x0a
+		RET
+	ramdisk_MKDIR_DirectoryFull:
+		POP R2
+		POP R0
+		DBGC 'm'
+		DBGC 'f'
+		DBGC 0x0a
+		RET
+	ramdisk_MKDIR_TraverseFail:
+		DBGC 'm'
+		DBGC 't'
+		DBGC 0x0a
+		RET
+
+; R0 Disk number
+; R1 ptr to path
+; R3 <- ptr to malloc'd listdir obj, or 0 on fail
+; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
+ramdisk_LIST:
+	CALL ramdisk_getinfo
+	; R0 is the pointer in the ramdisk table for this fs
+	CALL ramdisk_traverse
+	CE R1 0xffff
+	JMPC ramdisk_LIST_TraverseFail
+	; R1 has the page number
+
+	; R2 has the ptr to the new folder name
+
+	STZ R3		; Copy table pointer to R3
+	ADD R3 1 	; Get the second item in the table
+	DD R3
+	LDD R3		; Read the address of the fs
+	STR R3 $ramdisk_PendingFSAddress
+
+	LD R0 96
+	CALL malloc
+	STZ R3
+	DBG R3
+
+	PSH R3
+	; DBG R3
+
+	; R0 is the pointer in the ramdisk table
+	; R1 has the page number
+	; R2 is empty
+	; R3 is ptr to malloc'd listdir obj
+	; $ramdisk_PendingFSAddress has the fs address
+
+	LD R2 0 ; Offset from beginning of page to 1st directory entry
+	CNE R1 0
+	JMPC ramdisk_LIST_ForDirLoop
+	LD R2 48 ; For the first page, the offset is 48
+	ramdisk_LIST_ForDirLoop:
+
+		; R1 is the page number of the parent directory
+		; R2 is the offset within that page for the directory entry
+
+		LDZ R1 		; Copy page number to R0
+		SHL R0 7 	; Multiply by 128 to get page offset within fs
+		ADD R2		; Add the offset within the page
+		ADD R0 $ramdisk_PendingFSAddress
+		; R0 has address to directory entry	
+		PSH R0
+		PSH R1
+		PSH R2
+
+		ADD R0 2	; Increment past flags/pg to name
+		LD R1 0		; Load a counter into R2
+
+		ramdisk_LIST_NameCopy:
+			DD R0
+			LDD R2
+
+			DBG R3
+			DD R3
+			STD R2
+
+			; DBGC R2
+			; DBG R3
+
+			INC R0
+			INC R1
+			INC R3
+			CNE R1 12
+			JMPC ramdisk_LIST_NameCopy
+
+		POP R2
+		POP R1
+		POP R0
+		ADD R2 16	; Prepare for next interation	
+		CNE R2 128	; Loop if we're not at the end
+		JMPC ramdisk_LIST_ForDirLoop
+
+
+	POP R3
+
+	DBGC 'L'
+	DBGC 'S'
+	; DBG $0xf000
+	; DBG $0xf001
+	; DBG $0xf002
+	RET
+
+	ramdisk_LIST_TraverseFail:
+		POP R3
+		LD R3 0
+		DBGC 'l'
+		DBGC 't'
+		DBGC 0x0a
+		RET
+
+; R1 <- The page number of the new page or 0xffff on fail
+; R3 -> fs address
+ramdisk_allocateFreePage:
+	PSH R3
+	PSH R2
+	PSH R0
+
+	ADD R3 3 	; Get to the bitmap
+
+	LD R2 0 ; Counter for bytes
+	PSH R2
+
+	; Loops through each byte in the bitmap
+	ramdisk_allocateFreePage_Loop_Outer:
+	POP R2
+	INC R2
+	CE R2 33
+	JMPC ramdisk_allocateFreePage_nofree
+	PSH R2
+
+	INC R3
+	DD R3
+	LD R0		; Byte in bitmap
+	LD R2 0		; Counter for bit position
+
+	; Loops through each bit in the current byte
+	ramdisk_allocateFreePage_Loop:
+		CE R2 16
+		JMPC ramdisk_allocateFreePage_Loop_Outer
+		PSH R0
+		AND R0 0x8000
+		CNZ R0
+		POP R0
+		INC R2
+		SHL R0 1
+		JMPC ramdisk_allocateFreePage_Loop
+
+	POP R1
+	DEC R1
+	DEC R2
+
+	; R1 has the byte number
+	; R2 has the bit position
+	; R3 has the address of byte
+
+	DD R3
+	LDD R3 			; Load the bytes value
+	
+	LD R0 0x8000
+	SHR R2			; Shift a 1 in the MSB to the right by R2
+	; This is the newly allocated page
+	OR R3			; OR the new bit with the old value
+	STD R0			; Store it!
+
+	; R1 has the byte number
+	; R2 has the bit position
+
+	LDZ R1
+	SHL R0 4
+	ADD R2		; R0 = R1 * 16 + R2
+	STZ R1
+
+	; R1 has the page number
+
+	POP R0
+	POP R2
+	POP R3
+	RET
+
+	ramdisk_allocateFreePage_nofree:
+	LD R1 0xffff
+	POP R0
+	POP R2
+	POP R3
+	RET
+
+; R0 -> Disk number
+; R0 <- Pointer to item in table entry
+ramdisk_getinfo:
+	PSH R1
+	PSH R2
+	LD R1 ramdisk_Table
+	ramdisk_getinfo_loop:
+		DD R1
+		LDD R2 ; Disk ID of first entry
+		PSH R0
+		SUB R2 ; Subtract R2 from R0
+		CNZ R0 ; See if R0-R2 = 0: if not, need to loop
+		POP R0
+		ADD R1 4 ; Increment R1 to next table entry
+		JMPC ramdisk_getinfo_loop
+	SUB R1 4
+
+	PSH R1
+	POP R0
+
+	POP R2
+	POP R1
+	RET
+
+; R1 -> ptr to absolute path string
+; R1 <- Page number, 0xfff on fail
+ramdisk_traverse:
+	PSH R0
+	PSH R2
+	LD R2 0 ; Page to start on
+	DD R1
+	LDD R0 ; Holds first char of path
+	CNE R0 '/'
+	JMPC ramdisk_traverse_error
+	INC R1
+	DD R1
+	LDD R0
+	CE R0 0
+	JMPC ramdisk_traverse_done
+
+	; Need to handle directories here:
+	; R0 has the first character
+	; R1 has the pointer in the string to the first folder name
+	; R2 has the current page number
+
+	ramdisk_traverse_error:
+	LD R1 0xffff
+	POP R2
+	POP R0
+	RET
+	ramdisk_traverse_done:
+	PSH R2
+	POP R1
+	POP R2
+	POP R0
+	RET
+
+ramdisk_TableSize: .db 2
+; Each entry is 4 bytes
+; The disk number, the address, the size, and one blank
+ramdisk_Table:
+.dz 2 * 4
+
+ramdisk_PendingFSAddress: .db 0
+
+; Each driver table has:
+; 0: ptr to mkdir
+; 1: ptr to lsdir
+ramdisk_DriverTable:
+	.db ramdisk_MKDIR
+	.db ramdisk_LIST

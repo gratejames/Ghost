@@ -45,7 +45,7 @@ private:
 	unsigned short popFromStack();
 	void executeFunction(unsigned short instruction);
 
-	void callInterrupt(); // From ticker thread, jumps
+	void callPendingInterrupt(); // From ticker thread, jumps
 	void callInterrupt(unsigned short interrupt); // From event thread, queues
 	unsigned short interruptToCall;
 	bool needToInterrupt;

@@ -1,11 +1,11 @@
 #INC ./interrupts/kernel.ghasm
-#ORG PROG_START
+#ORG KERNEL_END
 
-ST 0b0000000000000001 $0xaf80	;; Background
-ST 0b0000011111001000 $0xaf81	;; Forground
+ST 0b0000000000000001 $0xaff0	;; Background
+ST 0b0000011111001000 $0xaff1	;; Forground
 
 ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
-ST 3 $0xaffe					;; Display mode
+ST 3 $0xafef					;; Display mode
 
 ST printString $0xaf5e			;; Register printString as the string printing interrupt
 ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
@@ -32,7 +32,8 @@ here:
 HLT
 
 KeyboardInterrupt:
-	POP R0						; Get key state
+	PSH
+	LD R0 $0xafd0				; Get key state
 	CEZ R0						; 
 	JMPC KeyboardInterruptExit	; Return if key up event
 	LD R0 $TextInputCursor		; Load the cursor within the textinput memory
@@ -44,7 +45,7 @@ KeyboardInterrupt:
 	DEC R0						; Restore it to its correct value
 	ADD R0 $TextInput			; Add the address of the textinput memory
 	DD R0						; The address of the next character
-	POP R0 						; Load the new character
+	LD R0 $0xafd1				; Load the new character
 	STD R0						; Store it to the textinput memory
 	ST R0 $0xaf70				; Store it to the character to be drawn
 	LD R0 $Cursor				; /
@@ -64,7 +65,7 @@ KeyboardInterrupt:
 	RET
 
 	KeyboardInterruptExit:
-		POP R0
+		; POP R0
 		POP
 		RET
 

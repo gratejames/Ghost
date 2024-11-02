@@ -342,6 +342,14 @@ Instructions = {
     "DECD": {
         "Binary": "0b11110111",
         "Arguments": "None"
+    },
+    "IDIS": {
+        "Binary": "0b11111000",
+        "Arguments": "None"
+    },
+    "IEN": {
+        "Binary": "0b11111001",
+        "Arguments": "None"
     }
 }
 Shorthand = {

@@ -1,0 +1,3 @@
+CMD_NOT_FOUND:
+.ds "!Command not found"
+.db 0

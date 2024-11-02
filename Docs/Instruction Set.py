@@ -216,9 +216,10 @@ def conditional(interior):
 def debugOut(value):
 	return f"\t\tstd::cout << \"0x\" << std::hex << std::setw(4) << std::setfill('0') << {value} << std::endl;\n"
 def debugOutChar(value):
-	return f"\t\tstd::cout << (char){value};\n\t\tif (flushDebugChar)\n\t\t\tstd::cout << std::endl;\n"
+	# return f"\t\tstd::cout << (char){value};\n\t\tif (flushDebugChar)\n\t\t\tstd::cout << std::endl;\n"
+	return "\t\tvalue = " + value + ";\n\t\tif (value != '\\n') \n\t\t\tstd::cout << (char)value;\n\t\telse if (flushDebugChar || value == '\\n')\n\t\t\tstd::cout << std::endl;\n"
 def setOffset(value):
-	return f"\t\toffsetRegister = {value};\n"
+	return f"\t\t// offsetRegister = {value};\n"
 
 cppFilePath = "/home/flicker/Desktop/Ghost/Simulator/src/cpu.cpp"
 
@@ -429,6 +430,10 @@ for i in range(0, 0x100):
 		content = setOffset(getArgument())
 	elif mne == "ADOA":
 		content = setOffset(getAtArgument())
+	elif mne == "IDIS":
+		content = "\t\tinteruptHandling = false;\n"
+	elif mne == "IEN":
+		content = "\t\tinteruptHandling = true;\n"
 	else:
 		print(mne)
 		raise NotImplementedError

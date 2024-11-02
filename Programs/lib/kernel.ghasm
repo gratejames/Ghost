@@ -1,19 +1,19 @@
-#DEF PROG_START 0x1000
-#SHARE PROG_START
-JMP PROG_START
+#DEF HEAP_SIZE 0x1000 
 
 ; R0 -> Size
 ; R0 <- Pointer or 0 if fail
-; Destroys R1,R2,R3
 #SHARE malloc
 malloc:
+	PSH R1
+	PSH R2
+	PSH R3
 	; DBGC 'M'
 	STR R0 $malloc_targetSize		; Since the size is going to be used for comparison, and we can't compare two registers, lets just leave it there to use later
 	LD R0 heap						; Start with the first header on the heap
 	malloc_CheckBlock:
-	CGT R0 PROG_START
+	CGT R0 heap+HEAP_SIZE
 	JMPC malloc_Fail
-	CE R0 PROG_START
+	CE R0 heap+HEAP_SIZE
 	JMPC malloc_Fail
 	DD R0							; Address of header
 	LDD R1
@@ -76,10 +76,16 @@ malloc:
 	malloc_Done:					; Now that we have a single block of the proper size, and it's marked as allocated, just return. That's all!
 		; DBGC 'D'
 		INC R0
+		POP R3
+		POP R2
+		POP R1
 		RET
 	malloc_Fail:
 		; DBGC 'A'
 		LD R0 0
+		POP R3
+		POP R2
+		POP R1
 		RET
 
 malloc_targetSize: .db 0
@@ -139,7 +145,7 @@ free:
 		RET							; Rearange so that R1 is size, R2 is header pointer
 	free_right:
 		; DBGC 'R'
-		CE R3 PROG_START
+		CE R3 heap+HEAP_SIZE
 		RETC						; If the header is at the end, we're done!
 		PSH R3
 		INC R3
@@ -174,7 +180,6 @@ free:
 
 ; Heap is a linked list where each header points to the next block
 ; First bit of header is 1 if allocated, 0 if not. The rest is the size of the block.
-#SHARE heap ; DEBUGGING ONLY
 heap:
-.db (PROG_START-2)-heap ; An unallocated section that fills to PROG_START, the default starting configuration.
-
+.db HEAP_SIZE-2
+.dz HEAP_SIZE-1

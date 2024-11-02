@@ -1,0 +1,102 @@
+JMP PROG_START
+#INC ./interrupts/kernel.ghasm
+#INC ./interrupts/vfs.ghasm
+#INC ./interrupts/ramdisk.ghasm
+PROG_START:
+
+LD R0 RAMDISK
+LD R1 $RAMDISKSIZE
+DBGC '!'
+CALL ramsdiskInit
+
+LD R0 0 ; Disk
+LD R1 dirTestStr1 ; Ptr to path
+LD R2 fName1 ; Ptr to new folder name
+CALL vfs_mkdir
+
+LD R0 0 ; Disk
+LD R1 dirTestStr1 ; Ptr to path
+LD R2 fName2 ; Ptr to new folder name
+CALL vfs_mkdir
+
+LD R0 0 ; Disk
+LD R1 dirTestStr1 ; Ptr to path
+LD R2 fName3 ; Ptr to new folder name
+CALL vfs_mkdir
+
+; DBG vfs_list
+
+LD R0 0 ; Disk
+LD R1 dirTestStr1 ; Ptr to path
+CALL vfs_list
+
+; R3 has pointer to listdir obj
+DBGC 0x0a
+
+LDZ R3
+LD R1 0
+LD R3 0
+DBGC '|'
+VFSLIST_debug:
+	DD R0
+	LDD R2
+	CE R2 0
+	JMPC VFSLIST_debug_noprint
+	DBGC R2
+	VFSLIST_debug_noprint:
+	INC R0
+	INC R1
+	INC R3
+	CNE R3 12
+	JMPC VFSLIST_debug_cont
+	LD R3 0
+	DBGC '|'
+	DBGC 0x0a
+	DBGC '|'
+	VFSLIST_debug_cont:
+	CLT R1 96
+	JMPC VFSLIST_debug
+
+DBGC '|'
+
+LDZ R3
+CALL free
+
+; DBGC 0x0a
+
+; LD R1 48 ; Start of Ramdisk debug
+; RamdiskDebugLoop:
+; 	LDZ R1
+; 	ADD R0 RAMDISK
+; 	DD R0
+; 	LDD R0
+; 	DBG R0
+; 	INC R1
+; 	CLT R1 64 ; End of Ramdisk debug
+; 	JMPC RamdiskDebugLoop
+
+
+HLT
+
+dirTestStr1:
+.ds "/"
+.db 0
+fName1:
+.ds "folderOne"
+.dz 3
+fName2:
+.ds "folderTwo"
+.dz 3
+fName3:
+.ds "folderThree"
+.dz 1
+
+printString:
+#INC ./interrupts/stringPrint.ghasm
+printChar:
+#INC ./interrupts/charPrint.ghasm
+Font:
+#INC ./fontGen/font.hex
+
+RAMDISKSIZE: .db 0x1000
+RAMDISK:
