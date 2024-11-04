@@ -316,7 +316,7 @@ MakeAbsolute:
 	DD R1
 	LDD R0
 	CE R0 '/'
-	JMPC MakeAbsolute_Done
+	JMPC MakeAbsolute_Almost_Done
 	; R1 has pointer to relative string
 	; Steps: Copy current into absolute, then copy relative onto absolute, then enforce trailing slash
 	LD R2 currentDirectory
@@ -349,31 +349,51 @@ MakeAbsolute:
 	DD R3
 	STD 0
 
-	; LD R1 absoluteDirectory
-	; CALL PrintLineAtCursor
-	LD R1 absoluteDirectory
-
 	MakeAbsolute_Done:
+	LD R1 absoluteDirectory
 	POP R3
 	POP R2
 	POP R0
 	RET
 
+	MakeAbsolute_Almost_Done:
+	LD R2 absoluteDirectory
+	MakeAbsolute_Almost_Done_Loop:
+		DD R1
+		LDD R0
+		DD R2
+		STD R0
+		DBGC R0
+		INC R1
+		INC R2
+		CNZ R0
+		JMPC MakeAbsolute_Almost_Done_Loop
+	SUB R2 2
+	DD R2
+	LDD R0
+	DBGC R0
+	CE R0 '/'
+	JMPC MakeAbsolute_Done ; Trailing slash? Done!
+	INC R2
+	DD R2
+	STD '/'
+	INCD
+	STD 0
+	JMP MakeAbsolute_Done ; Now we've got a trailing slash!
+
+
+
+	; It's already absolute, it just needs to be copied into the buffer
+	; so we can ensure it has a trailing slash. Hmmph.
+
+
 CMD_CD:
 	SUB R0 2
 	CLT R0 1
 	JMPC CMD_CD_NOARG
-
-	; R1 has pointer to 0 terminated string
 	CALL MakeAbsolute
 	; R1 has pointer to whole path
-	; TODO: Check if path is valid
 	PSH
-	; R0 -> Disk number
-	; R0 <- error code (Nominal 0)
-	; R1 ptr to path
-	; R3 <- ptr to malloc'd listdir obj, or 0 on fail
-	; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
 	LD R0 $currentDisk ; Disk
 	CALL vfs_list
 	CNZ R0
@@ -489,18 +509,82 @@ CMD_LS:
 CMD_MKDIR:
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
-	; TODO: Handle path instead of just folder name
-	; SUB R0 5
-	; CLT R0 1
-	; JMPC CMD_MKDIR_NOARG
-	
-	; CALL MakeAbsolute
+	; TODO: Handle path instead of just folder name	SUB R0 5
+	; CALL char12
+	SUB R0 5
+	CLT R0 1
+	JMPC CMD_MKDIR_NOARG
+	CALL MakeAbsolute
+
+	PSH R1
+
+	PSH
+	CALL PrintLineAtCursor
+	POP
+
+	; R1 is the ptr to argument made absolute
+
+	CMD_MKDIR_FINDEND:
+		DD R1
+		INC R1
+		LDD R0
+		; DBGC 'F'
+		; DBGC R0
+		CNZ R0
+		JMPC CMD_MKDIR_FINDEND
+
+	SUB R1 2
+	DD R1
+	LDD R0
+	STD 0
+
+	; R1 now has pointer to end of string
+	CMD_MKDIR_FINDLASTSLASH:
+		DEC R1
+		DD R1
+		LDD R0
+		; DBGC 'R'
+		; DBGC R0
+		CNE R0 '/'
+		JMPC CMD_MKDIR_FINDLASTSLASH
+
+	INC R1
+	PSH R1
+	; R1 pointer right after last slash, to folder name in place
+	; Stack has pointer to path
+	CALL char12
+
+	PSH
+	CALL PrintLineAtCursor
+	POP
+
+	; Now that we have the new folder name out of the way,
+	; Write a zero after the middle slash
+	; And use that for the path
+
+	POP R3
+	DD R3
+	LDD R0
+	STD 0
+
+
 	PSH R1
 	POP R2
+	POP R1
 	PSH R2
 
+
+	PSH
+	CALL PrintLineAtCursor
+	POP
+
+	; R1 has pointer to path
+	; R2 has pointer to file name
+	; Stack has pointer to file name to free it
+
 	LD R0 $currentDisk ; Disk
-	LD R1 currentDirectory ; Ptr to path
+	; LD R1 currentDirectory ; Ptr to path
+	; R2 is pointer to file name
 	CALL vfs_mkdir
 	CNZ R0
 	CALLC PRINT_CMD_MKDIR_ERROR
