@@ -1,6 +1,7 @@
 ; R0 -> Address to driver table
 ; R0 <- Table entry (Disk Number) on success, 0xffff on fail
 ; Destroys: R1, R2
+#SHARE vfs_register
 vfs_register:
 	LD R2 0 ; Counter
 	vfs_register_loop:
@@ -31,6 +32,7 @@ vfs_register:
 ; R0 Disk number
 ; R1 ptr to path
 ; R2 ptr to new folder name
+#SHARE vfs_mkdir
 vfs_mkdir:
 	PSH R0
 	ADD R0 DriversTable
@@ -46,6 +48,7 @@ vfs_mkdir:
 
 ; R0 Disk number
 ; R1 ptr to path
+#SHARE vfs_list
 vfs_list:
 	PSH R0
 	ADD R0 DriversTable

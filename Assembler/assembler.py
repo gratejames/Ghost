@@ -12,6 +12,7 @@ class assembler:
 		self.definitions = {}
 		self.shares = []
 		self.macros = {}
+		self.org = 0
 		self.position = 0
 		self.lineNumber = 0
 		self.shareall = False
@@ -96,9 +97,9 @@ class assembler:
 					line = self.intToHexString(eval(val, {**self.definitions}))
 				except NameError as e:
 					self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}")
-			if dataType == "String":
+			elif dataType == "String":
 				line = self.parseString(line[3:].strip())
-			if dataType == "Zeroes":
+			elif dataType == "Zeroes":
 				try:
 					line = "0x0000 " * eval(val, {**self.definitions})
 				except NameError as e:
@@ -274,8 +275,9 @@ class assembler:
 		return line
 	
 	def assemble(self, org=0, warnHLT=1, nested=0, definitions={}):
-		self.definitions = definitions
+		self.definitions = definitions.copy()
 		self.position = org
+		self.org = org
 		self.nested = nested
 		# print(f"Assembling {self.fileName.split('/')[-1]}")
 		if "HLT" not in self.fileContents and warnHLT == 1:
@@ -360,40 +362,41 @@ class assembler:
 
 			if line.startswith("#DATA"):
 				line = line[5:]
-			words = line.split(" ")
-			for wordNumber, word in enumerate(words):
-				if word in ["R0", "R1", "R2", "R3"]:
-					words[wordNumber] = ""
-					line = " ".join([x for x in words if x != ""])
-					continue
-				word = word.replace("$", "")
-				if word.strip() == "":
-					continue
-				if any([(op in word) for op in "-+/*"]):
-					try:
-						word = self.intToHexString(eval(word, {**self.definitions}))
-					except NameError as e:
-						# self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
-						self.die(f"\nX Could not resolve name '{e.name}'")
+			else:
+				words = line.split(" ")
+				for wordNumber, word in enumerate(words):
+					if word in ["R0", "R1", "R2", "R3"]:
+						words[wordNumber] = ""
+						line = " ".join([x for x in words if x != ""])
+						continue
+					word = word.replace("$", "")
+					if word.strip() == "":
+						continue
+					if any([(op in word) for op in "-+/*"]):
+						try:
+							word = self.intToHexString(eval(word, {**self.definitions}))
+						except NameError as e:
+							# self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
+							self.die(f"\nX Could not resolve name '{e.name}'")
 
-				if word in list(AssemblerDefs.Instructions.keys()):
-					Binary = AssemblerDefs.Instructions[word]["Binary"]
-					if "RR" in Binary:
-						Binary = Binary.replace("RR", str(bin(["R0", "R1", "R2", "R3"].index(words[wordNumber + 1])))[2:].zfill(2))
-					word = self.intToHexString(int(Binary, 2))
+					if word in list(AssemblerDefs.Instructions.keys()):
+						Binary = AssemblerDefs.Instructions[word]["Binary"]
+						if "RR" in Binary:
+							Binary = Binary.replace("RR", str(bin(["R0", "R1", "R2", "R3"].index(words[wordNumber + 1])))[2:].zfill(2))
+						word = self.intToHexString(int(Binary, 2))
 
-				if not self.isValidFinalHex(word):
-					try:
-						newWord = self.intToHexString(int(word, 0))
-						# print(f"! Assumed token '{word}' to '{newWord}'")
-						word = newWord
-					except ValueError:
-						# self.die(f"\nX Error resolving token '{word}' on line {self.lineNumber+1}, word {wordNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
-						self.die(f"\nX Error resolving token '{word}'")
+					if not self.isValidFinalHex(word):
+						try:
+							newWord = self.intToHexString(int(word, 0))
+							# print(f"! Assumed token '{word}' to '{newWord}'")
+							word = newWord
+						except ValueError:
+							# self.die(f"\nX Error resolving token '{word}' on line {self.lineNumber+1}, word {wordNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
+							self.die(f"\nX Error resolving token '{word}'")
 
 
-				words[wordNumber] = word.strip()
-				line = " ".join([x for x in words if x != ""])
+					words[wordNumber] = word.strip()
+					line = " ".join(words)
 
 			
 

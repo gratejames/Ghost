@@ -2,7 +2,8 @@
 ; R0 <- Disk Number
 ; R1 size
 ; Destroys R2
-ramsdiskInit:
+#SHARE ramdiskInit
+ramdiskInit:
 	PSH R0
 	PSH R1
 	LD R0 ramdisk_DriverTable
