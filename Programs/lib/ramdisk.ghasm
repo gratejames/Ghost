@@ -102,7 +102,111 @@ ramdisk_format:
 	ADD R1 12
 	RET
 
-; R0 Disk number
+ramdisk_compareNames_counter: .db 0
+
+; R0 is the first name
+; R2 is the second name
+; Returns in a conditional
+ramdisk_compareNames:
+	PSH
+	STZ R1
+	ST 12 $ramdisk_compareNames_counter
+	ramdisk_compareNames_loop:
+		DD R1
+		LDD R0
+		DD R2
+		LDD R3
+		INC R1
+		INC R2 ; Increment Ptrs for next time 'round
+		PSH R0
+			LD R0 $ramdisk_compareNames_counter
+			DEC R0
+			ST R0 $ramdisk_compareNames_counter
+		POP R0
+		; DBGC R0
+		; DBGC R3
+		; R0 is character
+		; R1 is ptr
+		; R2 is ptr
+		; R3 is character
+		PSH R0
+			XOR R3 ; Compare R0 and R3
+			CEZ R0
+		POP R0
+		JMPC ramdisk_compareNames_match
+		ramdisk_compareNames_notmatch:
+			LD R1 0
+			CNZ R1 ; Return False
+			POP
+			RET
+
+		ramdisk_compareNames_match:
+			; Ok, so the characters match
+			; If the counter is at zero, we're done. Else, Continue
+			CNZ $ramdisk_compareNames_counter
+			JMPC ramdisk_compareNames_loop
+			; Fall through to the case were they all match!
+			LD R1 0
+			CEZ R1 ; Return True
+			POP
+			RET
+
+; Checks if the given page has the given child name
+; Returns in conditions register
+; R1 page number
+; R2 pointer to name to check
+; R3 address of fs start
+; Try to return pointer to item in R3?
+; Destroys: 
+ramdisk_haschild:
+	PSH
+	LDZ R1
+	SHL R0 7
+	ADD R3
+	STZ R3
+	; Address of page (R3) = fs start + Page number * page size	
+	LD R1 0 ; Offset within page
+	CNZ R1
+	JMPC ramdisk_haschild_loop
+	LD R1 48 ; First page has an offset of 48, not 0
+	ramdisk_haschild_loop:
+		CE R1 128
+		JMPC ramdisk_haschild_noMatch
+		; R1: Page offset of the current entry
+		; R3: Address of the page start
+		LDZ R3
+		ADD R1
+		ADD R1 16
+		; R0: Address of current entry
+		PSH R0
+		DD R0
+		LDD R0		; Read entry flags
+		AND R0 0b01
+		CEZ R0		; If it's not allocated...
+		POP R0
+		JMPC ramdisk_haschild_loop
+		; Now we know the entry is allocated.
+		ADD R0 2
+		; R0 has the address of the current entry's name
+		; R2 has the address of the name to check
+		CALL ramdisk_compareNames
+		JMPC ramdisk_haschild_match
+		; Otherwise, loop
+		JMP ramdisk_haschild_loop
+
+	ramdisk_haschild_match:
+	LD R0 0
+	CEZ R0 ; Return True
+	POP
+	RET
+	ramdisk_haschild_noMatch:
+	LD R0 0
+	CNZ R0 ; Return False
+	POP
+	RET
+
+; R0 -> Disk number
+; R0 <- error code (Nominal 0)
 ; R1 ptr to path
 ; R2 ptr to new folder name zero padded to 12 characters
 ; Destroys: R3
@@ -116,15 +220,18 @@ ramdisk_MKDIR:
 	; R1 has the page number
 	; R2 has the ptr to the new folder name
 
-	PSH R2
-
 	STZ R3		; Copy table pointer to R3
 	ADD R3 1 	; Get the second item in the table
 	DD R3
 	LDD R3		; Read the address of the fs
 
+	CALL ramdisk_haschild
+	JMPC ramdisk_MKDIR_NameTaken
+
+	PSH R2
+
 	LD R2 0 ; Offset from beginning of page to 1st directory entry
-	CNE R1 0
+	CNZ R1
 	JMPC ramdisk_MKDIR_SearchForDirLoop
 	LD R2 48 ; For the first page, the offset is 48
 	ramdisk_MKDIR_SearchForDirLoop:
@@ -142,7 +249,8 @@ ramdisk_MKDIR:
 
 		PSH R0
 		DD R0
-		LDD R0		; Read that byte
+		LDD R0		; Read entry flags
+		AND R0 0b01
 		CNZ R0		; If it's marked as allocated we need to check the next directory slot
 		POP R0
 		ADD R2 16	; Prepare for next interation	
@@ -186,26 +294,34 @@ ramdisk_MKDIR:
 	DBGC 'M'
 	DBGC 'K'
 	DBGC 0x0a
+	LD R0 0x0000
 	RET
 
-	ramdisk_MKDIR_AllocPageFail:
-		POP R2
-		POP R0
+	ramdisk_MKDIR_NameTaken:
 		DBGC 'm'
-		DBGC 'a'
+		DBGC 'n'
 		DBGC 0x0a
-		RET
-	ramdisk_MKDIR_DirectoryFull:
-		POP R2
-		POP R0
-		DBGC 'm'
-		DBGC 'f'
-		DBGC 0x0a
+		LD R0 0x0001
 		RET
 	ramdisk_MKDIR_TraverseFail:
 		DBGC 'm'
 		DBGC 't'
 		DBGC 0x0a
+		LD R0 0x0002
+		RET
+	ramdisk_MKDIR_DirectoryFull:
+		POP R2
+		DBGC 'm'
+		DBGC 'f'
+		DBGC 0x0a
+		LD R0 0x0003
+		RET
+	ramdisk_MKDIR_AllocPageFail:
+		POP R2
+		DBGC 'm'
+		DBGC 'a'
+		DBGC 0x0a
+		LD R0 0x0004
 		RET
 
 ; R0 Disk number
@@ -231,7 +347,7 @@ ramdisk_LIST:
 	LD R0 96
 	CALL malloc
 	STZ R3
-	DBG R3
+	; DBG R3
 
 	PSH R3
 	; DBG R3
@@ -267,7 +383,7 @@ ramdisk_LIST:
 			DD R0
 			LDD R2
 
-			DBG R3
+			; DBG R3
 			DD R3
 			STD R2
 
@@ -421,6 +537,10 @@ ramdisk_traverse:
 	CE R0 0
 	JMPC ramdisk_traverse_done
 
+	DBGC 'N'
+	DBGC 'Y'
+	DBGC 'I'
+	DBGC 0xa
 	; Need to handle directories here:
 	; R0 has the first character
 	; R1 has the pointer in the string to the first folder name

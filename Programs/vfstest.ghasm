@@ -1,8 +1,28 @@
 JMP PROG_START
-#INC ./interrupts/kernel.ghasm
-#INC ./interrupts/vfs.ghasm
-#INC ./interrupts/ramdisk.ghasm
+#INC ./lib/kernel.ghasm
+#INC ./lib/vfs.ghasm
+#INC ./lib/ramdisk.ghasm
 PROG_START:
+
+DBGC 't'
+DBGC '1'
+LD R0 fName1
+LD R2 fName1
+CALL ramdisk_compareNames
+CALLC match
+DBGC '|'
+DBGC 0xa
+
+DBGC 't'
+DBGC '2'
+LD R0 fName1
+LD R2 fName2
+CALL ramdisk_compareNames
+CALLC match
+DBGC '|'
+DBGC 0xa
+
+HLT
 
 LD R0 RAMDISK
 LD R1 $RAMDISKSIZE
@@ -22,6 +42,11 @@ CALL vfs_mkdir
 LD R0 0 ; Disk
 LD R1 dirTestStr1 ; Ptr to path
 LD R2 fName3 ; Ptr to new folder name
+CALL vfs_mkdir
+
+LD R0 0 ; Disk
+LD R1 dirTestStr1 ; Ptr to path
+LD R2 fName1 ; Ptr to new folder name
 CALL vfs_mkdir
 
 ; DBG vfs_list
@@ -78,6 +103,10 @@ CALL free
 
 HLT
 
+match:
+	DBGC 'y'
+	RET
+
 dirTestStr1:
 .ds "/"
 .db 0
@@ -92,11 +121,11 @@ fName3:
 .dz 1
 
 printString:
-#INC ./interrupts/stringPrint.ghasm
+#INC ./lib/stringPrint.ghasm
 printChar:
-#INC ./interrupts/charPrint.ghasm
+#INC ./lib/charPrint.ghasm
 Font:
 #INC ./fontGen/font.hex
 
 RAMDISKSIZE: .db 0x1000
-RAMDISK:
+RAMDISK: .dz RAMDISKSIZE

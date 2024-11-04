@@ -157,9 +157,9 @@ KeyboardInterrupt:
 
 	KI_Backspace:
 		LD R1 $Cursor
-		CLT R1 $Backstop
+		CLT R1 $LastCursor
 		JMPC KeyboardInterruptExit
-		CE R1 $Backstop
+		CE R1 $LastCursor
 		JMPC KeyboardInterruptExit
 
 		LD R0 ' '
@@ -276,7 +276,7 @@ handleUserInput:
 	; DBGC 0x0a
 	RET
 	HUI_Exhausted:
-		LD R1 CMD_NOT_FOUND
+		LD R1 STR_CMD_NOT_FOUND
 		CALL PrintLineAtCursor
 		RET
 
@@ -288,12 +288,168 @@ CursorNewline:
 	ST R1 $Cursor
 	RET
 
+rootDir:
+.ds "/"
+.db 0
+
 CMD_LS:
-	DBGC 'S'
+	LD R0 0 ; Disk
+	LD R1 rootDir ; Ptr to path
+	CALL vfs_list
+
+	; R3 has pointer to listdir obj
+	; DBGC 0x0a
+
+	LDZ R3
+	LD R1 0
+	LD R3 0
+	; DBGC '|'
+	VFSLIST_debug:
+		DD R0
+		LDD R2
+		CE R2 0
+		JMPC VFSLIST_debug_noprint
+		; DBGC R2
+			PSH
+			LDZ R2
+			CALL PrintAtCursor
+			POP
+		VFSLIST_debug_noprint:
+		INC R0
+		INC R1
+		INC R3
+		CNE R3 12
+		JMPC VFSLIST_debug_cont
+		LD R3 0
+		; DBGC '|'
+		; DBGC 0x0a
+		; DBGC '|'
+			PSH
+			LD R0 ' '
+			CALL PrintAtCursor
+			POP
+		VFSLIST_debug_cont:
+		CLT R1 96
+		JMPC VFSLIST_debug
+
+	; DBGC '|'
+		PSH R1
+		CALL CursorNewline
+		POP R1
+
+	LDZ R3
+	CALL free
 	RET
 
-CMD_HLT:
+CMD_MKDIR:
+	; R1 has pointer to 0 terminated string
+	; Need to convert to an 12 char padded string
+	CALL char12
+	PSH R1
+	POP R2
+	PSH R2
+
+	LD R0 0 ; Disk
+	LD R1 rootDir ; Ptr to path
+	CALL vfs_mkdir
+	CNZ R0
+	CALLC PRINT_CMD_MKDIR_ERROR
+
+	POP R0
+	CALL free
+	RET
+
+PRINT_CMD_MKDIR_ERROR:
+	PSH R1
+	CE R0 0x0001
+	JMPC CMD_MKDIR_ERROR_1
+	CE R0 0x0002
+	JMPC CMD_MKDIR_ERROR_2
+	CE R0 0x0003
+	JMPC CMD_MKDIR_ERROR_3
+	CE R0 0x0004
+	JMPC CMD_MKDIR_ERROR_4
+	LD R1 STR_MKDIR_ERROR
+
+	PRINT_CMD_MKDIR_ERROR_EXIT:
+		CALL PrintLineAtCursor
+		POP R1
+		RET
+
+	CMD_MKDIR_ERROR_1:
+		LD R1 STR_MKDIR_ERROR_1
+		JMP PRINT_CMD_MKDIR_ERROR_EXIT
+	CMD_MKDIR_ERROR_2:
+		LD R1 STR_MKDIR_ERROR_2
+		JMP PRINT_CMD_MKDIR_ERROR_EXIT
+	CMD_MKDIR_ERROR_3:
+		LD R1 STR_MKDIR_ERROR_3
+		JMP PRINT_CMD_MKDIR_ERROR_EXIT
+	CMD_MKDIR_ERROR_4:
+		LD R1 STR_MKDIR_ERROR_4
+		JMP PRINT_CMD_MKDIR_ERROR_EXIT
+
+CMD_HALT:
+	LD R1 STR_CMD_HALT
+	CALL PrintLineAtCursor
 	HLT
+
+CMD_CLEAR:
+	ST 0 $Cursor
+	LD R2 CharMem
+	LD R3 0x1000
+
+	CMD_CLEAR_LOOP:
+		LD R0 ' '
+		CALL PrintAtCursor ; Clear display
+		DD R2
+		STD ' '
+		INC R2 ; Clear char mem
+		DEC R3
+		CNZ R3
+		JMPC CMD_CLEAR_LOOP
+	ST 0 $Cursor
+	RET
+
+; R1->ptr to 0 terminated string
+; R1<-ptr to malloc'd 12 byte string
+char12:
+	PSH R0
+	PSH R2
+	PSH R3
+	LD R0 12
+	LD R3 12
+	CALL malloc
+	PSH R0
+	; R0 has ptr to new buffer
+	; R1 has point to old string
+	char12_copyloop:
+		DD R1
+		LDD R2
+		DD R0
+		STD R2 ; Copy from one buffer to the other
+		INC R0
+		INC R1
+		DEC R3
+		CEZ R3
+		JMPC char12_outofroom
+		CNZ R2
+		JMPC char12_copyloop
+	; Now we've hit a zero, fill in the rest with zeroes
+	char12_clearloop:
+		DD R0
+		STD 0 ; Copy from one buffer to the other
+		INC R0
+		DEC R3
+		CNZ R3
+		JMPC char12_clearloop
+
+	char12_outofroom:
+	POP R1
+	POP R3
+	POP R2
+	POP R0
+	RET
 
 ; Table Format: string0ptr0...string0ptr00
 HUI_Table:
@@ -301,9 +457,21 @@ HUI_Table:
 .db 0
 .db CMD_LS
 .db 0
-.ds "hlt"
+.ds "halt"
 .db 0
-.db CMD_HLT
+.db CMD_HALT
+.db 0
+.ds "exit"
+.db 0
+.db CMD_HALT
+.db 0
+.ds "mkdir"
+.db 0
+.db CMD_MKDIR
+.db 0
+.ds "clear"
+.db 0
+.db CMD_CLEAR
 .db 0
 .db 0
 
@@ -351,6 +519,8 @@ SetAtCursor:
 	INT 0x5f
 	RET
 
+; R0: Character
+; Destroys R1
 PrintAtCursor:
 	CALL SetAtCursor
 	LD R1 $Cursor
@@ -391,7 +561,6 @@ RefreshDisplay:
 Timer:				.db 0xffff
 Cursor: 			.db 0x0001 ; (ypos, xpos)
 LastCursor:			.db 0x0001 ; (ypos, xpos)
-Backstop:			.db 0x0001
 KB_Mods:			.db 0 ; 0000 0000 0000 win+alt+ctrl+shift
 
 printString:
@@ -476,4 +645,4 @@ CharMem:
 .db 0
 
 RAMDISKSIZE: .db 0x1000
-RAMDISK: .dz 0x1000
+RAMDISK: .dz RAMDISKSIZE

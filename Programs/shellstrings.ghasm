@@ -1,3 +1,27 @@
-CMD_NOT_FOUND:
-.ds "!Command not found"
+STR_CMD_NOT_FOUND:
+.ds "!Command Not Found"
+.db 0
+
+STR_CMD_HALT:
+.ds "!Halting"
+.db 0
+
+STR_MKDIR_ERROR:
+.ds "!MKDIR:Unknown Error"
+.db 0
+
+STR_MKDIR_ERROR_1:
+.ds "!MKDIR:Folder Already Exists"
+.db 0
+
+STR_MKDIR_ERROR_2:
+.ds "!MKDIR:Failed to Traverse"
+.db 0
+
+STR_MKDIR_ERROR_3:
+.ds "!MKDIR:Parent Directory Full"
+.db 0
+
+STR_MKDIR_ERROR_4:
+.ds "!MKDIR:Failed to Allocate a New Page"
 .db 0
