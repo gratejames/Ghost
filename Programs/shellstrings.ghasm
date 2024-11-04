@@ -12,17 +12,53 @@ STR_MKDIR_ERROR:
 .db 0
 
 STR_MKDIR_ERROR_1:
-.ds "!MKDIR:Folder Already Exists"
+.ds "!MKDIR:Folder already exists"
 .db 0
 
 STR_MKDIR_ERROR_2:
-.ds "!MKDIR:Failed to Traverse"
+.ds "!MKDIR:Failed to traverse"
 .db 0
 
 STR_MKDIR_ERROR_3:
-.ds "!MKDIR:Parent Directory Full"
+.ds "!MKDIR:Parent directory full"
 .db 0
 
 STR_MKDIR_ERROR_4:
-.ds "!MKDIR:Failed to Allocate a New Page"
+.ds "!MKDIR:Failed to allocate a new page"
+.db 0
+
+STR_MKDIR_NOARG:
+.ds "!MKDIR:Must provide an argument"
+.db 0
+
+STR_RMDIR_ERROR:
+.ds "!RMDIR:Unknown Error"
+.db 0
+
+STR_RMDIR_ERROR_1:
+.ds "!RMDIR:Not a folder"
+.db 0
+
+STR_RMDIR_ERROR_2:
+.ds "!RMDIR:Failed to traverse"
+.db 0
+
+STR_RMDIR_ERROR_3:
+.ds "!RMDIR:Could not find directory"
+.db 0
+
+STR_LS_ERROR:
+.ds "!LS:Unknown Error"
+.db 0
+
+STR_LS_ERROR_1:
+.ds "!LS:Failed to traverse"
+.db 0
+
+STR_CD_ERROR_NOARG:
+.ds "!CD:Must provide an argument"
+.db 0
+
+STR_CD_ERROR_BADPATH:
+.ds "!CD:No such directory"
 .db 0

@@ -66,7 +66,6 @@ ramdisk_register:
 
 ; R0 -> Table entry in ramdisk_Table
 ramdisk_format:
-	; DBG R0
 	SHL R0 2
 	ADD R0 ramdisk_Table
 	INC R0
@@ -76,9 +75,7 @@ ramdisk_format:
 	DD R0
 	LDD R0 ; Disk size
 
-	; DBG R0
 	SHR R0 7 ; Amount of pages = size / 128
-	; DBG R0
 
 	; Write the header:
 	DD R1
@@ -124,8 +121,6 @@ ramdisk_compareNames:
 			DEC R0
 			ST R0 $ramdisk_compareNames_counter
 		POP R0
-		; DBGC R0
-		; DBGC R3
 		; R0 is character
 		; R1 is ptr
 		; R2 is ptr
@@ -152,27 +147,33 @@ ramdisk_compareNames:
 			POP
 			RET
 
+ramdisk_haschild:
+	PSH
+	CALL ramdisk_getchild
+	POP
+
 ; Checks if the given page has the given child name
 ; Returns in conditions register
 ; R1 page number
 ; R2 pointer to name to check
 ; R3 address of fs start
-; Try to return pointer to item in R3?
-; Destroys: 
-ramdisk_haschild:
-	PSH
+; Destroys: R0 <- pointer to child
+ramdisk_getchild:
+	PSH R1
+	PSH R2
+	PSH R3
 	LDZ R1
 	SHL R0 7
 	ADD R3
 	STZ R3
 	; Address of page (R3) = fs start + Page number * page size	
-	LD R1 0 ; Offset within page
 	CNZ R1
-	JMPC ramdisk_haschild_loop
+	LD R1 0 ; Offset within page
+	JMPC ramdisk_getchild_loop
 	LD R1 48 ; First page has an offset of 48, not 0
-	ramdisk_haschild_loop:
+	ramdisk_getchild_loop:
 		CE R1 128
-		JMPC ramdisk_haschild_noMatch
+		JMPC ramdisk_getchild_noMatch
 		; R1: Page offset of the current entry
 		; R3: Address of the page start
 		LDZ R3
@@ -185,26 +186,100 @@ ramdisk_haschild:
 		AND R0 0b01
 		CEZ R0		; If it's not allocated...
 		POP R0
-		JMPC ramdisk_haschild_loop
+		JMPC ramdisk_getchild_loop ; ... skip to the next
 		; Now we know the entry is allocated.
 		ADD R0 2
 		; R0 has the address of the current entry's name
 		; R2 has the address of the name to check
 		CALL ramdisk_compareNames
-		JMPC ramdisk_haschild_match
+		JMPC ramdisk_getchild_match
 		; Otherwise, loop
-		JMP ramdisk_haschild_loop
+		JMP ramdisk_getchild_loop
 
-	ramdisk_haschild_match:
-	LD R0 0
-	CEZ R0 ; Return True
-	POP
+	ramdisk_getchild_match:
+	SUB R0 2 ; Walk back from name pointer to entry pointer
+	LD R1 0
+	CEZ R1 ; Return True
+	POP R3
+	POP R2
+	POP R1
 	RET
-	ramdisk_haschild_noMatch:
+	ramdisk_getchild_noMatch:
 	LD R0 0
 	CNZ R0 ; Return False
-	POP
+	POP R3
+	POP R2
+	POP R1
 	RET
+
+; R0 -> Disk number
+; R0 <- error code (Nominal 0)
+; R1 ptr to path
+; R2 ptr to folder name zero padded to 12 characters
+; Destroys: R3
+ramdisk_RMDIR:
+	CALL ramdisk_getinfo
+	CALL ramdisk_traverse
+	CE R1 0xffff
+	JMPC ramdisk_RMDIR_TraverseFail
+
+	; R0 is the pointer in the ramdisk table
+	; R1 has the page number
+	; R2 has the ptr to the folder name
+
+	ADD R0 1 	; Get the second item in the table
+	DD R0
+	LDD R3		; Read the address of the fs
+	PSH R3
+
+	CALL ramdisk_getchild
+	JMPC ramdisk_RMDIR_foundTarget
+	JMP ramdisk_RMDIR_NotFound
+	ramdisk_RMDIR_foundTarget:
+	; R0 now has the pointer to the allocated directory entry
+	DD R0
+	LDD R1
+	AND R1 0b10
+	CEZ R1
+	JMPC ramdisk_RMDIR_NotADir
+	DD R0
+	STD 0 ; Deallocate the directory entry
+	INC R0
+	DD R0
+	LDD R1
+	POP R3
+	; R1 Page number of the directorys' contents
+	; R3 fs pointer
+	; TODO: Make sure that the directory is empty
+	; Steps: mark directory content page deallocated in both the page and the bitmap
+	CALL ramdisk_deallocatePage
+	DBGC 'R'
+	DBGC 'D'
+	DBGC 0x0a
+	LD R0 0x0000
+	RET
+
+	ramdisk_RMDIR_NotADir:
+		DBGC 'r'
+		DBGC 'd'
+		DBGC 0x0a
+		POP R0
+		LD R0 0x0001
+		RET
+	ramdisk_RMDIR_TraverseFail:
+		DBGC 'r'
+		DBGC 't'
+		DBGC 0x0a
+		LD R0 0x0002
+		RET
+	ramdisk_RMDIR_NotFound:
+		DBGC 'r'
+		DBGC 'n'
+		DBGC 0x0a
+		POP R0
+		LD R0 0x0003
+		RET
+
 
 ; R0 -> Disk number
 ; R0 <- error code (Nominal 0)
@@ -325,7 +400,8 @@ ramdisk_MKDIR:
 		LD R0 0x0004
 		RET
 
-; R0 Disk number
+; R0 -> Disk number
+; R0 <- error code (Nominal 0)
 ; R1 ptr to path
 ; R3 <- ptr to malloc'd listdir obj, or 0 on fail
 ; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
@@ -348,10 +424,8 @@ ramdisk_LIST:
 	LD R0 96
 	CALL malloc
 	STZ R3
-	; DBG R3
 
 	PSH R3
-	; DBG R3
 
 	; R0 is the pointer in the ramdisk table
 	; R1 has the page number
@@ -377,6 +451,15 @@ ramdisk_LIST:
 		PSH R1
 		PSH R2
 
+		; TODO: Make sure that the entry is actually allocated!
+		PSH R1
+		DD R0
+		LDD R1
+		AND R1 0b10
+		CEZ R1
+		POP R1
+		JMPC ramdisk_LIST_Skip
+
 		ADD R0 2	; Increment past flags/pg to name
 		LD R1 0		; Load a counter into R2
 
@@ -384,18 +467,16 @@ ramdisk_LIST:
 			DD R0
 			LDD R2
 
-			; DBG R3
 			DD R3
 			STD R2
-
-			; DBGC R2
-			; DBG R3
 
 			INC R0
 			INC R1
 			INC R3
 			CNE R1 12
 			JMPC ramdisk_LIST_NameCopy
+
+		ramdisk_LIST_Skip:
 
 		POP R2
 		POP R1
@@ -405,22 +486,76 @@ ramdisk_LIST:
 		JMPC ramdisk_LIST_ForDirLoop
 
 
+	LDZ R3
 	POP R3
+	PSH R3
+	POP R2
+	ADD R2 96
+	; R0 has the end of the output
+	; R2 has the final end of the output buffer
+	; R3 has the start of the output
+	ramdisk_LIST_fillLoop:
+		PSH R0
+		SBR R2 ; Distance left to fill
+		CEZ R0
+		POP R0
+		JMPC ramdisk_LIST_fillLoop_done
+		DD R0
+		STD 0
+		INC R0
+		JMP ramdisk_LIST_fillLoop
 
+
+	ramdisk_LIST_fillLoop_done:
 	DBGC 'L'
 	DBGC 'S'
-	; DBG $0xf000
-	; DBG $0xf001
-	; DBG $0xf002
+	DBGC 0x0a
+	LD R0 0
 	RET
 
 	ramdisk_LIST_TraverseFail:
 		POP R3
 		LD R3 0
+		LD R0 0x0001
 		DBGC 'l'
 		DBGC 't'
 		DBGC 0x0a
 		RET
+
+; R1 -> Page number to deallocate
+; R3 -> fs address
+ramdisk_deallocatePage:
+	PSH
+	ADD R3 3 	; Get to the bitmap
+	LDZ R1
+
+	SHR R0 4
+	AND R1 0x000f
+
+	; R0: number of bytes
+	; R1: bit position
+	; R3: Bitmap start address
+
+	ADD R3 ; Add bitmap start to butmap address
+	; R0 is pointer to bitmap byte
+	; R1 is bit position to unset
+	DD R0
+	LDD R2
+	STZ R3
+	; R1 is bit position to unset
+	; R2 is byte value
+	; R3 is the byte address
+	LD R0 0x8000
+	SHL R1
+	NOT R0
+	; R0 has the inverse of the new bit
+	AND R2
+	; R0 has new byte value
+	DD R3
+	STD R0
+	; Write new value back into bitmap
+	POP
+	RET
 
 ; R1 <- The page number of the new page or 0xffff on fail
 ; R3 -> fs address
@@ -522,42 +657,118 @@ ramdisk_getinfo:
 	POP R1
 	RET
 
+; R0 Pointer to item in table entry
 ; R1 -> ptr to absolute path string
 ; R1 <- Page number, 0xfff on fail
 ramdisk_traverse:
 	PSH R0
 	PSH R2
+	PSH R3
+
+	ADD R0 1 	; Get the second item in the table
+	DD R0
+	LDD R3		; Read the address of the fs
+
+	; R1 pointer to the path string
+	; R3 address of fs
+
 	LD R2 0 ; Page to start on
 	DD R1
 	LDD R0 ; Holds first char of path
 	CNE R0 '/'
-	JMPC ramdisk_traverse_error
+	JMPC ramdisk_traverse_error ; Ahh! Path not absolute!
 	INC R1
+
+	ramdisk_traverse_loop:
 	DD R1
 	LDD R0
 	CE R0 0
-	JMPC ramdisk_traverse_done
+	JMPC ramdisk_traverse_done ; If the path is just '/', then we're done!
 
-	DBGC 'N'
-	DBGC 'Y'
-	DBGC 'I'
-	DBGC 0xa
-	; Need to handle directories here:
-	; R0 has the first character
-	; R1 has the pointer in the string to the first folder name
-	; R2 has the current page number
+	PSH R3
+	LD R3 ramdisk_traverse_path_segment
+	ramdisk_traverse_copyLoop:
+		DD R1
+		LDD R0
+		DD R3
+		STD R0
+		INC R1
+		INC R3
+		CEZ R0
+		JMPC ramdisk_traverse_copyLoop_done
+		CE R0 '/'
+		JMPC ramdisk_traverse_copyLoop_done
+		JMP ramdisk_traverse_copyLoop
+
+	ramdisk_traverse_copyLoop_done:
+	POP R3
+	STD 0 ; We've either stored a / or a 0, make sure it's a 0 for string termination
+
+	; We now have a zero terminated string in ramdisk_traverse_path_segment for the path segment
+	; R1 is the pointer in the path string that now points after the current segment
+	; R2 has the current page in the fs
+	; R3 is the address of the file system
+
+	PSH R1
+	PSH R2
+		; Need to: Find child, make sure its a directory, go to it, repeat
+		PSH R2
+		POP R1 ; Move current page to R1
+		LD R2 ramdisk_traverse_path_segment
+		; R1 page number
+		; R2 pointer to name to check
+		; R3 address of fs start
+		CALL ramdisk_getchild
+	POP R2
+	POP R1
+	JMPC ramdisk_traverse_segment_success ; If found, no problem. Otherwise jmp to error
+	JMP ramdisk_traverse_error
+	ramdisk_traverse_segment_success:
+	; R0 is the pointer to the directory entry
+	; R1 is the pointer in the path string that now points after the current segment
+	; R2 has the current page in the fs
+	; R3 is the address of the file system
+	PSH R1
+	DD R0
+	LDD R1
+	; R1 has flags
+	AND R1 0b10
+	CEZ R1
+	POP R1
+	JMPC ramdisk_traverse_error ; If it's not a directory, fail
+	INC R0
+	PSH R1
+	DD R0
+	LDD R2 ; Load new page number into R2
+	POP R1
+	JMP ramdisk_traverse_loop
+
+
+
+	; Checks if the given page has the given child name
+	; Returns in conditions register
+	; R1 page number
+	; R2 pointer to name to check
+	; R3 address of fs start
+	; Destroys: R0 <- pointer to child
+	; ramdisk_getchild
 
 	ramdisk_traverse_error:
 	LD R1 0xffff
+	POP R3
 	POP R2
 	POP R0
 	RET
 	ramdisk_traverse_done:
 	PSH R2
 	POP R1
+
+	POP R3
 	POP R2
 	POP R0
 	RET
+
+ramdisk_traverse_path_segment: .dz 13
 
 ramdisk_TableSize: .db 2
 ; Each entry is 4 bytes
@@ -573,3 +784,4 @@ ramdisk_PendingFSAddress: .db 0
 ramdisk_DriverTable:
 	.db ramdisk_MKDIR
 	.db ramdisk_LIST
+	.db ramdisk_RMDIR

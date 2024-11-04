@@ -182,6 +182,8 @@ KeyboardInterrupt:
 		LD R0 ' '
 		CALL SetAtCursor	; Write a null terminator to the text memory
 
+		MV $Cursor $CommandEnd
+
 		CALL CursorNewline
 
 		CALL handleUserInput
@@ -267,9 +269,16 @@ handleUserInput:
 
 	; MATCH!!! Both strings have ended.
 	; DBGC 'M'
+
+	LD R0 $CommandEnd
+	SUB R0 $LastCursor
+
 	DD R2 ; Load the pointer to the function
 	LDD R3
 	DD R3
+	; Commands are run so that
+	; R0 is the length of the input
+	; R1 is a pointer to the arguments (Starting on the first char after the space)
 	CALD ; Call that pointer
 
 	; DBGC 'R'
@@ -288,17 +297,134 @@ CursorNewline:
 	ST R1 $Cursor
 	RET
 
-rootDir:
+currentDirectory:
 .ds "/"
-.dz (12+1)*8
+.dz (12+1)*8 +1
+
+absoluteDirectory:
+.ds "/"
+.dz (12+1)*8 +1
+
+currentDisk: .db 0
+
+; R1: pointer to zero terminated path string.
+MakeAbsolute:
+	PSH R0
+	PSH R2
+	PSH R3
+	
+	DD R1
+	LDD R0
+	CE R0 '/'
+	JMPC MakeAbsolute_Done
+	; R1 has pointer to relative string
+	; Steps: Copy current into absolute, then copy relative onto absolute, then enforce trailing slash
+	LD R2 currentDirectory
+	LD R3 absoluteDirectory
+	MakeAbsolute_CopyLoop1:
+		DD R2
+		LDD R0
+		DD R3
+		STD R0
+		INC R2
+		INC R3
+		CNZ R0
+		JMPC MakeAbsolute_CopyLoop1
+	DEC R3
+	; Now to copy the relative onto the absolute!
+	MakeAbsolute_CopyLoop2:
+		DD R1
+		LDD R0
+		DD R3
+		STD R0
+		INC R1
+		INC R3
+		CNZ R0
+		JMPC MakeAbsolute_CopyLoop2
+	; Enforce trailing slash
+	DEC R3
+	DD R3
+	STD '/'
+	INC R3
+	DD R3
+	STD 0
+
+	; LD R1 absoluteDirectory
+	; CALL PrintLineAtCursor
+	LD R1 absoluteDirectory
+
+	MakeAbsolute_Done:
+	POP R3
+	POP R2
+	POP R0
+	RET
+
+CMD_CD:
+	SUB R0 2
+	CLT R0 1
+	JMPC CMD_CD_NOARG
+
+	; R1 has pointer to 0 terminated string
+	CALL MakeAbsolute
+	; R1 has pointer to whole path
+	; TODO: Check if path is valid
+	PSH
+	; R0 -> Disk number
+	; R0 <- error code (Nominal 0)
+	; R1 ptr to path
+	; R3 <- ptr to malloc'd listdir obj, or 0 on fail
+	; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
+	LD R0 $currentDisk ; Disk
+	CALL vfs_list
+	CNZ R0
+	JMPC CMD_CD_BADPATH
+	LDZ R3
+	CALL free
+	POP
+
+	LD R2 currentDirectory
+
+	CMD_CD_LOOP:
+		DD R1
+		LDD R0
+		DD R2
+		STD R0
+		INC R1
+		INC R2
+		CNZ R0
+		JMPC CMD_CD_LOOP
+	RET
+	CMD_CD_NOARG:
+	LD R1 STR_CD_ERROR_NOARG
+	CALL PrintLineAtCursor
+	RET
+
+	CMD_CD_BADPATH:
+		; DBG R0
+		POP
+		LD R1 STR_CD_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
+
+CMD_ECHO:
+	CALL PrintLineAtCursor
+	RET
+
+CMD_PWD:
+	LD R1 currentDirectory
+	CALL PrintLineAtCursor
+	RET
+
 
 CMD_LS:
-	LD R0 0 ; Disk
-	LD R1 rootDir ; Ptr to path
+	LD R0 $currentDisk ; Disk
+	LD R1 currentDirectory ; Ptr to path
 	CALL vfs_list
 
-	; R3 has pointer to listdir obj
-	; DBGC 0x0a
+	CNZ R0
+	JMPC PRINT_CMD_LS_ERROR
+
+	PSH R3
 
 	LDZ R3
 	LD R1 0
@@ -307,14 +433,18 @@ CMD_LS:
 	VFSLIST_debug:
 		DD R0
 		LDD R2
-		CE R2 0
-		JMPC VFSLIST_debug_noprint
+		CEZ R2
+		JMPC VFSLIST_debug_zero
 		; DBGC R2
 			PSH
 			LDZ R2
 			CALL PrintAtCursor
 			POP
-		VFSLIST_debug_noprint:
+		JMP VFSLIST_debug_nonzero
+		VFSLIST_debug_zero:
+		CEZ R3
+		JMPC VFSLIST_debug_done
+		VFSLIST_debug_nonzero:
 		INC R0
 		INC R1
 		INC R3
@@ -332,31 +462,56 @@ CMD_LS:
 		CLT R1 96
 		JMPC VFSLIST_debug
 
+	VFSLIST_debug_done:
 	; DBGC '|'
-		PSH R1
-		CALL CursorNewline
-		POP R1
-
-	LDZ R3
+	PSH R1
+	CALL CursorNewline
+	POP R1
+	POP R0
 	CALL free
 	RET
+
+	PRINT_CMD_LS_ERROR:
+		PSH R1
+		CE R0 0x0001
+		JMPC CMD_LS_ERROR_1
+		LD R1 STR_LS_ERROR
+
+		PRINT_CMD_LS_ERROR_EXIT:
+			CALL PrintLineAtCursor
+			POP R1
+			RET
+
+		CMD_LS_ERROR_1:
+			LD R1 STR_LS_ERROR_1
+			JMP PRINT_CMD_LS_ERROR_EXIT
 
 CMD_MKDIR:
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
-	CALL char12
+	; TODO: Handle path instead of just folder name
+	; SUB R0 5
+	; CLT R0 1
+	; JMPC CMD_MKDIR_NOARG
+	
+	; CALL MakeAbsolute
 	PSH R1
 	POP R2
 	PSH R2
 
-	LD R0 0 ; Disk
-	LD R1 rootDir ; Ptr to path
+	LD R0 $currentDisk ; Disk
+	LD R1 currentDirectory ; Ptr to path
 	CALL vfs_mkdir
 	CNZ R0
 	CALLC PRINT_CMD_MKDIR_ERROR
 
 	POP R0
 	CALL free
+	RET
+
+CMD_MKDIR_NOARG:
+	LD R1 STR_MKDIR_NOARG
+	CALL PrintLineAtCursor
 	RET
 
 PRINT_CMD_MKDIR_ERROR:
@@ -388,6 +543,49 @@ PRINT_CMD_MKDIR_ERROR:
 	CMD_MKDIR_ERROR_4:
 		LD R1 STR_MKDIR_ERROR_4
 		JMP PRINT_CMD_MKDIR_ERROR_EXIT
+
+CMD_RMDIR:
+	CALL char12
+	; TODO: Handle path instead of just folder name
+	PSH R1
+	POP R2
+	PSH R2
+
+	LD R0 $currentDisk ; Disk
+	LD R1 currentDirectory ; Ptr to path
+	CALL vfs_rmdir
+	CNZ R0
+	CALLC PRINT_CMD_RMDIR_ERROR
+
+	POP R0
+	CALL free
+	RET
+
+
+PRINT_CMD_RMDIR_ERROR:
+	PSH R1
+	CE R0 0x0001
+	JMPC CMD_RMDIR_ERROR_1
+	CE R0 0x0002
+	JMPC CMD_RMDIR_ERROR_2
+	CE R0 0x0003
+	JMPC CMD_RMDIR_ERROR_3
+	LD R1 STR_RMDIR_ERROR
+
+	PRINT_CMD_RMDIR_ERROR_EXIT:
+		CALL PrintLineAtCursor
+		POP R1
+		RET
+
+	CMD_RMDIR_ERROR_1:
+		LD R1 STR_RMDIR_ERROR_1
+		JMP PRINT_CMD_RMDIR_ERROR_EXIT
+	CMD_RMDIR_ERROR_2:
+		LD R1 STR_RMDIR_ERROR_2
+		JMP PRINT_CMD_RMDIR_ERROR_EXIT
+	CMD_RMDIR_ERROR_3:
+		LD R1 STR_RMDIR_ERROR_3
+		JMP PRINT_CMD_RMDIR_ERROR_EXIT
 
 CMD_HALT:
 	LD R1 STR_CMD_HALT
@@ -469,9 +667,25 @@ HUI_Table:
 .db 0
 .db CMD_MKDIR
 .db 0
+.ds "rmdir"
+.db 0
+.db CMD_RMDIR
+.db 0
 .ds "clear"
 .db 0
 .db CMD_CLEAR
+.db 0
+.ds "cd"
+.db 0
+.db CMD_CD
+.db 0
+.ds "echo"
+.db 0
+.db CMD_ECHO
+.db 0
+.ds "pwd"
+.db 0
+.db CMD_PWD
 .db 0
 .db 0
 
@@ -560,7 +774,8 @@ RefreshDisplay:
 
 Timer:				.db 0xffff
 Cursor: 			.db 0x0001 ; (ypos, xpos)
-LastCursor:			.db 0x0001 ; (ypos, xpos)
+LastCursor:			.db 0x0001 ; ^
+CommandEnd:			.db 0x0001 ; ^
 KB_Mods:			.db 0 ; 0000 0000 0000 win+alt+ctrl+shift
 
 printString:

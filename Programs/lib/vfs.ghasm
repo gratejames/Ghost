@@ -60,14 +60,28 @@ vfs_list:
 	DD R0
 	POP R0
 	CALD
-	; LD R0 $0xf000
-	; DBG R0
+	RET
 
+; R0 Disk number
+; R1 ptr to path
+; R2 ptr to new folder name
+#SHARE vfs_rmdir
+vfs_rmdir:
+	PSH R0
+	ADD R0 DriversTable
+	DD R0
+	LDD R0 ; Load the pointer to the drivers
+	ADD R0 2 ; Load the third driver: rmdir
+	DD R0
+	LDD R0 ; Load the pointer to the list function
+	DD R0
+	POP R0
+	CALD
 	RET
 
 
 
-DriversTableSize: .db 2
+DriversTableSize: .db 4
 ; 1 byte pointers to each drivers table
 DriversTable:
-.dz 1 * 2
+.dz 1 * 4
