@@ -47,6 +47,10 @@ STR_RMDIR_ERROR_3:
 .ds "!RMDIR:Could not find directory"
 .db 0
 
+STR_RMDIR_ERROR_4:
+.ds "!RMDIR:Directory still has allocated children"
+.db 0
+
 STR_RMDIR_NOARG:
 .ds "!RMDIR:Must provide an argument"
 .db 0
