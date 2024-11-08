@@ -47,6 +47,10 @@ STR_RMDIR_ERROR_3:
 .ds "!RMDIR:Could not find directory"
 .db 0
 
+STR_RMDIR_NOARG:
+.ds "!RMDIR:Must provide an argument"
+.db 0
+
 STR_LS_ERROR:
 .ds "!LS:Unknown Error"
 .db 0

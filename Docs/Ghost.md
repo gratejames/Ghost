@@ -5,16 +5,17 @@
 + [ ] Text modes?
 + [ ] Simulate external video card?
 + [x] Interrupts should probably queue...
-	+ [x] Nope! Also, get rid of Interupt data - read it in from IO!
+	+ [x] Nope! Also, get rid of Interupt data - read it in from IO bit of memory!
 + [ ] vfs
 	+ [x] ramdisk
-	+ [ ] mkdir
+	+ [x] mkdir
 	+ [ ] rmdir
 	+ [ ] touch
 	+ [ ] rm
-	+ [ ] ls
-	+ [ ] subfolder/path handling
+	+ [x] ls
+	+ [x] subfolder/path handling
 	+ [ ] '..'
+	+ [ ] Actual file manipulation - file handlers
 + [ ] AHH THE CAPITAL M IS TOO TALL
 
 # Glossary

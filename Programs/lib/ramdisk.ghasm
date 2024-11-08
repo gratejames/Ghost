@@ -148,9 +148,9 @@ ramdisk_compareNames:
 			RET
 
 ramdisk_haschild:
-	PSH
+	PSH R0
 	CALL ramdisk_getchild
-	POP
+	POP R0
 
 ; Checks if the given page has the given child name
 ; Returns in conditions register
@@ -251,6 +251,11 @@ ramdisk_RMDIR:
 	; R1 Page number of the directorys' contents
 	; R3 fs pointer
 	; TODO: Make sure that the directory is empty
+
+	PSH
+
+	POP
+
 	; Steps: mark directory content page deallocated in both the page and the bitmap
 	CALL ramdisk_deallocatePage
 	DBGC 'R'
@@ -451,7 +456,6 @@ ramdisk_LIST:
 		PSH R1
 		PSH R2
 
-		; TODO: Make sure that the entry is actually allocated!
 		PSH R1
 		DD R0
 		LDD R1
