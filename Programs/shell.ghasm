@@ -568,15 +568,15 @@ CMD_HALT:
 
 CMD_CLEAR:
 	ST 0 $Cursor
-	LD R2 CharMem
+	; LD R2 CharMem
 	LD R3 0x1000
 
 	CMD_CLEAR_LOOP:
 		LD R0 ' '
 		CALL PrintAtCursor ; Clear display
-		DD R2
-		STD ' '
-		INC R2 ; Clear char mem
+		; DD R2
+		; STD ' '
+		; INC R2 ; Clear char mem
 		DEC R3
 		CNZ R3
 		JMPC CMD_CLEAR_LOOP
@@ -844,6 +844,10 @@ SetAtCursor:
 ; R0: Character
 ; Destroys R1
 PrintAtCursor:
+	LD R1 $Cursor		; Load the cursor position
+	ADD R1 CharMem
+	DD R1
+	STD R0
 	CALL SetAtCursor
 	LD R1 $Cursor
 	INC R1
