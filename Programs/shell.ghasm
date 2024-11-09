@@ -583,6 +583,75 @@ CMD_CLEAR:
 	ST 0 $Cursor
 	RET
 
+CMD_SCROLL:
+	CALL ScrollScreen
+	RET
+
+; Uses none
+ScrollScreen:
+	PSH R1
+	LD R1 $Cursor
+	CLT R1 0x41
+	POP R1
+	JMPC CMD_CLEAR
+	PSH
+	LD R1 CharMem
+	LD R2 CharMem
+	ADD R2 0x40
+	LD R3 0x0fc0
+	LD R0 $Cursor
+	SUB R0 0x80
+	PSH R0
+	ST 0x0000 $Cursor
+	ScrollScreen_Loop:
+		DD R2
+		LDD R0
+		CNZ R0
+		JMPC ScrollScreen_Loop_notzero ; Display zeroes as spaces
+		LD R0 ' '
+		ScrollScreen_Loop_notzero:
+		DD R1
+		STD R0
+		PSH R1
+		CALL PrintAtCursor
+		POP R1
+		INC R1
+		INC R2
+		DEC R3
+		CNZ R3
+		JMPC ScrollScreen_Loop
+	LD R3 0x0040
+	LD R0 ' '
+	ScrollScreen_Loop2:
+		DD R1
+		STD R0
+		PSH R1
+		CALL PrintAtCursor
+		POP R1
+		INC R2
+		DEC R3
+		CNZ R3
+		JMPC ScrollScreen_Loop2
+	POP R1
+	ST R1 $Cursor
+	PSH R1
+	LD R3 0x0040
+	LD R0 ' '
+	ScrollScreen_Loop3:
+		DD R1
+		STD R0
+		PSH R1
+		CALL PrintAtCursor
+		POP R1
+		INC R2
+		DEC R3
+		CNZ R3
+		JMPC ScrollScreen_Loop3
+	POP R0
+	ST R0 $Cursor
+	POP
+	RET
+
 ; R1 -> Pointer to the absolute string
 ; R1 <- Pointer to path excluding name
 ; R2 <- Pointer to 12 character directory name
@@ -794,6 +863,10 @@ HUI_Table:
 .ds "pwd"
 .db 0
 .db CMD_PWD
+.db 0
+.ds "scroll"
+.db 0
+.db CMD_SCROLL
 .db 0
 .db 0
 
