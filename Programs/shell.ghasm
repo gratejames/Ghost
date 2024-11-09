@@ -318,7 +318,7 @@ CMD_CD:
 	SUB R0 2
 	CLT R0 1
 	JMPC CMD_CD_NOARG
-	CALL MakeAbsolute
+	CALL MakeAbsoluteDir
 	; R1 has pointer to whole path
 	PSH
 	LD R0 $currentDisk ; Disk
@@ -439,7 +439,7 @@ CMD_MKDIR:
 	SUB R0 5
 	CLT R0 1
 	JMPC CMD_MKDIR_NOARG
-	CALL MakeAbsolute
+	CALL MakeAbsoluteDir
 	CALL SplitDirectory
 	PSH R2
 
@@ -503,7 +503,7 @@ CMD_RMDIR:
 	SUB R0 5
 	CLT R0 1
 	JMPC CMD_RMDIR_NOARG
-	CALL MakeAbsolute
+	CALL MakeAbsoluteDir
 	CALL SplitDirectory
 	PSH R2
 
@@ -644,7 +644,7 @@ SplitDirectory:
 	RET
 
 ; R1: pointer to zero terminated path string.
-MakeAbsolute:
+MakeAbsoluteDir:
 	PSH R0
 	PSH R2
 	PSH R3
@@ -652,12 +652,12 @@ MakeAbsolute:
 	DD R1
 	LDD R0
 	CE R0 '/'
-	JMPC MakeAbsolute_Almost_Done
+	JMPC MakeAbsoluteDir_Almost_Done
 	; R1 has pointer to relative string
 	; Steps: Copy current into absolute, then copy relative onto absolute, then enforce trailing slash
 	LD R2 currentDirectory
 	LD R3 absoluteDirectory
-	MakeAbsolute_CopyLoop1:
+	MakeAbsoluteDir_CopyLoop1:
 		DD R2
 		LDD R0
 		DD R3
@@ -665,10 +665,10 @@ MakeAbsolute:
 		INC R2
 		INC R3
 		CNZ R0
-		JMPC MakeAbsolute_CopyLoop1
+		JMPC MakeAbsoluteDir_CopyLoop1
 	DEC R3
 	; Now to copy the relative onto the absolute!
-	MakeAbsolute_CopyLoop2:
+	MakeAbsoluteDir_CopyLoop2:
 		DD R1
 		LDD R0
 		DD R3
@@ -676,7 +676,7 @@ MakeAbsolute:
 		INC R1
 		INC R3
 		CNZ R0
-		JMPC MakeAbsolute_CopyLoop2
+		JMPC MakeAbsoluteDir_CopyLoop2
 	; Enforce trailing slash
 	DEC R3
 	DD R3
@@ -685,37 +685,37 @@ MakeAbsolute:
 	DD R3
 	STD 0
 
-	MakeAbsolute_Done:
+	MakeAbsoluteDir_Done:
 	LD R1 absoluteDirectory
 	POP R3
 	POP R2
 	POP R0
 	RET
 
-	MakeAbsolute_Almost_Done:
+	MakeAbsoluteDir_Almost_Done:
 	LD R2 absoluteDirectory
-	MakeAbsolute_Almost_Done_Loop:
+	MakeAbsoluteDir_Almost_Done_Loop:
 		DD R1
 		LDD R0
 		DD R2
 		STD R0
-		DBGC R0
+		; DBGC R0
 		INC R1
 		INC R2
 		CNZ R0
-		JMPC MakeAbsolute_Almost_Done_Loop
+		JMPC MakeAbsoluteDir_Almost_Done_Loop
 	SUB R2 2
 	DD R2
 	LDD R0
-	DBGC R0
+	; DBGC R0
 	CE R0 '/'
-	JMPC MakeAbsolute_Done ; Trailing slash? Done!
+	JMPC MakeAbsoluteDir_Done ; Trailing slash? Done!
 	INC R2
 	DD R2
 	STD '/'
 	INCD
 	STD 0
-	JMP MakeAbsolute_Done ; Now we've got a trailing slash!
+	JMP MakeAbsoluteDir_Done ; Now we've got a trailing slash!
 
 ; R1->ptr to 0 terminated string
 ; R1<-ptr to malloc'd 12 byte string
