@@ -16,7 +16,7 @@
 	+ [x] subfolder/path handling
 	+ [ ] '..'
 	+ [ ] Actual file manipulation - file handlers
-+ [ ] AHH THE CAPITAL M IS TOO TALL
++ [x] AHH THE CAPITAL M IS TOO TALL
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
