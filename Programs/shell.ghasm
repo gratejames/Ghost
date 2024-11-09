@@ -206,6 +206,11 @@ KeyboardInterrupt:
 handleUserInput:
 	LD R1 $LastCursor
 	ADD R1 CharMem
+
+	DD R1
+	LDD R2
+	CEZ R2
+	RETC
 	; String Index into table of routine pointers
 	
 	LD R2 HUI_Table
