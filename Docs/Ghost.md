@@ -9,7 +9,7 @@
 + [ ] vfs
 	+ [x] ramdisk
 	+ [x] mkdir
-	+ [ ] rmdir
+	+ [x] rmdir
 	+ [ ] touch
 	+ [ ] rm
 	+ [x] ls
