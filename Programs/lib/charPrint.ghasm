@@ -1,11 +1,11 @@
-#DEF ScreenAddress 0xb000
-
 ;; Char Print Routine (5f)
 ; 0xaf70: Character
 ; 0xaf71: X Pos
 ; 0xaf72: Y Pos
 ; 0xaf73: Font Address
-
+#DEF ScreenAddress 0xb000
+#SHARE printChar
+printChar:
 PSH
 LD R1 $0xaf70				; Load the character
 PSH R1
@@ -77,10 +77,9 @@ DrawCharRow:
 
 	POP R0
 	INC R0
-	CE R0 4
+	CNE R0 4
 	PSH R0
-	JMPC DrawCharReturn
-	JMP DrawCharRow
+	JMPC DrawCharRow
 DrawCharReturn:
 	POP R0
 	POP R1
