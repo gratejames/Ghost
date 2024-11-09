@@ -42,15 +42,12 @@ Stack: 0xf000 - 0xffff (  4096 Bytes )
 
 ### Interrupt Table
 #### 0x00: Key Status Change
-	Push all
 	IO 0: Key Event: (0: up, 1: down)
 	IO 1: Key Code: [https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html](SDLKEY)
 #### 0x01: Mouse Position Change                 NYI
-	Push all
 	IO 0: MouseX position in px, absolute to window
 	IO 1: MouseY position in px, absolute to window
 #### 0x02: Mouse Button Change                   NYI
-	Push all
 	IO 0: Button Event (0: up, 1: down)
 	IO 1: Button Number
 #### 0x4f-5f: User defined, not called by hardware. Convention below.
