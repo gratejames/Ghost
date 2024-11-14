@@ -9,7 +9,7 @@ PROG_START:
 
 LD R0 RAMDISK
 LD R1 $RAMDISKSIZE
-CALL ramdiskInit
+CALL ramdisk_init
 
 ST 0b0000000000000001 $0xaff0	;; Background
 ST 0b0000011111001000 $0xaff1	;; Forground
