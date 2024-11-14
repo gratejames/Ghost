@@ -3,23 +3,23 @@
 ; Destroys: R1, R2
 #SHARE vfs_register
 vfs_register:
-	LD R2 0 ; Counter
+	LD R1 0 ; Counter
 	vfs_register_loop:
-		CE R2 $DriversTableSize
+		CE R1 DiskTableSize
 		JMPC driverTable_full
-		PSH R2
-		POP R1
-		ADD R1 DriversTable
+		PSH R1
+		ADD R1 DiskTable
 		DD R1
 		LDD R1
 		CNZ R1
-		INC R2
+		POP R1
+		INC R1
 		JMPC vfs_register_loop
 	; R1 is zero
-	DEC R2
-	PSH R2
-	ADD R2 DriversTable
-	DD R2
+	DEC R1
+	PSH R1
+	ADD R1 DiskTable
+	DD R1
 	STD R0
 	POP R0
 	; DBG R0
@@ -30,12 +30,12 @@ vfs_register:
 		RET
 
 ; R0 Disk number
-; R1 ptr to path
+; R1 ptr to absolute path
 ; R2 ptr to new folder name
 #SHARE vfs_mkdir
 vfs_mkdir:
 	PSH R0
-	ADD R0 DriversTable
+	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
 	; don't need to add anything since mkdir is the first entry
@@ -47,11 +47,11 @@ vfs_mkdir:
 	RET
 
 ; R0 Disk number
-; R1 ptr to path
+; R1 ptr to absolute path
 #SHARE vfs_list
 vfs_list:
 	PSH R0
-	ADD R0 DriversTable
+	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
 	ADD R0 1 ; Load the second driver: list
@@ -63,12 +63,12 @@ vfs_list:
 	RET
 
 ; R0 Disk number
-; R1 ptr to path
+; R1 ptr to absolute path
 ; R2 ptr to new folder name
 #SHARE vfs_rmdir
 vfs_rmdir:
 	PSH R0
-	ADD R0 DriversTable
+	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
 	ADD R0 2 ; Load the third driver: rmdir
@@ -81,7 +81,8 @@ vfs_rmdir:
 
 
 
-DriversTableSize: .db 4
+#DEF DiskTableSize 4
 ; 1 byte pointers to each drivers table
-DriversTable:
-.dz 1 * 4
+.dz 1 * DiskTableSize
+
+#DEF FileTableSize 6

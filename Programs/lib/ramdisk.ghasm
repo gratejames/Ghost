@@ -25,7 +25,7 @@ ramdisk_register:
 	PSH
 	LD R2 0 ; Counter
 	ramdisk_register_loop:
-		CE R2 $ramdisk_TableSize
+		CE R2 ramdisk_TableSize
 		JMPC ramdisk_full
 		PSH R2
 		POP R1
@@ -814,7 +814,7 @@ ramdisk_traverse:
 
 ramdisk_traverse_path_segment: .dz 13
 
-ramdisk_TableSize: .db 2
+#DEF ramdisk_TableSize 2
 ; Each entry is 4 bytes
 ; The disk number, the address, the size, and one blank
 ramdisk_Table:
