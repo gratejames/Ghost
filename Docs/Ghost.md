@@ -16,6 +16,10 @@
 	+ [x] subfolder/path handling
 	+ [ ] '..'
 	+ [ ] Actual file manipulation - file handlers
+		+ [ ] fopen
+		+ [ ] fwrite
+		+ [ ] fread
+	+ [ ] stat
 + [x] AHH THE CAPITAL M IS TOO TALL
 
 # Glossary

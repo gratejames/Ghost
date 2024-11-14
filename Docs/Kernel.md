@@ -30,6 +30,6 @@ Directory Entry: (16 bytes)
   2 byte size of file
 
 File Page:
-  Page number of remaining file date, or 0
+  Page number of remaining file data, or 0
   Date...
   
