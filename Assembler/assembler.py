@@ -236,7 +236,12 @@ class assembler:
 			return self.definitions
 		outDict = {}
 		for share in self.shares:
-			outDict[share] = self.definitions[share]
+			# outDict[share] = self.definitions[share]
+			try:
+				outDict[share] = self.definitions[share]
+			except KeyError:
+				self.die(f"X Error sharing definition '{share}', could not be found in definitions")
+
 		return outDict
 
 	def recordLabels(self, line):
