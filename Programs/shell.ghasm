@@ -177,12 +177,12 @@ KeyboardInterrupt:
 		JMP KeyboardInterruptExit
 
 	KI_Enter:
-		LD R1 $Cursor		; Load the cursor position
+		LD R1 $Cursor
 		ADD R1 CharMem
 		DD R1
-		STD 0				; Draw a space in charmem
+		STD 0				; Store a null terminator into charmem
 		LD R0 ' '
-		CALL SetAtCursor	; Write a null terminator to the text memory
+		CALL SetAtCursor	; Display a space
 
 		MV $Cursor $CommandEnd
 
@@ -190,15 +190,8 @@ KeyboardInterrupt:
 
 		CALL handleUserInput
 
-		LD R1 $Cursor
-		ADD R1 CharMem
-		DD R1
-		STD '>'
 		LD R0 '>'
-		CALL SetAtCursor	; Write and draw the prompt character
-		LD R1 $Cursor		; Leave the cursor after the prompt
-		INC R1
-		ST R1 $Cursor
+		CALL PrintAtCursor
 
 		MV $Cursor $LastCursor
 
@@ -302,6 +295,14 @@ CursorNewline:
 	ADD R1 0x0040		; Reset the cursor to the next line
 	AND R1 0xffc0
 	ST R1 $Cursor
+
+	CLT R1 0x1000
+	JMPC CursorNewline_enoughRoom	
+		CALL ScrollScreen ; Scroll screen if there isn't enough room
+		LD R1 $LastCursor
+		SUB R1 0x40
+		ST R1 $LastCursor
+	CursorNewline_enoughRoom:
 	RET
 
 currentDirectory:
@@ -361,7 +362,6 @@ CMD_PWD:
 	LD R1 currentDirectory
 	CALL PrintLineAtCursor
 	RET
-
 
 CMD_LS:
 	LD R0 $currentDisk ; Disk
@@ -595,12 +595,12 @@ ScrollScreen:
 	POP R1
 	JMPC CMD_CLEAR
 	PSH
-	LD R1 CharMem
+	; LD R1 CharMem
 	LD R2 CharMem
 	ADD R2 0x40
 	LD R3 0x0fc0
 	LD R0 $Cursor
-	SUB R0 0x80
+	SUB R0 0x40
 	PSH R0
 	ST 0x0000 $Cursor
 	ScrollScreen_Loop:
@@ -608,14 +608,21 @@ ScrollScreen:
 		LDD R0
 		CNZ R0
 		JMPC ScrollScreen_Loop_notzero ; Display zeroes as spaces
-		LD R0 ' '
+			; Manually run PrintAtCursor, but split
+			; so that we can write a zero but show a space
+			LD R1 $Cursor
+			ADD R1 CharMem
+			DD R1
+			STD R0
+			LD R0 ' '
+			CALL SetAtCursor
+			LD R1 $Cursor
+			INC R1
+			ST R1 $Cursor
+		JMP ScrollScreen_Loop_donewithzero
 		ScrollScreen_Loop_notzero:
-		DD R1
-		STD R0
-		PSH R1
 		CALL PrintAtCursor
-		POP R1
-		INC R1
+		ScrollScreen_Loop_donewithzero:
 		INC R2
 		DEC R3
 		CNZ R3
@@ -623,30 +630,10 @@ ScrollScreen:
 	LD R3 0x0040
 	LD R0 ' '
 	ScrollScreen_Loop2:
-		DD R1
-		STD R0
-		PSH R1
 		CALL PrintAtCursor
-		POP R1
-		INC R2
 		DEC R3
 		CNZ R3
 		JMPC ScrollScreen_Loop2
-	POP R1
-	ST R1 $Cursor
-	PSH R1
-	LD R3 0x0040
-	LD R0 ' '
-	ScrollScreen_Loop3:
-		DD R1
-		STD R0
-		PSH R1
-		CALL PrintAtCursor
-		POP R1
-		INC R2
-		DEC R3
-		CNZ R3
-		JMPC ScrollScreen_Loop3
 	POP R0
 	ST R0 $Cursor
 	POP
@@ -828,47 +815,43 @@ char12:
 
 ; Table Format: string0ptr0...string0ptr00
 HUI_Table:
-.ds "ls"
-.db 0
-.db CMD_LS
-.db 0
-.ds "halt"
-.db 0
-.db CMD_HALT
-.db 0
-.ds "exit"
-.db 0
-.db CMD_HALT
-.db 0
-.ds "mkdir"
-.db 0
-.db CMD_MKDIR
-.db 0
-.ds "rmdir"
-.db 0
-.db CMD_RMDIR
-.db 0
-.ds "clear"
-.db 0
-.db CMD_CLEAR
-.db 0
-.ds "cd"
-.db 0
-.db CMD_CD
-.db 0
-.ds "echo"
-.db 0
-.db CMD_ECHO
-.db 0
-.ds "pwd"
-.db 0
-.db CMD_PWD
-.db 0
-.ds "scroll"
-.db 0
-.db CMD_SCROLL
-.db 0
-.db 0
+	.ds "ls"
+	.db 0
+	.db CMD_LS
+	.db 0
+	.ds "halt"
+	.db 0
+	.db CMD_HALT
+	.db 0
+	.ds "exit"
+	.db 0
+	.db CMD_HALT
+	.db 0
+	.ds "mkdir"
+	.db 0
+	.db CMD_MKDIR
+	.db 0
+	.ds "rmdir"
+	.db 0
+	.db CMD_RMDIR
+	.db 0
+	.ds "clear"
+	.db 0
+	.db CMD_CLEAR
+	.db 0
+	.ds "cd"
+	.db 0
+	.db CMD_CD
+	.db 0
+	.ds "echo"
+	.db 0
+	.db CMD_ECHO
+	.db 0
+	.ds "pwd"
+	.db 0
+	.db CMD_PWD
+	.db 0
+	.db 0
 
 ; R0: Character
 ApplyShift:
