@@ -477,13 +477,14 @@ ramdisk_MKDIR:
 	; R1 is the page number of the parent directory
 	; R2 is the offset within that page for the directory entry
 	; R3 is the address of the fs
-
-	DD R0
-	STD 0b11 ; Store the flags: Directory, allocated
 	
 	CALL ramdisk_allocateFreePage
 	CE R1 0xffff
 	JMPC ramdisk_MKDIR_AllocPageFail
+
+	DD R0
+	STD 0b11 ; Store the flags: Directory, allocated
+
 	; R1 is the new page for the new directory
 
 	INC R0
@@ -595,7 +596,7 @@ ramdisk_LIST:
 		PSH R1
 		DD R0
 		LDD R1
-		AND R1 0b10
+		AND R1 0b01
 		CEZ R1
 		POP R1
 		JMPC ramdisk_LIST_Skip
@@ -833,7 +834,6 @@ ramdisk_FOPEN:
 	DBGC 'F'
 	DBGC 'C'
 	DBGC 0xa
-	DBG R0
 	RET
 
 	ramdisk_FOPEN_TraverseFail:
@@ -894,7 +894,7 @@ ramdisk_FOPEN_localPointer: .db 0
 ; R3 -> fs address
 ramdisk_deallocatePage:
 	PSH
-	ADD R3 3 	; Get to the bitmap
+	ADD R3 4 	; Get to the bitmap
 	LDZ R1
 
 	SHR R0 4
@@ -904,7 +904,7 @@ ramdisk_deallocatePage:
 	; R1: bit position
 	; R3: Bitmap start address
 
-	ADD R3 ; Add bitmap start to butmap address
+	ADD R3 ; Add bitmap start to bitmap byte
 	; R0 is pointer to bitmap byte
 	; R1 is bit position to unset
 	DD R0
@@ -914,7 +914,7 @@ ramdisk_deallocatePage:
 	; R2 is byte value
 	; R3 is the byte address
 	LD R0 0x8000
-	SHL R1
+	SHR R1
 	NOT R0
 	; R0 has the inverse of the new bit
 	AND R2
@@ -923,6 +923,13 @@ ramdisk_deallocatePage:
 	STD R0
 	; Write new value back into bitmap
 	POP
+	PSH R3
+		ADD R3 3
+		DD R3
+		LDD R3
+		INC R3
+		STD R3
+	POP R3
 	RET
 
 ; R1 <- The page number of the new page or 0xffff on fail
@@ -933,6 +940,15 @@ ramdisk_allocateFreePage:
 	PSH R0
 
 	ADD R3 3 	; Get to the bitmap
+
+	PSH R3
+		DD R3
+		LDD R3
+		CEZ R3
+		JMPC ramdisk_allocateFreePage_nofreePages
+		DEC R3
+		STD R3
+	POP R3
 
 	LD R2 0 ; Counter for bytes
 	PSH R2
@@ -994,6 +1010,8 @@ ramdisk_allocateFreePage:
 	POP R3
 	RET
 
+	ramdisk_allocateFreePage_nofreePages:
+	POP R3
 	ramdisk_allocateFreePage_nofree:
 	LD R1 0xffff
 	POP R0
