@@ -39,7 +39,7 @@ int main (int argc, char **argv) {
   options.add_options()
     ("v,verbose", "Verbose output")
     ("r,flush", "Flush each debugged character")
-    ("s,scale", "Integer scale of the resolution (Integr between 1 and 4)", cxxopts::value<int>())
+    ("s,scale", "Integer scale of the resolution (Integer between 1 and 4)", cxxopts::value<int>())
     ("f,file", "File name", cxxopts::value<std::string>())
     ("h,help", "Print usage")
     ;
@@ -117,7 +117,7 @@ bool init() {
     return false;
   }
 
-  window = SDL_CreateWindow("SDL Example", /* Title of the SDL window */
+  window = SDL_CreateWindow("Ghost Simulator", /* Title of the SDL window */
 			    SDL_WINDOWPOS_CENTERED, /* Position x of the window */
 			    SDL_WINDOWPOS_CENTERED, /* Position y of the window */
 			    WINSIZE*scale, /* Width of the window in pixels */

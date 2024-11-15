@@ -23,7 +23,7 @@ const std::string InstructionDebugging[0x100] {"NOP", "MVAA", "DDV", "DDA", "DDR
 const int InstructionDebuggingNumArgs[0x100] {0, 2, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 const std::set <unsigned short> AllowedInterrupts {0x5e, 0x5f};
-unsigned short PendingIOData[8];
+unsigned short PendingIOData[8] = {};
 int PendingDataSize = 0;
 
 bool interuptHandling = true;
@@ -180,7 +180,7 @@ int cpu::getColorAt(int x) {
 			color = pallette2_888((MEMORY[VideoMemory+x/0x10] >> (0xf-(x%0x10))) & 0x1);
 			break;
 		default:
-			if (!halted)
+			if (!halted && !broken)
 				std::cout << "ERR: Invalid display mode (" << displayMode << ") selected." << std::endl;
 			color = 0;
 			halted = true;
@@ -215,7 +215,7 @@ unsigned short cpu::popFromStack() {
 }
 
 void cpu::callInterrupt(unsigned short interrupt) {
-	if (halted)
+	if (halted || broken)
 		return;
 	if (!interuptHandling) {
 		std::cout << "WRN: Interrupt blocked" << std::endl;

@@ -16,27 +16,27 @@ public:
 
 	void memLog(unsigned short from, unsigned short to);
 
-	bool halted;
-	bool broken;
-	bool closed;
+	bool halted = false;
+	bool broken = false;
+	bool closed = false;
 
-	bool verbose;
-	bool flushDebugChar;
+	bool verbose = false;
+	bool flushDebugChar = false;
 
 private:
 	std::string romFileName;
-	int t; 							// Instructions since last reset
-	unsigned short MEMORY[0x10000];
-	unsigned short PC; 				// Program Counter: Address of current instruction
-	unsigned short DD; 				// Address Register
-	unsigned short R0;
-	unsigned short R1;
-	unsigned short R2;
-	unsigned short R3;
-	unsigned short value;			// Used in instruction logic
-	unsigned short instruction;		// ^
-	unsigned short offsetRegister;
-	bool jump;
+	int t = 0; 							// Instructions since last reset
+	unsigned short MEMORY[0x10000] = {};
+	unsigned short PC = 0; 				// Program Counter: Address of current instruction
+	unsigned short DD = 0; 				// Address Register
+	unsigned short R0 = 0;
+	unsigned short R1 = 0;
+	unsigned short R2 = 0;
+	unsigned short R3 = 0;
+	unsigned short value = 0;			// Used in instruction logic
+	unsigned short instruction = 0;		// ^
+	unsigned short offsetRegister = 0;
+	bool jump = false;
 
 	unsigned short getAtAddress(unsigned short address);
 	unsigned short getArgument();
@@ -47,8 +47,8 @@ private:
 
 	void callPendingInterrupt(); // From ticker thread, jumps
 	void callInterrupt(unsigned short interrupt); // From event thread, queues
-	unsigned short interruptToCall;
-	bool needToInterrupt;
+	unsigned short interruptToCall = 0;
+	bool needToInterrupt = false;
 
 	// Color conversions
 	int rgb565_888(unsigned short x);
