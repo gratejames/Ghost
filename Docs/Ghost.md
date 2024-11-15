@@ -17,9 +17,13 @@
 	+ [ ] '..'
 	+ [ ] Actual file manipulation - file handlers
 		+ [ ] fopen
+		+ [ ] fclose
 		+ [ ] fwrite
 		+ [ ] fread
 	+ [ ] stat
+	+ [ ] rewrite fs functions to use other functions
+	+ [ ] fix free page counter
+	+ [ ] make fs bitmap work right
 + [x] AHH THE CAPITAL M IS TOO TALL
 
 # Glossary
