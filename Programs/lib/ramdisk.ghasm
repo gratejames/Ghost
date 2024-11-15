@@ -26,7 +26,7 @@ ramdisk_register:
 	LD R2 0 ; Counter
 	ramdisk_register_loop:
 		CE R2 ramdisk_TableSize
-		JMPC ramdisk_full
+		JMPC ramdisk_register_full
 		PSH R2
 		POP R1
 		SHL R1 2 ; Multiply by 4, the size of each table entry
@@ -38,8 +38,7 @@ ramdisk_register:
 		INC R2
 		JMPC ramdisk_register_loop
 	DEC R2
-	PSH R2
-	POP R0 ; Save the table entry for later
+	LDZ R2 ; Save the table entry for later
 
 	SHL R2 2 ; Multiply by 4, the size of each table entry
 	ADD R2 ramdisk_Table
@@ -59,7 +58,7 @@ ramdisk_register:
 	STD R1
 
 	RET
-	ramdisk_full:
+	ramdisk_register_full:
 		POP
 		LD R0 0xffff ; -1, no space in driver table
 		RET
@@ -205,6 +204,103 @@ ramdisk_getchild:
 	POP R1
 	RET
 	ramdisk_getchild_noMatch:
+	LD R0 0
+	CNZ R0 ; Return False
+	POP R3
+	POP R2
+	POP R1
+	RET
+
+; Checks if the given page has any free entries
+; Returns in conditions register
+; R1 page number
+; R3 address of fs start
+ramdisk_isfull:
+	PSH
+	LDZ R1
+	SHL R0 7
+	ADD R3
+	STZ R3
+	; Address of page (R3) = fs start + Page number * page size	
+	CNZ R1
+	LD R1 0 ; Offset within page
+	JMPC ramdisk_isfull_loop
+	LD R1 48 ; First page has an offset of 48, not 0
+	ramdisk_isfull_loop:
+		CE R1 128
+		JMPC ramdisk_isfull_full
+		; R1: Page offset of the current entry
+		; R3: Address of the page start
+		LDZ R3
+		ADD R1
+		ADD R1 16
+		; R0: Address of current entry
+		PSH R0
+		DD R0
+		LDD R0		; Read entry flags
+		AND R0 0b01
+		CEZ R0		; If it's not allocated...
+		POP R0
+		JMPC ramdisk_isfull_notfull ; ... we're done
+
+		JMP ramdisk_isfull_loop
+
+	ramdisk_isfull_notfull:
+	LD R1 0
+	CNZ R1 ; Return False
+	POP
+	RET
+	ramdisk_isfull_full:
+	LD R0 0
+	CEZ R0 ; Return True
+	POP
+	RET
+
+; Gets a pointer to the first free entry on the given page
+; Returns in conditions register
+; R1 page number
+; R3 address of fs start
+; Destroys: R0 <- pointer to new entry
+ramdisk_firstFree:
+	PSH R1
+	PSH R2
+	PSH R3
+	LDZ R1
+	SHL R0 7
+	ADD R3
+	STZ R3
+	; Address of page (R3) = fs start + Page number * page size	
+	CNZ R1
+	LD R1 0 ; Offset within page
+	JMPC ramdisk_firstFree_loop
+	LD R1 48 ; First page has an offset of 48, not 0
+	ramdisk_firstFree_loop:
+		CE R1 128
+		JMPC ramdisk_firstFree_full
+		; R1: Page offset of the current entry
+		; R3: Address of the page start
+		LDZ R3
+		ADD R1
+		ADD R1 16
+		; R0: Address of current entry
+		PSH R0
+		DD R0
+		LDD R0		; Read entry flags
+		AND R0 0b01
+		CEZ R0		; If it's not allocated...
+		POP R0
+		JMPC ramdisk_firstFree_success ; ... we're done
+
+		JMP ramdisk_firstFree_loop
+
+	ramdisk_firstFree_success:
+	LD R1 0
+	CEZ R1 ; Return True
+	POP R3
+	POP R2
+	POP R1
+	RET
+	ramdisk_firstFree_full:
 	LD R0 0
 	CNZ R0 ; Return False
 	POP R3
@@ -566,6 +662,234 @@ ramdisk_LIST:
 		DBGC 0x0a
 		RET
 
+; R0 -> Disk number
+; R0 <- Error code (Nominal 0)
+; R1 -> ptr to absolute path
+; R1 <- File Pointer
+; R2 -> ptr to file name
+; Destroys R3
+ramdisk_FOPEN:
+	CALL ramdisk_getinfo
+	CALL ramdisk_traverse
+	CE R1 0xffff
+	JMPC ramdisk_FOPEN_TraverseFail
+
+	STZ R3		; Copy table pointer to R3
+	ADD R3 1 	; Get the second item in the table
+	DD R3
+	LDD R3		; Read the address of the fs
+
+	; R1 has the page number
+	; R2 has the ptr to the file name
+	; R3 has the fs address
+
+	CALL ramdisk_haschild
+	JMPC ramdisk_FOPEN_FileAlreadyExists
+
+	CALL ramdisk_isfull
+	JMPC ramdisk_FOPEN_DirectoryFull
+
+	; We get to create the file!
+	; We need to:
+	; 1. Allocate a new page on disk
+	; 2. Allocate an entry in the parent directory and fill it out
+
+	PSH R1 ; Store the parent page
+	CALL ramdisk_allocateFreePage
+	CE R1 0xffff
+	JMPC ramdisk_FOPEN_AllocPageFail
+	; R1 now has the new child page number
+	PSH R1
+	LDZ R1
+	SHL R0 7
+	ADD R3
+	DD R0
+	STD 0 ; Store a zero to the first byte of the new page: there isn't more than one page yet
+	POP R0
+	POP R1
+
+	; R0 has the new page number
+	; R1 has the parent page number
+	; R2 has the new filename
+	; R3 has the fs address
+
+	PSH R2
+	STZ R2
+	CALL ramdisk_firstFree
+	; R0 now has the pointer to a new directory entry
+	DD R0
+	STD 0b01 ; Allocated, not dir
+	INC R0
+	DD R0
+	STD R2   ; Store new page number to directory entry
+	POP R2
+	INC R0
+	; Now we need to copy the name from R2 to R0 for 12 chars, then store 2 byte file size (0 and 0)
+	PSH R1
+	PSH R3
+
+	LD R1 12 ; Name size
+	ramdisk_FOPEN_copynameloop:
+		DD R2
+		LDD R3
+		DD R0
+		STD R3
+		INC R0
+		INC R2
+		DEC R1
+		CNZ R1
+		JMPC ramdisk_FOPEN_copynameloop ; Copys 12 bytes from the new name into the entry
+
+	DD R0
+	STD 0
+	INC R0
+	DD R0
+	STD 0 ; Final 2 size bytes
+
+	POP R3
+	POP R1	
+
+
+	ramdisk_FOPEN_FileAlreadyExists:
+	; We need to
+	; 1. Create a global table entry
+		; Global[i] = File functions table
+	; 2. Create a local table entry
+		; Local[j] = i, first page, cursor=0, entry pointer
+	; 3. Return i
+
+	; Global Registry
+	PSH R1
+	LD R0 ramdisk_FileFuncsTable
+	CALL vfs_register_fileptr
+	POP R1
+	PSH R0
+
+	; Local Registry
+	PSH
+		LD R2 0 ; Counter
+		ramdisk_FOPEN_register_loop:
+			CE R2 ramdisk_FileTableSize
+			JMPC ramdisk_FOPEN_RegisterFull
+			PSH R2
+			POP R1
+			SHL R1 2 ; Multiply by 4, the size of each table entry
+			ADD R1 ramdisk_FileTable
+			ADD R1 1 ; Read from the page pointer instead
+			DD R1
+			LDD R1
+			CNZ R1
+			INC R2
+			JMPC ramdisk_FOPEN_register_loop
+		DEC R2
+		LDZ R2 ; Save the table entry for later
+
+		SHL R2 2 ; Multiply by 4, the size of each table entry
+		ADD R2 ramdisk_FileTable
+		ST R2 $ramdisk_FOPEN_localPointer
+	POP
+
+	; R0 has the new global file handler index
+	; R1 has the parent page number
+	; R2 has the filename
+	; R3 has the fs address
+	; $ramdisk_FOPEN_localPointer a pointer to the new local file handler entry
+
+	; Store global, incrememnt local
+	PSH R1
+	LD R1 $ramdisk_FOPEN_localPointer
+	DD R1
+	STD R0
+	INC R1
+	ST R1 $ramdisk_FOPEN_localPointer
+	POP R1
+
+	CALL ramdisk_getchild
+	; R0 has child table entry number
+	PSH R0
+	DD R0
+	LDD R1
+	CE R1 0b01 ; Make sure it's not a directory, and is allocated
+	JMPC ramdisk_FOPEN_DirNotFile
+
+	INC R0
+	DD R0
+	LDD R0 ; The first page of the file
+	; Store first page, 
+	LD R1 $ramdisk_FOPEN_localPointer
+	DD R1
+	STD R0
+	INC R1
+	DD R1
+	STD 0
+	INC R1
+	DD R1
+	POP R0
+	STD R0
+
+	POP R1
+	LD R0 0
+
+	DBGC 'F'
+	DBGC 'C'
+	DBGC 0xa
+	DBG R0
+	RET
+
+	ramdisk_FOPEN_TraverseFail:
+		DBGC 'f'
+		DBGC 't'
+		DBGC 0x0a
+		LD R0 0x0001
+		RET
+	ramdisk_FOPEN_AllocPageFail:
+		POP R0 
+		DBGC 'f'
+		DBGC 'a'
+		DBGC 0x0a
+		LD R0 0x0002
+		RET
+	ramdisk_FOPEN_DirectoryFull:
+		DBGC 'f'
+		DBGC 'f'
+		DBGC 0x0a
+		LD R0 0x0003
+		RET
+	ramdisk_FOPEN_DirNotFile:
+		POP R0
+		DBGC 'f'
+		DBGC 'd'
+		DBGC 0x0a
+		LD R0 0x0004
+		RET
+	ramdisk_FOPEN_RegisterFull:
+		; TODO: Deallocate allocated resources?
+		; Or maybe do this first?
+		POP
+		DBGC 'f'
+		DBGC 'r'
+		DBGC 0x0a
+		LD R0 0x0005
+		RET
+
+; R0 -> File Handle
+; R0 <- Error code (Nominal 0)
+ramdisk_FCLOSE:
+	SHL R0
+	SHL R0 2 ; Multiply by 4, the size of each table entry
+	ADD R0 ramdisk_FileTable
+	INC R0
+	DD R0
+	STD 0 ; Zero the page pointer
+	DEC R0
+	DD R0
+	LDD R0 ; Load the index into the global
+	CALL vfs_unregister_fileptr
+	LD R0 0 ; No errors
+	RET
+
+ramdisk_FOPEN_localPointer: .db 0
+
 ; R1 -> Page number to deallocate
 ; R3 -> fs address
 ramdisk_deallocatePage:
@@ -818,14 +1142,30 @@ ramdisk_traverse_path_segment: .dz 13
 ; Each entry is 4 bytes
 ; The disk number, the address, the size, and one blank
 ramdisk_Table:
-.dz 2 * 4
+.dz 4 * ramdisk_TableSize
+
+
+#DEF ramdisk_FileTableSize 6
+; Each entry is 4 bytes
+; 0. The global file pointer number
+; 1. The pointer to the first page of the file
+; 2. The cursor in file
+; 3. The pointer to the directory entry
+ramdisk_FileTable:
+.dz 4 * ramdisk_FileTableSize
 
 ramdisk_PendingFSAddress: .db 0
 
 ; Each driver table has:
-; 0: ptr to mkdir
-; 1: ptr to lsdir
 ramdisk_DriverTable:
 	.db ramdisk_MKDIR
 	.db ramdisk_LIST
 	.db ramdisk_RMDIR
+	.db ramdisk_FOPEN
+
+
+; Each driver table has:
+ramdisk_FileFuncsTable:
+	.db ramdisk_FCLOSE
+	; .db ramdisk_FREAD
+	; .db ramdisk_FWRITE

@@ -29,6 +29,43 @@ vfs_register:
 		LD R0 0xffff ; -1, no space in driver table
 		RET
 
+; R0 -> Address to file functions table
+; R0 <- Global file table entry on success, 0xffff on fail
+; Destroys: R1
+#SHARE vfs_register_fileptr
+vfs_register_fileptr:
+	LD R1 0 ; Counter
+	vfs_register_fileptr_loop:
+		CE R1 FileTableSize
+		JMPC vfs_register_table_full
+		PSH R1
+		ADD R1 FileTable
+		DD R1
+		LDD R1
+		CNZ R1
+		POP R1
+		INC R1
+		JMPC vfs_register_fileptr_loop
+	; R1 is zero
+	DEC R1
+	PSH R1
+	ADD R1 FileTable
+	DD R1
+	STD R0
+	POP R0
+	RET
+	vfs_register_table_full:
+		LD R0 0xffff
+		RET
+
+; R0 -> Address to file functions table
+#SHARE vfs_unregister_fileptr
+vfs_unregister_fileptr:
+	ADD R0 FileTable
+	DD R0
+	STD 0
+	RET
+
 ; R0 Disk number
 ; R1 ptr to absolute path
 ; R2 ptr to new folder name
@@ -73,16 +110,37 @@ vfs_rmdir:
 	LDD R0 ; Load the pointer to the drivers
 	ADD R0 2 ; Load the third driver: rmdir
 	DD R0
-	LDD R0 ; Load the pointer to the list function
+	LDD R0 ; Load the pointer to the rmdir function
 	DD R0
 	POP R0
 	CALD
 	RET
 
-
+; R0 -> Disk number
+; R0 <- Error code (Nominal 0)
+; R1 -> ptr to absolute path
+; R1 <- File Pointer
+; R2 -> ptr to new file name
+#SHARE vfs_fopen
+vfs_fopen:
+	PSH R0
+	ADD R0 DiskTable
+	DD R0
+	LDD R0 ; Load the pointer to the drivers
+	ADD R0 3 ; Load the fourth driver: fopen
+	DD R0
+	LDD R0 ; Load the pointer to the fopen function
+	DD R0
+	POP R0
+	CALD
+	RET
 
 #DEF DiskTableSize 4
 ; 1 byte pointers to each drivers table
+DiskTable:
 .dz 1 * DiskTableSize
 
 #DEF FileTableSize 6
+; 1 byte pointers to each file functions table
+FileTable:
+.dz 1 * FileTableSize
