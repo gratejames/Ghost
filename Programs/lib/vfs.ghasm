@@ -135,12 +135,31 @@ vfs_fopen:
 	CALD
 	RET
 
+; R0 -> Disk number
+; R0 <- Error code (Nominal 0)
+; R1 -> ptr to absolute path
+; R1 <- File Pointer
+; R2 -> ptr to new file name
+#SHARE vfs_fopen
+vfs_fopen:
+	PSH R0
+	ADD R0 DiskTable
+	DD R0
+	LDD R0 ; Load the pointer to the drivers
+	ADD R0 4 ; Load the fifth driver: rm
+	DD R0
+	LDD R0 ; Load the pointer to the rm function
+	DD R0
+	POP R0
+	CALD
+	RET
+
 ; R0 -> File Pointer
 ; R0 <- Error code (Nominal 0)
 #SHARE vfs_fclose
 vfs_fclose:
 	PSH R0
-	ADD R0 FileTableSize
+	ADD R0 FileTable
 	DD R0
 	LDD R0 ; Load the pointer to the functions
 	ADD R0 0 ; Load the first function: fclose

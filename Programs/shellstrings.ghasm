@@ -70,3 +70,31 @@ STR_CD_ERROR_NOARG:
 STR_CD_ERROR_BADPATH:
 .ds "!CD:No such directory"
 .db 0
+
+STR_TOUCH_ERROR:
+.ds "!TOUCH:Unknown Error"
+.db 0
+
+STR_TOUCH_NOARG:
+.ds "!TOUCH:Must provide an argument"
+.db 0
+
+STR_TOUCH_ERROR_1:
+.ds "!TOUCH:Failed to traverse"
+.db 0
+
+STR_TOUCH_ERROR_2:
+.ds "!TOUCH:Failed to allocate a new page"
+.db 0
+
+STR_TOUCH_ERROR_3:
+.ds "!TOUCH:Parent directory full"
+.db 0
+
+STR_TOUCH_ERROR_4:
+.ds "!TOUCH:Given file is a directory"
+.db 0
+
+STR_TOUCH_ERROR_5:
+.ds "!TOUCH:No unused file handles - non recoverable error, sorry"
+.db 0

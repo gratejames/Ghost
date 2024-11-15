@@ -16,15 +16,17 @@
 	+ [x] subfolder/path handling
 	+ [ ] '..'
 	+ [ ] Actual file manipulation - file handlers
-		+ [ ] fopen
-		+ [ ] fclose
+		+ [x] fopen
+		+ [x] fclose
 		+ [ ] fwrite
 		+ [ ] fread
 	+ [ ] stat
 	+ [ ] rewrite fs functions to use other functions
-	+ [ ] fix free page counter
-	+ [ ] make fs bitmap work right
+	+ [x] fix free page counter
+	+ [x] make fs bitmap work right
+	+ [ ] cat
 + [x] AHH THE CAPITAL M IS TOO TALL
++ [ ] Show registers on simulator's memory monitor
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
