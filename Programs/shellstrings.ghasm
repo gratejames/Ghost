@@ -98,3 +98,23 @@ STR_TOUCH_ERROR_4:
 STR_TOUCH_ERROR_5:
 .ds "!TOUCH:No unused file handles - non recoverable error, sorry"
 .db 0
+
+STR_RM_ERROR:
+.ds "!RM:Unknown Error"
+.db 0
+
+STR_RM_NOARG:
+.ds "!RM:Must provide an argument"
+.db 0
+
+STR_RM_ERROR_1:
+.ds "!RM:Given file is a directory"
+.db 0
+
+STR_RM_ERROR_2:
+.ds "!RM:Failed to traverse"
+.db 0
+
+STR_RM_ERROR_3:
+.ds "!RM:File not found"
+.db 0

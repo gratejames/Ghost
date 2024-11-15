@@ -10,8 +10,8 @@
 	+ [x] ramdisk
 	+ [x] mkdir
 	+ [x] rmdir
-	+ [ ] touch
-	+ [ ] rm
+	+ [x] touch
+	+ [x] rm
 	+ [x] ls
 	+ [x] subfolder/path handling
 	+ [ ] '..'

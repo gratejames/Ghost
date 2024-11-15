@@ -914,54 +914,34 @@ ramdisk_RM:
 	AND R1 0b10
 	CNZ R1
 	JMPC ramdisk_RM_NotAFile
-	INC R0
+
 	DD R0
-	LDD R1
+	STD 0 ; Deallocate the directory entry
+	INC R0
+	; R0 has the pointer to the page field of the directory entry
 	POP R3
-	DEC R0
-	PSH R0
+
+	ramdisk_RM_loop:
+	DD R0
+	LDD R1 ; Page number to deallocate
+	CEZ R1
+	JMP ramdisk_RM_loop_done
+	CALL ramdisk_deallocatePage
+	LDZ R1
+	SHL R0 7
+	ADD R3 ; Page Number * 128 + fs address
+	JMP ramdisk_RM_loop
+
+	ramdisk_RM_loop_done:
+
+	; R0 has the 
 	; R1 Page number of the directorys' contents
 	; R3 fs pointer
 
 	; Now to free each page...
 
-	PSH R1
-	PSH R3
-	LDZ R1
-	SHL R0 7
-	ADD R3
-	STZ R3
-	; Address of page (R3) = fs start + Page number * page size	
-	CNZ R1
-	LD R1 0 ; Offset within page
-	JMPC ramdisk_RM_loop
-	LD R1 48 ; First page has an offset of 48, not 0
-	ramdisk_RM_loop:
-		CE R1 128
-		JMPC ramdisk_RM_allDeallocated
-		; R1: Page offset of the current entry
-		; R3: Address of the page start
-		LDZ R3
-		ADD R1
-		ADD R1 16
-		; R0: Address of current entry
-		DD R0
-		LDD R0		; Read entry flags
-		AND R0 0b01
-		CNZ R0		; If it's not allocated...
-		JMPC ramdisk_RM_RemainingChildren
-		JMP ramdisk_RM_loop
-
-	ramdisk_RM_allDeallocated:
-
-	POP R3
-	POP R1
-	POP R0
-	DD R0
-	STD 0 ; Deallocate the directory entry
 
 	; Steps: mark directory content page deallocated in both the page and the bitmap
-	CALL ramdisk_deallocatePage
 	DBGC 'R'
 	DBGC 'F'
 	DBGC 0x0a

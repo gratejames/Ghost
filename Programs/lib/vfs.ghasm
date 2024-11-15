@@ -140,8 +140,8 @@ vfs_fopen:
 ; R1 -> ptr to absolute path
 ; R1 <- File Pointer
 ; R2 -> ptr to new file name
-#SHARE vfs_fopen
-vfs_fopen:
+#SHARE vfs_rm
+vfs_rm:
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
