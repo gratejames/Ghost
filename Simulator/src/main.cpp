@@ -7,7 +7,10 @@
 #include <fstream>
 
 #include "cxxopts.hpp"
+#include "NFont/NFont.cpp"
 #include "cpu.cpp"
+
+#include "fonts/embedded_font.cpp"
 
 #define WINSIZE 512
 #define WINSIZESqr 262144
@@ -15,6 +18,9 @@
 
 bool init();
 void deinit();
+void createDebugger();
+void destroyDebugger();
+void createDebugText();
 void EventsFunc();
 void TickerFunc();
 unsigned char asciiFromKeycode(SDL_Keycode kc);
@@ -23,7 +29,6 @@ std::thread Events;
 std::thread Ticker;
 
 SDL_Window *window = NULL;
-SDL_Surface *surface = NULL;
 SDL_Renderer *renderer;
 SDL_Texture *texture;
 Uint32* pixels = nullptr;
@@ -34,10 +39,16 @@ int scale = 1;
 
 int pitch = 0;
 
+int debuggerPage = 0;
+bool debuggingPanelActive = false;
+SDL_Window *dbgwindow = NULL;
+SDL_Renderer *dbgrenderer;
+
 int main (int argc, char **argv) {
   cxxopts::Options options("Ghost Simulator SDL", "Simulator for the fantasy console GHOST");
   options.add_options()
     ("v,verbose", "Verbose output")
+    ("d,debugging", "Start with debugging panel open")
     ("r,flush", "Flush each debugged character")
     ("s,scale", "Integer scale of the resolution (Integer between 1 and 4)", cxxopts::value<int>())
     ("f,file", "File name", cxxopts::value<std::string>())
@@ -81,6 +92,11 @@ int main (int argc, char **argv) {
     return 1;
   }
 
+  if (result.count("debugging")) {
+    SDL_ShowWindow(dbgwindow);
+    debuggingPanelActive = true;
+  }
+
   while (!processor->closed) {
     SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
 
@@ -92,6 +108,12 @@ int main (int argc, char **argv) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
     SDL_RenderPresent(renderer);
+    
+    if (debuggingPanelActive) {
+      SDL_RenderClear(dbgrenderer);
+      createDebugText();
+      SDL_RenderPresent(dbgrenderer);
+    }
   }
   deinit();
 
@@ -99,9 +121,11 @@ int main (int argc, char **argv) {
 }
 
 void deinit() {
+  destroyDebugger();
+
   Events.join();
   Ticker.join();
-  
+
   /* Frees memory */
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
@@ -147,6 +171,8 @@ bool init() {
     return false;
   }
 
+  createDebugger();
+
   std::cout << "Engine Initialized" << std:: endl;
 
   Events = std::thread(EventsFunc);
@@ -154,9 +180,59 @@ bool init() {
   return true;
 }
 
+void createDebugText() {
+  // NFont font(dbgrenderer, "../src/fonts/cherry-13-r.bdf", 13);
+  SDL_RWops* rwops = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
+  NFont font(dbgrenderer, rwops, 0, 13, NFont::Color{255, 255, 255});
+
+  for (int row = 0; row < 64; row++) {
+    std::stringstream input_text;
+    input_text << "| 0x" << std::hex << std::setw(4) << std::setfill('0') << debuggerPage * 64 * 16 + row * 16 << " | ";
+    for (int col = 0; col < 16; col++) {
+	    input_text << std::hex << std::setw(4) << std::setfill('0') << processor->MEMORY[debuggerPage * 64 * 16 + row * 16 + col] << " ";
+    }
+    input_text << "| ";
+    for (int col = 0; col < 16; col++) {
+      char c = (char)processor->MEMORY[debuggerPage * 64 * 16 + row * 16 + col];
+      if (c == 0) {
+        input_text << ".";
+      } else if (isprint(c)) {
+	      input_text << c;
+      } else {
+	      input_text << " ";
+      }
+    }
+    input_text << " |";
+    font.draw(dbgrenderer, 10, 10 + row*26, NFont::Scale(2.0f), input_text.str().c_str());
+  }
+}
+
+void destroyDebugger() {
+  SDL_DestroyRenderer(dbgrenderer);
+  SDL_DestroyWindow(dbgwindow);
+}
+void createDebugger() {
+    dbgwindow = SDL_CreateWindow("Ghost Debugger", /* Title of the SDL window */
+			    0, /* Position x of the window */
+			    SDL_WINDOWPOS_CENTERED, /* Position y of the window */
+			    1580, /* Width of the window in pixels */
+			    26*64 + 20, /* Height of the window in pixels */
+			    0); /* Additional flag(s) */
+  if (dbgwindow == NULL) {
+    std::cerr << "SDL window failed to initialise:" << SDL_GetError() << std::endl;
+  }
+  SDL_HideWindow(dbgwindow);
+  dbgrenderer = SDL_CreateRenderer(dbgwindow, -1, 0);
+  if (dbgrenderer == NULL) {
+    std::cerr << "SDL renderer failed to initialize:" << SDL_GetError() << std::endl;
+  }
+  createDebugText();
+}
+
 void TickerFunc () {
   while (!processor->closed) {
-    processor->tick();
+    if (!processor->broken)
+      processor->tick();
   }
 }
 
@@ -169,10 +245,45 @@ void EventsFunc() {
           std::cout << "Engine Closing" << std::endl;
           processor->closed = true;
           break;
+        case SDL_WINDOWEVENT:
+          if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+            processor->verbose = false;
+            std::cout << "Engine Closing" << std::endl;
+            processor->closed = true;
+          }
+          break;
         case SDL_KEYDOWN:
           if (event.key.repeat!=0)
             break;
-          if (event.key.keysym.sym == SDLK_KP_0) {
+          if (event.key.keysym.mod & KMOD_CTRL) {
+            if (event.key.keysym.sym == SDLK_d) {
+              if (debuggingPanelActive) {
+                SDL_HideWindow(dbgwindow);
+                debuggingPanelActive = false;
+              } else {
+                SDL_ShowWindow(dbgwindow);
+                debuggingPanelActive = true;
+              }
+            } else if (event.key.keysym.sym == SDLK_h) {
+              processor->broken = !processor->broken;
+              std::cout << "Debugger break" << std::endl;
+            } else if (event.key.keysym.sym == SDLK_SPACE) {
+              if (processor->broken) {
+                std::cout << "Debugger step" << std::endl;
+                processor->tick();
+              } else {
+                std::cout << "Couldn't step - still running" << std::endl;
+              }
+            } else if (event.key.keysym.sym == SDLK_UP) {
+              if (debuggerPage > 0) {
+                debuggerPage--;
+              }
+            } else if (event.key.keysym.sym == SDLK_DOWN) {
+              if (debuggerPage < 63) {
+                debuggerPage++;
+              }
+            }
+          } else if (event.key.keysym.sym == SDLK_KP_0) {
             processor->memLog(0, 0x15); // If numpad 0 key pressed, log first 0x15 of memory
           } else {
             processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 1);

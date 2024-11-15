@@ -58,7 +58,12 @@
         "unordered_set": "cpp",
         "regex": "cpp",
         "shared_mutex": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp"
     },
     "cmake.sourceDirectory": "/home/flicker/Desktop/Ghost/Simulator/build",
     "cmake.configureOnOpen": false

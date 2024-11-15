@@ -9,8 +9,11 @@ find_package(Threads REQUIRED)
 target_link_libraries(Simulator Threads::Threads)
 #
 
+find_package(SDL2_ttf REQUIRED)
+target_include_directories(Simulator PRIVATE ../src/NFont/)
+
 # https://stackoverflow.com/questions/62541168/how-to-add-precompiled-headers-in-cmake-for-visual-studio-generator
 target_precompile_headers(Simulator PRIVATE ../src/cxxopts.hpp)
 #
 
-target_link_libraries(Simulator SDL2main SDL2 GL)
+target_link_libraries(Simulator SDL2main SDL2 SDL2_ttf GL)

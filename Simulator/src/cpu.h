@@ -22,11 +22,11 @@ public:
 
 	bool verbose = false;
 	bool flushDebugChar = false;
+	unsigned short MEMORY[0x10000] = {};
 
 private:
 	std::string romFileName;
 	int t = 0; 							// Instructions since last reset
-	unsigned short MEMORY[0x10000] = {};
 	unsigned short PC = 0; 				// Program Counter: Address of current instruction
 	unsigned short DD = 0; 				// Address Register
 	unsigned short R0 = 0;
