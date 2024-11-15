@@ -135,6 +135,22 @@ vfs_fopen:
 	CALD
 	RET
 
+; R0 -> File Pointer
+; R0 <- Error code (Nominal 0)
+#SHARE vfs_fclose
+vfs_fclose:
+	PSH R0
+	ADD R0 FileTableSize
+	DD R0
+	LDD R0 ; Load the pointer to the functions
+	ADD R0 0 ; Load the first function: fclose
+	DD R0
+	LDD R0 ; Load the pointer to the fclose function
+	DD R0
+	POP R0
+	CALD
+	RET
+
 #DEF DiskTableSize 4
 ; 1 byte pointers to each drivers table
 DiskTable:
