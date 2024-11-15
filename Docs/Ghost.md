@@ -26,7 +26,7 @@
 	+ [x] make fs bitmap work right
 	+ [ ] cat
 + [x] AHH THE CAPITAL M IS TOO TALL
-+ [ ] Show registers on simulator's memory monitor
++ [x] Show registers on simulator's memory monitor
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

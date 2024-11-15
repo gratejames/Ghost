@@ -23,6 +23,7 @@ public:
 	bool verbose = false;
 	bool flushDebugChar = false;
 	unsigned short MEMORY[0x10000] = {};
+	void readRegisterState(unsigned short Registers[]);
 
 private:
 	std::string romFileName;

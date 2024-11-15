@@ -185,6 +185,18 @@ void createDebugText() {
   SDL_RWops* rwops = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
   NFont font(dbgrenderer, rwops, 0, 13, NFont::Color{255, 255, 255});
 
+  {
+    std::stringstream input_text;
+	  unsigned short Registers[5] = {};
+    processor->readRegisterState(Registers);
+    input_text << "| PC 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[0] << " ";
+    input_text << "| R0 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[1] << " ";
+    input_text << "R1 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[2] << " ";
+    input_text << "R2 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[3] << " ";
+    input_text << "R3 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[4] << " |";
+    font.draw(dbgrenderer, 10, 10+64*26+13, NFont::Scale(2.0f), input_text.str().c_str());
+  }
+
   for (int row = 0; row < 64; row++) {
     std::stringstream input_text;
     input_text << "| 0x" << std::hex << std::setw(4) << std::setfill('0') << debuggerPage * 64 * 16 + row * 16 << " | ";
@@ -216,7 +228,7 @@ void createDebugger() {
 			    0, /* Position x of the window */
 			    SDL_WINDOWPOS_CENTERED, /* Position y of the window */
 			    1580, /* Width of the window in pixels */
-			    26*64 + 20, /* Height of the window in pixels */
+			    26*66 + 20, /* Height of the window in pixels */
 			    0); /* Additional flag(s) */
   if (dbgwindow == NULL) {
     std::cerr << "SDL window failed to initialise:" << SDL_GetError() << std::endl;

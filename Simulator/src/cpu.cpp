@@ -116,6 +116,14 @@ void cpu::debug() {
 	// std::cout << "Jump " << jump << std::endl;
 }
 
+void cpu::readRegisterState(unsigned short Registers[]) {
+	Registers[0] = PC;
+	Registers[1] = R0;
+	Registers[2] = R1;
+	Registers[3] = R2;
+	Registers[4] = R3;
+}
+
 int cpu::pallette16_888(unsigned short x) {
 	if (x>0xf)
 		std::cout << "ERR: Invalid pallete access, (" << x << ") is greater than 15." << std::endl;
