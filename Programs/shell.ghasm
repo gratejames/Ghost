@@ -735,6 +735,14 @@ MakeAbsoluteDir:
 		JMPC MakeAbsoluteDir_CopyLoop2
 	; Enforce trailing slash
 	DEC R3
+
+	DEC R3 ; Check if the last character is already a slash
+	DD R3
+	LDD R0
+	CE R0 '/'
+	JMPC MakeAbsoluteDir_Done
+	; If it's not, replace the null with a slash and add another null
+	INC R3
 	DD R3
 	STD '/'
 	INC R3
