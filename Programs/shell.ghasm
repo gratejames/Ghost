@@ -706,6 +706,118 @@ CMD_RM:
 			LD R1 STR_RM_ERROR_3
 			JMP PRINT_CMD_RM_ERROR_EXIT
 
+CMD_TESTFILE:
+	LD R0 0
+	LD R1 testFilePath
+	LD R2 testFileName
+	; R0 -> Disk number
+	; R0 <- Error code (Nominal 0)
+	; R1 -> ptr to absolute path
+	; R1 <- File Pointer
+	; R2 -> ptr to file name
+	CALL vfs_fopen
+
+	PSH R0
+	LD R1 testFileContents1
+	LD R2 $testFileLength1
+	; R0 -> File Pointer
+	; R0 <- Error code (Nominal 0)
+	; R1 -> Buffer to read from
+	; R1 <- bytes read
+	; R2 -> Amount of bytes to read
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	PSH R0
+	LD R1 testFileContents3
+	LD R2 $testFileLength3
+	CALL vfs_fwrite
+	POP R0
+	CALL vfs_fclose
+	RET
+
+testFilePath:
+.ds "/"
+.db 0
+testFileName:
+.ds "tf"
+.dz 12
+testFileLength1:
+.db 10
+testFileContents1:
+.ds "0123456789"
+testFileLength2:
+.db 26
+testFileContents3:
+.ds "abcdefghijklmnopqrstuvwxyz"
+testFileContents2:
+.ds "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+testFileLength3:
+.db 26*2
 ; Uses none
 ScrollScreen:
 	PSH R1
@@ -1113,6 +1225,10 @@ HUI_Table:
 	.ds "rm"
 	.db 0
 	.db CMD_RM
+	.db 0
+	.ds "tf"
+	.db 0
+	.db CMD_TESTFILE
 	.db 0
 	.db 0
 

@@ -18,7 +18,7 @@
 	+ [ ] Actual file manipulation - file handlers
 		+ [x] fopen
 		+ [x] fclose
-		+ [ ] fwrite
+		+ [x] fwrite
 		+ [ ] fread
 		+ [ ] fseek
 	+ [ ] stat (return a stat struct from vfs_stat)
