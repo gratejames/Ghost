@@ -20,11 +20,16 @@
 		+ [x] fclose
 		+ [ ] fwrite
 		+ [ ] fread
-	+ [ ] stat
+		+ [ ] fseek
+	+ [ ] stat (return a stat struct from vfs_stat)
 	+ [ ] rewrite fs functions to use other functions
 	+ [x] fix free page counter
 	+ [x] make fs bitmap work right
 	+ [ ] cat
+	+ [ ] maybe unregister fileystem/disk number at some point?
+	+ [ ] change disk number command
+	+ [ ] current disk number command (Integrate into pwd?)
+		+ [ ] should absolute paths be disknum:/path/... ? 0:/folders/file.ext ?
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
 

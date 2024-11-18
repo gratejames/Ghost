@@ -120,7 +120,7 @@ vfs_rmdir:
 ; R0 <- Error code (Nominal 0)
 ; R1 -> ptr to absolute path
 ; R1 <- File Pointer
-; R2 -> ptr to new file name
+; R2 -> ptr to file name
 #SHARE vfs_fopen
 vfs_fopen:
 	PSH R0

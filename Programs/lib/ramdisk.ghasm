@@ -75,6 +75,7 @@ ramdisk_format:
 	LDD R0 ; Disk size
 
 	SHR R0 7 ; Amount of pages = size / 128
+	DEC R0 ; Header page already used!
 
 	; Write the header:
 	DD R1
@@ -670,6 +671,7 @@ ramdisk_LIST:
 ; R2 -> ptr to file name
 ; Destroys R3
 ramdisk_FOPEN:
+	ST R0 $ramdisk_FOPEN_disknumber
 	CALL ramdisk_getinfo
 	CALL ramdisk_traverse
 	CE R1 0xffff
@@ -758,7 +760,7 @@ ramdisk_FOPEN:
 	; 1. Create a global table entry
 		; Global[i] = File functions table
 	; 2. Create a local table entry
-		; Local[j] = i, first page, cursor=0, entry pointer
+		; Local[j] = i, disk number, cursor=0, entry pointer
 	; 3. Return i
 
 	; Global Registry
@@ -817,12 +819,13 @@ ramdisk_FOPEN:
 	CNE R1 0b01 ; Make sure it's not a directory, and is allocated ; TODO
 	JMPC ramdisk_FOPEN_DirNotFile
 
-	INC R0
-	DD R0
-	LDD R0 ; The first page of the file
+	; INC R0
+	; DD R0
+	; LDD R0 ; The first page of the file
 	; Store first page, 
 	LD R1 $ramdisk_FOPEN_localPointer
 	DD R1
+	LD R0 $ramdisk_FOPEN_disknumber
 	STD R0
 	INC R1
 	DD R1
@@ -839,6 +842,9 @@ ramdisk_FOPEN:
 	DBGC 'C'
 	DBGC 0xa
 	RET
+
+	ramdisk_FOPEN_disknumber: .db 0
+	ramdisk_FOPEN_localPointer: .db 0
 
 	ramdisk_FOPEN_TraverseFail:
 		DBGC 'f'
@@ -938,9 +944,6 @@ ramdisk_RM:
 	; R1 Page number of the directorys' contents
 	; R3 fs pointer
 
-	; Now to free each page...
-
-
 	; Steps: mark directory content page deallocated in both the page and the bitmap
 	DBGC 'R'
 	DBGC 'F'
@@ -972,8 +975,7 @@ ramdisk_RM:
 ; R0 -> File Handle
 ; R0 <- Error code (Nominal 0)
 ramdisk_FCLOSE:
-	DBGC 0xa
-	SHL R0
+	CALL ramdisk_getlocalfile
 	SHL R0 2 ; Multiply by 4, the size of each table entry
 	ADD R0 ramdisk_FileTable
 	INC R0
@@ -986,7 +988,6 @@ ramdisk_FCLOSE:
 	LD R0 0 ; No errors
 	RET
 
-ramdisk_FOPEN_localPointer: .db 0
 
 ; R1 -> Page number to deallocate
 ; R3 -> fs address
@@ -1141,6 +1142,30 @@ ramdisk_getinfo:
 	POP R1
 	RET
 
+; R0 -> Global file pointer
+; R0 <- Local file pointer
+ramdisk_getlocalfile:
+	PSH R1
+	PSH R2
+	LD R1 ramdisk_FileTable
+	ramdisk_FileTable_loop:
+		DD R1
+		LDD R2 ; Disk ID of first entry
+		PSH R0
+		SUB R2 ; Subtract R2 from R0
+		CNZ R0 ; See if R0-R2 = 0: if not, need to loop
+		POP R0
+		ADD R1 4 ; Increment R1 to next table entry
+		JMPC ramdisk_FileTable_loop
+	SUB R1 4
+
+	PSH R1
+	POP R0
+
+	POP R2
+	POP R1
+	RET
+
 ; R0 Pointer to item in table entry
 ; R1 -> ptr to absolute path string
 ; R1 <- Page number, 0xfff on fail
@@ -1264,7 +1289,7 @@ ramdisk_Table:
 #DEF ramdisk_FileTableSize 6
 ; Each entry is 4 bytes
 ; 0. The global file pointer number
-; 1. The pointer to the first page of the file
+; 1. The disk number
 ; 2. The cursor in file
 ; 3. The pointer to the directory entry
 ramdisk_FileTable:

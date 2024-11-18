@@ -27,7 +27,7 @@ Directory Entry: (16 bytes)
   Flags (Byte 0: Is allocated? Byte 1: Is dir?) (Here, byte zero is least significant: 0b0000 0000 0000 00da)
   Page of contents start
   12 char name padded with 0
-  2 byte size of file
+  2 byte size of file (Only final byte is used)
 
 File Page:
   Page number of remaining file data, or 0
