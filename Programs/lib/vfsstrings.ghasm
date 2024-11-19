@@ -1,0 +1,73 @@
+#SHARE *
+
+STR_VFS_ERROR_LIST:
+.ds "LIST:Unknown error"
+.db 0
+.ds "LIST:Failed to traverse"
+.db 0
+.db 0
+
+STR_VFS_ERROR_MKDIR:
+.ds "MKDIR:Unknown error"
+.db 0
+.ds "MKDIR:Folder already exists"
+.db 0
+.ds "MKDIR:Failed to traverse"
+.db 0
+.ds "MKDIR:Parent directory full"
+.db 0
+.ds "MKDIR:Failed to allocate a new page"
+.db 0
+.db 0
+
+STR_VFS_ERROR_RMDIR:
+.ds "RMDIR:Unknown error"
+.db 0
+.ds "RMDIR:Not a folder"
+.db 0
+.ds "RMDIR:Failed to traverse"
+.db 0
+.ds "RMDIR:Could not find directory"
+.db 0
+.ds "RMDIR:Directory still has allocated children"
+.db 0
+.db 0
+
+STR_VFS_ERROR_RM:
+.ds "RM:Unknown Error"
+.db 0
+.ds "RM:Given file is a directory"
+.db 0
+.ds "RM:Failed to traverse"
+.db 0
+.ds "RM:File not found"
+.db 0
+.db 0
+
+STR_VFS_ERROR_FOPEN:
+.ds "FOPEN:Unknown error"
+.db 0
+.ds "FOPEN:Failed to traverse"
+.db 0
+.ds "FOPEN:Failed to allocate a new page"
+.db 0
+.ds "FOPEN:Parent directory full"
+.db 0
+.ds "FOPEN:Given file is a directory"
+.db 0
+.ds "FOPEN:No unused file handles - non recoverable error, sorry"
+.db 0
+.ds "FOPEN:(SHOULDN'T HAPPEN) Couldn't open file"
+.db 0
+.ds "FOPEN:File not found"
+.db 0
+.db 0
+
+STR_VFS_ERROR_FREAD:
+.ds "FOPEN:Unknown error"
+.db 0
+.ds "FOPEN:Cursor too large"
+.db 0
+.ds "FOPEN:Failed to allocate a new page"
+.db 0
+.db 0

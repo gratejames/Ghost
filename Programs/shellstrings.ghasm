@@ -1,152 +1,17 @@
 #SHARE *
-STR_CMD_NOT_FOUND:
+
+STR_SHELL_ERROR_NOARG:
+.ds "!Must provide an argument"
+.db 0
+
+STR_SHELL_ERROR_NOCMD:
 .ds "!Command Not Found"
 .db 0
 
-STR_CMD_HALT:
+STR_SHELL_ERROR_UNKNOWN:
+.ds "!Unknown Error"
+.db 0
+
+STR_SHELL_NOTIF_HALT:
 .ds "!Halting"
-.db 0
-
-STR_MKDIR_ERROR:
-.ds "!MKDIR:Unknown Error"
-.db 0
-
-STR_MKDIR_ERROR_1:
-.ds "!MKDIR:Folder already exists"
-.db 0
-
-STR_MKDIR_ERROR_2:
-.ds "!MKDIR:Failed to traverse"
-.db 0
-
-STR_MKDIR_ERROR_3:
-.ds "!MKDIR:Parent directory full"
-.db 0
-
-STR_MKDIR_ERROR_4:
-.ds "!MKDIR:Failed to allocate a new page"
-.db 0
-
-STR_MKDIR_NOARG:
-.ds "!MKDIR:Must provide an argument"
-.db 0
-
-STR_RMDIR_ERROR:
-.ds "!RMDIR:Unknown Error"
-.db 0
-
-STR_RMDIR_ERROR_1:
-.ds "!RMDIR:Not a folder"
-.db 0
-
-STR_RMDIR_ERROR_2:
-.ds "!RMDIR:Failed to traverse"
-.db 0
-
-STR_RMDIR_ERROR_3:
-.ds "!RMDIR:Could not find directory"
-.db 0
-
-STR_RMDIR_ERROR_4:
-.ds "!RMDIR:Directory still has allocated children"
-.db 0
-
-STR_RMDIR_NOARG:
-.ds "!RMDIR:Must provide an argument"
-.db 0
-
-STR_LS_ERROR:
-.ds "!LS:Unknown Error"
-.db 0
-
-STR_LS_ERROR_1:
-.ds "!LS:Failed to traverse"
-.db 0
-
-STR_CD_ERROR_NOARG:
-.ds "!CD:Must provide an argument"
-.db 0
-
-STR_CD_ERROR_BADPATH:
-.ds "!CD:No such directory"
-.db 0
-
-STR_TOUCH_ERROR:
-.ds "!TOUCH:Unknown Error"
-.db 0
-
-STR_TOUCH_NOARG:
-.ds "!TOUCH:Must provide an argument"
-.db 0
-
-STR_TOUCH_ERROR_1:
-.ds "!TOUCH:Failed to traverse"
-.db 0
-
-STR_TOUCH_ERROR_2:
-.ds "!TOUCH:Failed to allocate a new page"
-.db 0
-
-STR_TOUCH_ERROR_3:
-.ds "!TOUCH:Parent directory full"
-.db 0
-
-STR_TOUCH_ERROR_4:
-.ds "!TOUCH:Given file is a directory"
-.db 0
-
-STR_TOUCH_ERROR_5:
-.ds "!TOUCH:No unused file handles - non recoverable error, sorry"
-.db 0
-
-STR_RM_ERROR:
-.ds "!RM:Unknown Error"
-.db 0
-
-STR_RM_NOARG:
-.ds "!RM:Must provide an argument"
-.db 0
-
-STR_RM_ERROR_1:
-.ds "!RM:Given file is a directory"
-.db 0
-
-STR_RM_ERROR_2:
-.ds "!RM:Failed to traverse"
-.db 0
-
-STR_RM_ERROR_3:
-.ds "!RM:File not found"
-.db 0
-
-STR_CAT_ERROR_fread:
-.ds "!CAT:Unknown fread Error"
-.db 0
-
-STR_CAT_ERROR_fopen:
-.ds "!CAT:Unknown fopen Error"
-.db 0
-
-STR_CAT_NOARG:
-.ds "!CAT:Must provide an argument"
-.db 0
-
-STR_CAT_ERROR_1:
-.ds "!CAT:Failed to traverse"
-.db 0
-
-STR_CAT_ERROR_2:
-.ds "!CAT:Failed to allocate a new page"
-.db 0
-
-STR_CAT_ERROR_3:
-.ds "!CAT:Parent directory full"
-.db 0
-
-STR_CAT_ERROR_4:
-.ds "!CAT:Given file is a directory"
-.db 0
-
-STR_CAT_ERROR_5:
-.ds "!CAT:No unused file handles - non recoverable error, sorry"
 .db 0
