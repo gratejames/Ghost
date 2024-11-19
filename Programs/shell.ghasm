@@ -364,7 +364,6 @@ CMD_LS:
 	LD R0 $currentDisk ; Disk
 	LD R1 currentDirectory ; Ptr to path
 	CALL vfs_list
-
 	CNZ R0
 	JMPC PRINT_CMD_LS_ERROR
 
@@ -706,10 +705,138 @@ CMD_RM:
 			LD R1 STR_RM_ERROR_3
 			JMP PRINT_CMD_RM_ERROR_EXIT
 
+CMD_CAT:
+	SUB R0 2
+	CLT R0 1
+	JMPC CMD_CAT_NOARG
+	; R1 has pointer to 0 terminated string
+	; Need to convert to an 12 char padded string
+	CALL MakeAbsoluteFile
+	CALL SplitPath
+	PSH R2
+
+	; R1 has pointer to path
+	; R2 has pointer to file name
+	; Stack has pointer to file name to free it
+
+	LD R0 $currentDisk ; Disk
+	; LD R1 currentDirectory ; Ptr to path
+	; R2 is pointer to file name
+	LD R3 0
+	CALL vfs_fopen
+	CNZ R0
+	JMPC PRINT_CMD_CAT_ERROR_fopen
+	LDZ R1
+
+	CMD_CAT_freadloop:
+		PSH R0
+		; R0 is file pointer
+		LD R1 CMD_CAT_buffer
+		LD R2 20
+		; R0 -> File Pointer
+		; R0 <- Error code (Nominal 0)
+		; R1 -> Buffer to read into
+		; R1 <- bytes read
+		; R2 -> Amount of bytes to read
+		CALL vfs_fread
+		CNZ R0
+		POP R0
+		JMPC PRINT_CMD_CAT_ERROR_fread
+
+		CNE R1 20
+		JMPC CMD_CAT_freadloop_done
+
+		PSH
+		LD R1 CMD_CAT_buffer
+		CALL PrintLineAtCursor
+		POP
+
+		JMP CMD_CAT_freadloop
+
+	CMD_CAT_freadloop_done:
+	PSH R0
+	LD R0 CMD_CAT_buffer
+	ADD R1
+	DD R0
+	STD 0
+	LD R1 CMD_CAT_buffer
+	CALL PrintLineAtCursor
+	POP R0
+
+	CALL vfs_fclose
+
+	POP R0
+	CALL free
+	RET
+
+	CMD_CAT_buffer: .dz 21
+
+	CMD_CAT_NOARG:
+		LD R1 STR_RM_NOARG
+		CALL PrintLineAtCursor
+		RET
+
+	PRINT_CMD_CAT_ERROR_fread:
+		DBGC 0xa
+		PSH R1
+		; CE R0 0x0001
+		; JMPC CMD_CAT_ERROR_1
+		; CE R0 0x0002
+		; JMPC CMD_CAT_ERROR_2
+		; CE R0 0x0003
+		; JMPC CMD_CAT_ERROR_3
+		LD R1 STR_CAT_ERROR_fread
+
+		PRINT_CMD_CAT_ERROR_EXIT_fread:
+			CALL PrintLineAtCursor
+			POP R1
+			POP R0
+			CALL free
+			RET
+
+		; CMD_CAT_ERROR_1:
+		; 	LD R1 STR_CAT_ERROR_1
+		; 	JMP PRINT_CMD_CAT_ERROR_EXIT
+		; CMD_CAT_ERROR_2:
+		; 	LD R1 STR_CAT_ERROR_2
+		; 	JMP PRINT_CMD_CAT_ERROR_EXIT
+		; CMD_CAT_ERROR_3:
+		; 	LD R1 STR_CAT_ERROR_3
+		; 	JMP PRINT_CMD_CAT_ERROR_EXIT
+
+	PRINT_CMD_CAT_ERROR_fopen:
+		DBGC 0xa
+		PSH R1
+		CE R0 0x0001
+		JMPC CMD_CAT_ERROR_1
+		CE R0 0x0002
+		JMPC CMD_CAT_ERROR_2
+		CE R0 0x0003
+		JMPC CMD_CAT_ERROR_3
+		LD R1 STR_CAT_ERROR_fopen
+
+		PRINT_CMD_CAT_ERROR_EXIT_fopen:
+			CALL PrintLineAtCursor
+			POP R1
+			POP R0
+			CALL free
+			RET
+
+		CMD_CAT_ERROR_1:
+			LD R1 STR_CAT_ERROR_1
+			JMP PRINT_CMD_CAT_ERROR_EXIT_fopen
+		CMD_CAT_ERROR_2:
+			LD R1 STR_CAT_ERROR_2
+			JMP PRINT_CMD_CAT_ERROR_EXIT_fopen
+		CMD_CAT_ERROR_3:
+			LD R1 STR_CAT_ERROR_3
+			JMP PRINT_CMD_CAT_ERROR_EXIT_fopen
+
 CMD_TESTFILE:
 	LD R0 0
 	LD R1 testFilePath
 	LD R2 testFileName
+	LD R3 1
 	; R0 -> Disk number
 	; R0 <- Error code (Nominal 0)
 	; R1 -> ptr to absolute path
@@ -1233,6 +1360,10 @@ HUI_Table:
 	.ds "tf"
 	.db 0
 	.db CMD_TESTFILE
+	.db 0
+	.ds "cat"
+	.db 0
+	.db CMD_CAT
 	.db 0
 	.db 0
 

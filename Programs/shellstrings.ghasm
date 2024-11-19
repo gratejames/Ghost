@@ -118,3 +118,35 @@ STR_RM_ERROR_2:
 STR_RM_ERROR_3:
 .ds "!RM:File not found"
 .db 0
+
+STR_CAT_ERROR_fread:
+.ds "!CAT:Unknown fread Error"
+.db 0
+
+STR_CAT_ERROR_fopen:
+.ds "!CAT:Unknown fopen Error"
+.db 0
+
+STR_CAT_NOARG:
+.ds "!CAT:Must provide an argument"
+.db 0
+
+STR_CAT_ERROR_1:
+.ds "!CAT:Failed to traverse"
+.db 0
+
+STR_CAT_ERROR_2:
+.ds "!CAT:Failed to allocate a new page"
+.db 0
+
+STR_CAT_ERROR_3:
+.ds "!CAT:Parent directory full"
+.db 0
+
+STR_CAT_ERROR_4:
+.ds "!CAT:Given file is a directory"
+.db 0
+
+STR_CAT_ERROR_5:
+.ds "!CAT:No unused file handles - non recoverable error, sorry"
+.db 0

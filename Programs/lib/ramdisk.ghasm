@@ -669,8 +669,9 @@ ramdisk_LIST:
 ; R1 -> ptr to absolute path
 ; R1 <- File Pointer
 ; R2 -> ptr to file name
-; Destroys R3
+; R3 -> fopen mode (1 to create if not exist, else 0)
 ramdisk_FOPEN:
+	ST R3 $ramdisk_FOPEN_mode
 	ST R0 $ramdisk_FOPEN_disknumber
 	CALL ramdisk_getinfo
 	CALL ramdisk_traverse
@@ -688,6 +689,14 @@ ramdisk_FOPEN:
 
 	CALL ramdisk_haschild
 	JMPC ramdisk_FOPEN_FileAlreadyExists
+
+	; Should we create the file?
+	PSH R0
+	LD R0 $ramdisk_FOPEN_mode
+	CEZ R0
+	POP R0
+	JMPC ramdisk_FOPEN_FileNotExist ; If R3 was zero, don't make a new file
+
 
 	CALL ramdisk_isfull
 	JMPC ramdisk_FOPEN_DirectoryFull
@@ -845,6 +854,7 @@ ramdisk_FOPEN:
 
 	ramdisk_FOPEN_disknumber: .db 0
 	ramdisk_FOPEN_localPointer: .db 0
+	ramdisk_FOPEN_mode: .db 0
 
 	ramdisk_FOPEN_TraverseFail:
 		DBGC 'f'
@@ -888,6 +898,12 @@ ramdisk_FOPEN:
 		DBGC 'o'
 		DBGC 0x0a
 		LD R0 0x0006
+		RET
+	ramdisk_FOPEN_FileNotExist:
+		DBGC 'f'
+		DBGC 'n'
+		DBGC 0x0a
+		LD R0 0x0007
 		RET
 
 ; R0 -> Disk number

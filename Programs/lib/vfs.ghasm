@@ -121,6 +121,7 @@ vfs_rmdir:
 ; R1 -> ptr to absolute path
 ; R1 <- File Pointer
 ; R2 -> ptr to file name
+; R3 -> fopen mode (1 to create if not exist, else 0)
 #SHARE vfs_fopen
 vfs_fopen:
 	PSH R0

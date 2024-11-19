@@ -25,7 +25,7 @@
 	+ [ ] rewrite fs functions to use other functions
 	+ [x] fix free page counter
 	+ [x] make fs bitmap work right
-	+ [ ] cat
+	+ [x] cat
 	+ [ ] maybe unregister fileystem/disk number at some point?
 	+ [ ] change disk number command
 	+ [ ] current disk number command (Integrate into pwd?)
