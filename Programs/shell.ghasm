@@ -788,36 +788,40 @@ CMD_TESTFILE:
 	CALL vfs_fwrite
 	POP R0
 	PSH R0
-	LD R1 testFileContents3
-	LD R2 $testFileLength3
-	CALL vfs_fwrite
+	LD R1 0
+	CALL vfs_fseek
 	POP R0
 	PSH R0
-	LD R1 testFileContents3
-	LD R2 $testFileLength3
-	CALL vfs_fwrite
+	LD R1 testFileReadBuffer
+	LD R2 $testFileReadSize
+	CALL vfs_fread
 	POP R0
 	CALL vfs_fclose
 	RET
 
-testFilePath:
-.ds "/"
-.db 0
-testFileName:
-.ds "tf"
-.dz 12
-testFileLength1:
-.db 10
-testFileContents1:
-.ds "0123456789"
-testFileLength2:
-.db 26
-testFileContents3:
-.ds "abcdefghijklmnopqrstuvwxyz"
-testFileContents2:
-.ds "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-testFileLength3:
-.db 26*2
+	testFilePath:
+	.ds "/"
+	.db 0
+	testFileName:
+	.ds "tf"
+	.dz 12
+	testFileLength1:
+	.db 10
+	testFileContents1:
+	.ds "0123456789"
+	testFileLength2:
+	.db 26
+	testFileContents3:
+	.ds "abcdefghijklmnopqrstuvwxyz"
+	testFileContents2:
+	.ds "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	testFileLength3:
+	.db 26*2
+
+	testFileReadBuffer:
+	.dz 128*3
+	testFileReadSize:
+	.db 128
 ; Uses none
 ScrollScreen:
 	PSH R1

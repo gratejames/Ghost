@@ -181,9 +181,45 @@ vfs_fwrite:
 	ADD R0 FileTable
 	DD R0
 	LDD R0 ; Load the pointer to the functions
-	ADD R0 1 ; Load the first function: fwrite
+	ADD R0 1 ; Load the second function: fwrite
 	DD R0
 	LDD R0 ; Load the pointer to the fwrite function
+	DD R0
+	POP R0
+	CALD
+	RET
+
+; R0 -> File Pointer
+; R0 <- Error code (Nominal 0)
+; R1 -> Buffer to read into
+; R1 <- bytes read
+; R2 -> Amount of bytes to read
+#SHARE vfs_fread
+vfs_fread:
+	PSH R0
+	ADD R0 FileTable
+	DD R0
+	LDD R0 ; Load the pointer to the functions
+	ADD R0 2 ; Load the third function: fread
+	DD R0
+	LDD R0 ; Load the pointer to the fread function
+	DD R0
+	POP R0
+	CALD
+	RET
+
+; R0 -> File Pointer
+; R0 <- Error code (Nominal 0)
+; R1 -> position to seek to
+#SHARE vfs_fseek
+vfs_fseek:
+	PSH R0
+	ADD R0 FileTable
+	DD R0
+	LDD R0 ; Load the pointer to the functions
+	ADD R0 3 ; Load the fourth function: fseek
+	DD R0
+	LDD R0 ; Load the pointer to the fseek function
 	DD R0
 	POP R0
 	CALD

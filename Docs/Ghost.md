@@ -19,8 +19,8 @@
 		+ [x] fopen
 		+ [x] fclose
 		+ [x] fwrite
-		+ [ ] fread
-		+ [ ] fseek (0xffff is 'end')
+		+ [x] fread (hesitantly)
+		+ [x] fseek (0xffff is 'end')
 	+ [ ] stat (return a stat struct from vfs_stat)
 	+ [ ] rewrite fs functions to use other functions
 	+ [x] fix free page counter
