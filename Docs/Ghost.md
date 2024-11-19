@@ -22,7 +22,7 @@
 		+ [x] fread (hesitantly)
 		+ [x] fseek (0xffff is 'end')
 	+ [ ] stat (return a stat struct from vfs_stat)
-	+ [ ] rewrite fs functions to use other functions
+	+ [ ] rewrite fs functions to use other subfunctions
 	+ [x] fix free page counter
 	+ [x] make fs bitmap work right
 	+ [x] cat
@@ -32,6 +32,7 @@
 		+ [ ] should absolute paths be disknum:/path/... ? 0:/folders/file.ext ?
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
++ [ ] AN EDITOR
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
