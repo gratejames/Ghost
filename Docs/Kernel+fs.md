@@ -16,7 +16,7 @@ Each page is 128 bytes
 
 Header page
   Magic 'G'
-  Verion number
+  Version number
   Bitmap size - unused
   Free pages count
   Allocated pages bitmap, 32 bytes (0 is free, 1 is allocated)

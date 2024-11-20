@@ -208,6 +208,8 @@ void createDebugText() {
       char c = (char)processor->MEMORY[debuggerPage * 64 * 16 + row * 16 + col];
       if (c == 0) {
         input_text << ".";
+      } else if (c == '%') {
+	      input_text << "%%";
       } else if (isprint(c)) {
 	      input_text << c;
       } else {
