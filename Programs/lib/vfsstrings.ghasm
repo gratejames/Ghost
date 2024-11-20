@@ -64,10 +64,17 @@ STR_VFS_ERROR_FOPEN:
 .db 0
 
 STR_VFS_ERROR_FREAD:
-.ds "FOPEN:Unknown error"
+.ds "FREAD:Unknown error"
 .db 0
-.ds "FOPEN:Cursor too large"
+.ds "FREAD:Cursor too large"
 .db 0
-.ds "FOPEN:Failed to allocate a new page"
+.ds "FREAD:Failed to allocate a new page"
+.db 0
+.db 0
+
+STR_VFS_ERROR_STAT:
+.ds "STAT:Unknown error"
+.db 0
+.ds "STAT:Could not find file"
 .db 0
 .db 0

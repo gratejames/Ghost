@@ -11,7 +11,7 @@
 	+ [x] mkdir
 	+ [x] rmdir
 	+ [x] touch
-	+ [x] rm
+	+ [ ] rm
 	+ [x] ls
 	+ [x] subfolder/path handling
 	+ [ ] '..'
@@ -21,7 +21,7 @@
 		+ [x] fwrite
 		+ [x] fread (hesitantly)
 		+ [x] fseek (0xffff is 'end')
-	+ [ ] stat (return a stat struct from vfs_stat)
+	+ [x] stat (return a stat struct from vfs_stat)
 	+ [ ] rewrite fs functions to use other subfunctions
 	+ [x] fix free page counter
 	+ [x] make fs bitmap work right
@@ -33,6 +33,9 @@
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
 + [ ] AN EDITOR
++ [ ] Memory access
+	+ [ ] peek
+	+ [ ] poke
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

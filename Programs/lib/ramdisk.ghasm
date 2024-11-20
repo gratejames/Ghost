@@ -154,10 +154,10 @@ ramdisk_haschild:
 
 ; Checks if the given page has the given child name
 ; Returns in conditions register
-; R1 page number
-; R2 pointer to name to check
-; R3 address of fs start
-; Destroys: R0 <- pointer to child
+; R0 <- pointer to child
+; R1 -> page number
+; R2 -> pointer to name to check
+; R3 -> address of fs start
 ramdisk_getchild:
 	PSH R1
 	PSH R2
@@ -214,8 +214,8 @@ ramdisk_getchild:
 
 ; Checks if the given page has any free entries
 ; Returns in conditions register
-; R1 page number
-; R3 address of fs start
+; R1 -> page number
+; R3 -> address of fs start
 ramdisk_isfull:
 	PSH
 	LDZ R1
@@ -259,9 +259,9 @@ ramdisk_isfull:
 
 ; Gets a pointer to the first free entry on the given page
 ; Returns in conditions register
-; R1 page number
-; R3 address of fs start
-; Destroys: R0 <- pointer to new entry
+; R0 <- pointer to new entry
+; R1 -> page number
+; R3 -> address of fs start
 ramdisk_firstFree:
 	PSH R1
 	PSH R2
@@ -310,9 +310,9 @@ ramdisk_firstFree:
 	RET
 
 ; R0 -> Disk number
+; R1 -> ptr to path
+; R2 -> ptr to folder name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
-; R1 ptr to path
-; R2 ptr to folder name zero padded to 12 characters
 ; Destroys: R3
 ramdisk_RMDIR:
 	CALL ramdisk_getinfo
@@ -422,11 +422,10 @@ ramdisk_RMDIR:
 		LD R0 0x0004
 		RET
 
-
 ; R0 -> Disk number
+; R1 -> ptr to path
+; R2 -> ptr to new folder name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
-; R1 ptr to path
-; R2 ptr to new folder name zero padded to 12 characters
 ; Destroys: R3
 ramdisk_MKDIR:
 	CALL ramdisk_getinfo
@@ -544,8 +543,8 @@ ramdisk_MKDIR:
 		RET
 
 ; R0 -> Disk number
+; R1 -> ptr to path
 ; R0 <- error code (Nominal 0)
-; R1 ptr to path
 ; R3 <- ptr to malloc'd listdir obj, or 0 on fail
 ; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
 ramdisk_LIST:
@@ -665,11 +664,11 @@ ramdisk_LIST:
 		RET
 
 ; R0 -> Disk number
-; R0 <- Error code (Nominal 0)
 ; R1 -> ptr to absolute path
-; R1 <- File Pointer
 ; R2 -> ptr to file name
 ; R3 -> fopen mode (1 to create if not exist, else 0)
+; R0 <- Error code (Nominal 0)
+; R1 <- File Pointer
 ramdisk_FOPEN:
 	ST R3 $ramdisk_FOPEN_mode
 	ST R0 $ramdisk_FOPEN_disknumber
@@ -986,6 +985,68 @@ ramdisk_RM:
 		DBGC 0x0a
 		POP R0
 		LD R0 0x0003
+		RET
+
+; R0 -> Disk number
+; R1 -> ptr to path
+; R2 -> ptr to folder name zero padded to 12 characters
+; R0 <- error code (Nominal 0)
+; R3 <- File Pointer to malloc'd stat struct
+; 3 bytes: [directory entry flags, first page, file size]
+ramdisk_STAT:
+	CALL ramdisk_getinfo
+	CALL ramdisk_traverse
+	CE R1 0xffff
+	JMPC ramdisk_LIST_TraverseFail
+	; R0 is the pointer in the ramdisk table for this fs
+	; R1 has the page number
+	; R2 has the ptr to the new folder name
+
+	STZ R3		; Copy table pointer to R3
+	ADD R3 1 	; Get the second item in the table
+	DD R3
+	LDD R3		; Read the address of the fs
+	STR R3 $ramdisk_PendingFSAddress
+
+	CALL ramdisk_getchild
+	JMPC ramdisk_STAT_foundTarget
+	JMP ramdisk_STAT_NotFound
+	ramdisk_STAT_foundTarget:
+
+	STZ R2
+	LD R0 3
+	CALL malloc
+	STZ R3
+	; R0 malloc'd struct
+	; R2 pointer to directory entry
+	; R3 malloc'd struct
+
+	DD R2
+	LDD R1
+	DD R0
+	STD R1 ; Copy directory flags
+
+	INC R0
+	INC R2
+
+	DD R2
+	LDD R1
+	DD R0
+	STD R1 ; Copy first page
+
+	INC R0
+	ADD R2 14
+
+	DD R2
+	LDD R1
+	DD R0
+	STD R1 ; Copy file size
+
+	LD R0 0
+
+	RET
+	ramdisk_STAT_NotFound:
+		LD R0 0x0001
 		RET
 
 ; R0 -> File Handle
@@ -1799,6 +1860,7 @@ ramdisk_DriverTable:
 	.db ramdisk_RMDIR
 	.db ramdisk_FOPEN
 	.db ramdisk_RM
+	.db ramdisk_STAT
 
 ; Each driver table has:
 ramdisk_FileFuncsTable:

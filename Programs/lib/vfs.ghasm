@@ -83,8 +83,11 @@ vfs_mkdir:
 	CALD
 	RET
 
-; R0 Disk number
-; R1 ptr to absolute path
+; R0 -> Disk number
+; R1 -> ptr to path
+; R0 <- error code (Nominal 0)
+; R3 <- ptr to malloc'd listdir obj, or 0 on fail
+; 
 #SHARE vfs_list
 vfs_list:
 	PSH R0
@@ -117,11 +120,11 @@ vfs_rmdir:
 	RET
 
 ; R0 -> Disk number
-; R0 <- Error code (Nominal 0)
 ; R1 -> ptr to absolute path
-; R1 <- File Pointer
 ; R2 -> ptr to file name
 ; R3 -> fopen mode (1 to create if not exist, else 0)
+; R0 <- Error code (Nominal 0)
+; R1 <- File Pointer
 #SHARE vfs_fopen
 vfs_fopen:
 	PSH R0
@@ -137,10 +140,9 @@ vfs_fopen:
 	RET
 
 ; R0 -> Disk number
-; R0 <- Error code (Nominal 0)
 ; R1 -> ptr to absolute path
-; R1 <- File Pointer
-; R2 -> ptr to new file name
+; R2 -> ptr to file name
+; R0 <- Error code (Nominal 0)
 #SHARE vfs_rm
 vfs_rm:
 	PSH R0
@@ -150,6 +152,26 @@ vfs_rm:
 	ADD R0 4 ; Load the fifth driver: rm
 	DD R0
 	LDD R0 ; Load the pointer to the rm function
+	DD R0
+	POP R0
+	CALD
+	RET
+
+; R0 -> Disk number
+; R1 -> ptr to absolute path
+; R2 -> ptr to file name
+; R0 <- Error code (Nominal 0)
+; R3 <- File Pointer to malloc'd stat struct
+; 3 bytes: [directory entry flags, first page, file size]
+#SHARE vfs_stat
+vfs_stat:
+	PSH R0
+	ADD R0 DiskTable
+	DD R0
+	LDD R0 ; Load the pointer to the drivers
+	ADD R0 5 ; Load the sixth driver: stat
+	DD R0
+	LDD R0 ; Load the pointer to the stat function
 	DD R0
 	POP R0
 	CALD

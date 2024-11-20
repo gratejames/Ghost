@@ -710,6 +710,85 @@ CMD_CAT:
 		POP R2
 		RET
 
+CMD_STAT:
+	SUB R0 2
+	CLT R0 1
+	JMPC CMD_STAT_NOARG
+	; R1 has pointer to 0 terminated string
+	; Need to convert to an 12 char padded string
+	CALL MakeAbsoluteFile
+	CALL SplitPath
+	PSH R2
+
+	; R1 has pointer to path
+	; R2 has pointer to file name
+	; Stack has pointer to file name to free it
+
+	LD R0 $currentDisk ; Disk
+	; LD R1 currentDirectory ; Ptr to path
+	; R2 is pointer to file name
+	CALL vfs_stat
+	CNZ R0
+	JMPC PRINT_CMD_STAT_ERROR
+
+	PSH R3
+
+	; Filetype
+	DD R3
+	LDD R0 ; Flags
+	AND R0 0b10
+	DBG R0
+	CNZ R0
+	LD R0 'D'
+	JMPC CMD_STAT_notFile
+	LD R0 'F'
+	CMD_STAT_notFile:
+	CALL PrintAtCursor
+
+	INC R3
+
+	LD R0 ' '
+	CALL PrintAtCursor
+
+	; First page
+	DD R3
+	LDD R0 ; first page
+	CALL PrintNumberAtCursor
+
+	INC R3
+
+	LD R0 ' '
+	CALL PrintAtCursor
+
+	; File Size
+	DD R3
+	LDD R0 ; file size
+	CALL PrintNumberAtCursor
+
+	CALL CursorNewline
+
+	POP R0
+	CALL free ; free the stat struct
+
+	POP R0
+	CALL free ; free the file name
+	RET
+
+	CMD_STAT_NOARG:
+		LD R1 STR_SHELL_ERROR_NOARG
+		CALL PrintLineAtCursor
+		RET
+
+	PRINT_CMD_STAT_ERROR:
+		PSH R1
+		LD R1 STR_VFS_ERROR_STAT
+		; R0 has the error number
+		; R1 has the error message table
+		CALL PrintErrorMessage
+		POP R1
+		POP R2
+		RET
+
 CMD_TESTFILE:
 	LD R0 0
 	LD R1 testFilePath
@@ -1284,6 +1363,10 @@ HUI_Table:
 	.db 0
 	.db CMD_CAT
 	.db 0
+	.ds "stat"
+	.db 0
+	.db CMD_STAT
+	.db 0
 	.db 0
 
 ; R0: Character
@@ -1341,6 +1424,71 @@ PrintAtCursor:
 	INC R1
 	ST R1 $Cursor
 	RET
+
+; R0:: value 
+; Destroys R1
+PrintNumberAtCursor:
+	ST 0 $PrintNumberAtCursor_Thousands
+	ST 0 $PrintNumberAtCursor_Hundreds
+	ST 0 $PrintNumberAtCursor_Tens
+	ST 0 $PrintNumberAtCursor_Ones
+
+	PrintNumberAtCursor_ThousandsLoop:
+		CLT R0 1000
+		JMPC PrintNumberAtCursor_HundredsLoop
+		SUB R0 1000
+		LD R1 $PrintNumberAtCursor_Thousands
+		INC R1
+		ST R1 $PrintNumberAtCursor_Thousands
+		JMP PrintNumberAtCursor_ThousandsLoop
+
+	PrintNumberAtCursor_HundredsLoop:
+		CLT R0 100
+		JMPC PrintNumberAtCursor_TensLoop
+		SUB R0 100
+		LD R1 $PrintNumberAtCursor_Hundreds
+		INC R1
+		ST R1 $PrintNumberAtCursor_Hundreds
+		JMP PrintNumberAtCursor_HundredsLoop
+
+	PrintNumberAtCursor_TensLoop:
+		CLT R0 10
+		JMPC PrintNumberAtCursor_OnesLoop
+		SUB R0 10
+		LD R1 $PrintNumberAtCursor_Tens
+		INC R1
+		ST R1 $PrintNumberAtCursor_Tens
+		JMP PrintNumberAtCursor_TensLoop
+
+	PrintNumberAtCursor_OnesLoop:
+		CLT R0 1
+		JMPC PrintNumberAtCursor_DoneLoops
+		SUB R0 1
+		LD R1 $PrintNumberAtCursor_Ones
+		INC R1
+		ST R1 $PrintNumberAtCursor_Ones
+		JMP PrintNumberAtCursor_OnesLoop
+
+	PrintNumberAtCursor_DoneLoops:
+	LD R0 $PrintNumberAtCursor_Thousands
+	ADD R0 '0'
+	CALL PrintAtCursor
+	LD R0 $PrintNumberAtCursor_Hundreds
+	ADD R0 '0'
+	CALL PrintAtCursor
+	LD R0 $PrintNumberAtCursor_Tens
+	ADD R0 '0'
+	CALL PrintAtCursor
+	LD R0 $PrintNumberAtCursor_Ones
+	ADD R0 '0'
+	CALL PrintAtCursor
+
+	RET
+
+	PrintNumberAtCursor_Thousands: .db 0
+	PrintNumberAtCursor_Hundreds: .db 0
+	PrintNumberAtCursor_Tens: .db 0
+	PrintNumberAtCursor_Ones: .db 0
 
 ; R1->ptr
 PrintStringAtCursor:
