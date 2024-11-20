@@ -9,9 +9,11 @@
 + [ ] vfs
 	+ [x] ramdisk
 	+ [x] mkdir
+		+ [ ] Clearing child directory flags
 	+ [x] rmdir
 	+ [x] touch
-	+ [ ] rm
+	+ [x] rm
+		+ [x] Fix recursion bug
 	+ [x] ls
 	+ [x] subfolder/path handling
 	+ [ ] '..'

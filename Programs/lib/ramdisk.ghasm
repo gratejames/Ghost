@@ -946,7 +946,7 @@ ramdisk_RM:
 	DD R0
 	LDD R1 ; Page number to deallocate
 	CEZ R1
-	JMP ramdisk_RM_loop_done
+	JMPC ramdisk_RM_loop_done
 	CALL ramdisk_deallocatePage
 	LDZ R1
 	SHL R0 7
