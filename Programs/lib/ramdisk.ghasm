@@ -385,36 +385,21 @@ ramdisk_RMDIR:
 
 	; Steps: mark directory content page deallocated in both the page and the bitmap
 	CALL ramdisk_deallocatePage
-	DBGC 'R'
-	DBGC 'D'
-	DBGC 0x0a
 	LD R0 0x0000
 	RET
 
 	ramdisk_RMDIR_NotADir:
-		DBGC 'r'
-		DBGC 'd'
-		DBGC 0x0a
 		POP R0
 		LD R0 0x0001
 		RET
 	ramdisk_RMDIR_TraverseFail:
-		DBGC 'r'
-		DBGC 't'
-		DBGC 0x0a
 		LD R0 0x0002
 		RET
 	ramdisk_RMDIR_NotFound:
-		DBGC 'r'
-		DBGC 'n'
-		DBGC 0x0a
 		POP R0
 		LD R0 0x0003
 		RET
 	ramdisk_RMDIR_RemainingChildren:
-		DBGC 'r'
-		DBGC 'c'
-		DBGC 0x0a
 		POP R3
 		POP R1
 		POP R0
@@ -509,36 +494,21 @@ ramdisk_MKDIR:
 		CNE R2 12
 		JMPC ramdisk_MKDIR_copyname
 
-	DBGC 'M'
-	DBGC 'K'
-	DBGC 0x0a
 	LD R0 0x0000
 	RET
 
 	ramdisk_MKDIR_NameTaken:
-		DBGC 'm'
-		DBGC 'n'
-		DBGC 0x0a
 		LD R0 0x0001
 		RET
 	ramdisk_MKDIR_TraverseFail:
-		DBGC 'm'
-		DBGC 't'
-		DBGC 0x0a
 		LD R0 0x0002
 		RET
 	ramdisk_MKDIR_DirectoryFull:
 		POP R2
-		DBGC 'm'
-		DBGC 'f'
-		DBGC 0x0a
 		LD R0 0x0003
 		RET
 	ramdisk_MKDIR_AllocPageFail:
 		POP R2
-		DBGC 'm'
-		DBGC 'a'
-		DBGC 0x0a
 		LD R0 0x0004
 		RET
 
@@ -648,9 +618,6 @@ ramdisk_LIST:
 
 
 	ramdisk_LIST_fillLoop_done:
-	DBGC 'L'
-	DBGC 'S'
-	DBGC 0x0a
 	LD R0 0
 	RET
 
@@ -658,9 +625,6 @@ ramdisk_LIST:
 		POP R3
 		LD R3 0
 		LD R0 0x0001
-		DBGC 'l'
-		DBGC 't'
-		DBGC 0x0a
 		RET
 
 ; R0 -> Disk number
@@ -845,10 +809,6 @@ ramdisk_FOPEN:
 
 	POP R1
 	LD R0 0
-
-	DBGC 'F'
-	DBGC 'C'
-	DBGC 0xa
 	RET
 
 	ramdisk_FOPEN_disknumber: .db 0
@@ -856,52 +816,31 @@ ramdisk_FOPEN:
 	ramdisk_FOPEN_mode: .db 0
 
 	ramdisk_FOPEN_TraverseFail:
-		DBGC 'f'
-		DBGC 't'
-		DBGC 0x0a
 		LD R0 0x0001
 		RET
 	ramdisk_FOPEN_AllocPageFail:
 		POP R0 
-		DBGC 'f'
-		DBGC 'a'
-		DBGC 0x0a
 		LD R0 0x0002
 		RET
 	ramdisk_FOPEN_DirectoryFull:
-		DBGC 'f'
-		DBGC 'f'
-		DBGC 0x0a
 		LD R0 0x0003
 		RET
 	ramdisk_FOPEN_DirNotFile:
 		POP R0
 		POP R0
-		DBGC 'f'
-		DBGC 'd'
-		DBGC 0x0a
 		LD R0 0x0004
 		RET
 	ramdisk_FOPEN_RegisterFull:
 		; TODO: Deallocate allocated resources?
 		; Or maybe do this first?
 		POP
-		DBGC 'f'
-		DBGC 'r'
-		DBGC 0x0a
 		LD R0 0x0005
 		RET
 	ramdisk_FOPEN_CouldntOpen: ; Shouldn't happen lol
 		POP R0
-		DBGC 'f'
-		DBGC 'o'
-		DBGC 0x0a
 		LD R0 0x0006
 		RET
 	ramdisk_FOPEN_FileNotExist:
-		DBGC 'f'
-		DBGC 'n'
-		DBGC 0x0a
 		LD R0 0x0007
 		RET
 
@@ -960,29 +899,17 @@ ramdisk_RM:
 	; R3 fs pointer
 
 	; Steps: mark directory content page deallocated in both the page and the bitmap
-	DBGC 'R'
-	DBGC 'F'
-	DBGC 0x0a
 	LD R0 0x0000
 	RET
 
 	ramdisk_RM_NotAFile:
-		DBGC 'r'
-		DBGC 'd'
-		DBGC 0x0a
 		POP R0
 		LD R0 0x0001
 		RET
 	ramdisk_RM_TraverseFail:
-		DBGC 'r'
-		DBGC 't'
-		DBGC 0x0a
 		LD R0 0x0002
 		RET
 	ramdisk_RM_NotFound:
-		DBGC 'r'
-		DBGC 'n'
-		DBGC 0x0a
 		POP R0
 		LD R0 0x0003
 		RET
@@ -1267,10 +1194,6 @@ ramdisk_FWRITE:
 
 	LD R0 0
 	LD R1 $ramdisk_FWRITE_byteswritten
-
-	DBGC 'W'
-	DBGC 'F'
-	DBGC 0xa
 	RET
 	ramdisk_FWRITE_nextpage_ptr: .db 0
 	ramdisk_FWRITE_cursor_ptr: .db 0
@@ -1279,9 +1202,6 @@ ramdisk_FWRITE:
 	ramdisk_FWRITE_byteswritten: .db 0
 
 	ramdisk_FWRITE_CursorTooLarge:
-		DBGC 'w'
-		DBGC 'c'
-		DBGC 0xa
 		POP R2
 		POP R1
 		LD R0 0x0001
@@ -1290,9 +1210,6 @@ ramdisk_FWRITE:
 	ramdisk_FWRITE_AllocPageFailed:
 		POP R0 ; Pop from ret
 		POP R1
-		DBGC 'w'
-		DBGC 'a'
-		DBGC 0xa
 		LD R0 0x0002
 		LD R1 $ramdisk_FWRITE_byteswritten
 		RET
@@ -1484,10 +1401,6 @@ ramdisk_FREAD:
 
 	LD R0 0
 	LD R1 $ramdisk_FREAD_bytesread
-
-	DBGC 'W'
-	DBGC 'F'
-	DBGC 0xa
 	RET
 	ramdisk_FREAD_nextpage_ptr: .db 0
 	ramdisk_FREAD_cursor_ptr: .db 0
@@ -1496,9 +1409,6 @@ ramdisk_FREAD:
 	ramdisk_FREAD_bytesread: .db 0
 
 	ramdisk_FREAD_CursorTooLarge:
-		DBGC 'w'
-		DBGC 'c'
-		DBGC 0xa
 		POP R2
 		POP R1
 		LD R0 0x0001
@@ -1507,9 +1417,6 @@ ramdisk_FREAD:
 	ramdisk_FREAD_AllocPageFailed:
 		POP R0 ; Pop from ret
 		POP R1
-		DBGC 'w'
-		DBGC 'a'
-		DBGC 0xa
 		LD R0 0x0002
 		LD R1 $ramdisk_FREAD_bytesread
 		RET
@@ -1565,6 +1472,7 @@ ramdisk_deallocatePage:
 	DD R0
 	LDD R2
 	STZ R3
+
 	; R1 is bit position to unset
 	; R2 is byte value
 	; R3 is the byte address

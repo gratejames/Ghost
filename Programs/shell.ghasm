@@ -224,16 +224,12 @@ handleUserInput:
 		; R1 is character address in user input
 		; R2 is the pointer to the string to compare to
 		; R3 is the table character
-		; DBGC R0
-		; DBGC R3
 		PSH R0
 			XOR R3 ; R0 XOR R3 => R0 (Checks if R0 and R3 are equal)
 			CEZ R0
 		POP R0
 		JMPC HUI_Match
 		HUI_NotMatch:
-			; DBGC 'N'
-			; DBGC 0x0a
 			; This string is a miss, we need to scan to the next one, skip over the pointer
 			; and prepare for the next search
 			HUI_NotMatchSkip:
@@ -257,8 +253,6 @@ handleUserInput:
 			JMP HUI_Exhausted ; If the first character in the string
 
 		HUI_Match:
-			; DBGC '!'
-			; DBGC 0x0a
 			; The current characters match. Scan to the next ones. If the current ones are both zeroes
 			; (We've reached the end of both strings) then we need to escape the loop and declare a match
 			INC R2
@@ -267,8 +261,6 @@ handleUserInput:
 			JMPC HUI_LookupLoop
 
 	; MATCH!!! Both strings have ended.
-	; DBGC 'M'
-
 	LD R0 $CommandEnd
 	SUB R0 $LastCursor
 
@@ -280,8 +272,6 @@ handleUserInput:
 	; R1 is a pointer to the arguments (Starting on the first char after the space)
 	CALD ; Call that pointer
 
-	; DBGC 'R'
-	; DBGC 0x0a
 	RET
 	HUI_Exhausted:
 		LD R1 STR_SHELL_ERROR_NOCMD
@@ -375,13 +365,11 @@ CMD_LS:
 	LDZ R3
 	LD R1 0
 	LD R3 0
-	; DBGC '|'
 	VFSLIST_debug:
 		DD R0
 		LDD R2
 		CEZ R2
 		JMPC VFSLIST_debug_zero
-		; DBGC R2
 			PSH
 			LDZ R2
 			CALL PrintAtCursor
@@ -397,9 +385,6 @@ CMD_LS:
 		CNE R3 12
 		JMPC VFSLIST_debug_cont
 		LD R3 0
-		; DBGC '|'
-		; DBGC 0x0a
-		; DBGC '|'
 			PSH
 			LD R0 ' '
 			CALL PrintAtCursor
@@ -409,7 +394,6 @@ CMD_LS:
 		JMPC VFSLIST_debug
 
 	VFSLIST_debug_done:
-	; DBGC '|'
 	PSH R1
 	CALL CursorNewline
 	POP R1
@@ -737,7 +721,6 @@ CMD_STAT:
 	DD R3
 	LDD R0 ; Flags
 	AND R0 0b10
-	DBG R0
 	CNZ R0
 	LD R0 'D'
 	JMPC CMD_STAT_notFile
@@ -1012,8 +995,6 @@ SplitDirectory:
 		DD R1
 		INC R1
 		LDD R0
-		; DBGC 'F'
-		; DBGC R0
 		CNZ R0
 		JMPC SplitDirectory_FindEnd
 
@@ -1027,8 +1008,6 @@ SplitDirectory:
 		DEC R1
 		DD R1
 		LDD R0
-		; DBGC 'R'
-		; DBGC R0
 		CNE R0 '/'
 		JMPC SplitDirectory_FindLastSlash
 
@@ -1068,8 +1047,6 @@ SplitPath:
 		DD R1
 		INC R1
 		LDD R0
-		; DBGC 'F'
-		; DBGC R0
 		CNZ R0
 		JMPC SplitPath_FindEnd
 
@@ -1083,8 +1060,6 @@ SplitPath:
 		DEC R1
 		DD R1
 		LDD R0
-		; DBGC 'R'
-		; DBGC R0
 		CNE R0 '/'
 		JMPC SplitPath_FindLastSlash
 
@@ -1177,7 +1152,6 @@ MakeAbsoluteDir:
 		LDD R0
 		DD R2
 		STD R0
-		; DBGC R0
 		INC R1
 		INC R2
 		CNZ R0
@@ -1185,7 +1159,6 @@ MakeAbsoluteDir:
 	SUB R2 2
 	DD R2
 	LDD R0
-	; DBGC R0
 	CE R0 '/'
 	JMPC MakeAbsoluteDir_Done ; Trailing slash? Done!
 	INC R2
@@ -1255,7 +1228,6 @@ MakeAbsoluteFile:
 		LDD R0
 		DD R2
 		STD R0
-		; DBGC R0
 		INC R1
 		INC R2
 		CNZ R0
@@ -1263,7 +1235,6 @@ MakeAbsoluteFile:
 	SUB R2 2
 	DD R2
 	LDD R0
-	; DBGC R0
 	CNE R0 '/'
 	JMPC MakeAbsoluteFile_Done ; Trailing slash? Done!
 	STD 0

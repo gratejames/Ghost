@@ -19,6 +19,7 @@
 	+ [ ] '..'
 	+ [ ] Actual file manipulation - file handlers
 		+ [x] fopen
+			+ [ ] Need more recoverability
 		+ [x] fclose
 		+ [x] fwrite
 		+ [x] fread (hesitantly)
@@ -38,6 +39,7 @@
 + [ ] Memory access
 	+ [ ] peek
 	+ [ ] poke
++ [ ] Combine path and directory functions
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

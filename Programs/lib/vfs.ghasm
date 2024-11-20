@@ -22,8 +22,6 @@ vfs_register:
 	DD R1
 	STD R0
 	POP R0
-	; DBG R0
-	; DBGC 0x0a
 	RET
 	driverTable_full:
 		LD R0 0xffff ; -1, no space in driver table
