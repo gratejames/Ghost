@@ -278,8 +278,8 @@ handleUserInput:
 		CALL PrintLineAtCursor
 		RET
 
-; Destroys R1
 CursorNewline:
+	PSH R1
 	LD R1 $Cursor		; Load the cursor position
 	ADD R1 0x0040		; Reset the cursor to the next line
 	AND R1 0xffc0
@@ -292,6 +292,7 @@ CursorNewline:
 		SUB R1 0x40
 		ST R1 $LastCursor
 	CursorNewline_enoughRoom:
+	POP R1
 	RET
 
 currentDirectory:
@@ -890,8 +891,8 @@ CMD_TESTFILE:
 	testFileReadSize:
 	.db 128
 
-; R0 has the error number
-; R1 has the error message table
+; R0 -> error number
+; R1 -> error message table
 PrintErrorMessage:
 	PSH
 	PSH R1
@@ -1088,7 +1089,7 @@ SplitPath:
 	POP R1
 	RET
 
-; R1: pointer to zero terminated path string.
+; R1 -> pointer to zero terminated path string.
 MakeAbsoluteDir:
 	PSH R0
 	PSH R2
@@ -1168,7 +1169,7 @@ MakeAbsoluteDir:
 	STD 0
 	JMP MakeAbsoluteDir_Done ; Now we've got a trailing slash!
 
-; R1: pointer to zero terminated path string.
+; R1 -> pointer to zero terminated path string.
 MakeAbsoluteFile:
 	PSH R0
 	PSH R2
@@ -1240,8 +1241,8 @@ MakeAbsoluteFile:
 	STD 0
 	JMP MakeAbsoluteFile_Done ; Now we've got a trailing slash!
 
-; R1->ptr to 0 terminated string
-; R1<-ptr to malloc'd 12 byte string
+; R1 -> ptr to 0 terminated string
+; R1 <- ptr to malloc'd 12 byte string
 char12:
 	PSH R0
 	PSH R2
@@ -1340,7 +1341,7 @@ HUI_Table:
 	.db 0
 	.db 0
 
-; R0: Character
+; R0 -> Character
 ApplyShift:
 	PSH R1
 	LD R1 $KB_Mods
@@ -1354,8 +1355,8 @@ ApplyShift:
 	LDD R0
 	RET
 
-; R0: State
-; R1: Modifier Position
+; R0 -> State
+; R1 -> Modifier Position
 SetModifier:
 	PSH R0
 	LD R0 1
@@ -1369,9 +1370,9 @@ SetModifier:
 	ST R0 $KB_Mods
 	RET
 
-; R0: Character
-; Destroys R1
+; R0 -> Character
 SetAtCursor:
+	PSH R1
 	ST R0 $0xaf70		; Character
 	LD R1 $Cursor
 	AND R1 0x003f
@@ -1381,11 +1382,12 @@ SetAtCursor:
 	ST R1 $0xaf72		; Y Pos
 	ST Font $0xaf73		; Font Address
 	INT 0x5f
+	POP R1
 	RET
 
-; R0: Character
-; Destroys R1
+; R0 -> Character
 PrintAtCursor:
+	PSH R1
 	LD R1 $Cursor		; Load the cursor position
 	ADD R1 CharMem
 	DD R1
@@ -1394,11 +1396,12 @@ PrintAtCursor:
 	LD R1 $Cursor
 	INC R1
 	ST R1 $Cursor
+	POP R1
 	RET
 
-; R0:: value 
-; Destroys R1
+; R0 -> value 
 PrintNumberAtCursor:
+	PSH R1
 	ST 0 $PrintNumberAtCursor_Thousands
 	ST 0 $PrintNumberAtCursor_Hundreds
 	ST 0 $PrintNumberAtCursor_Tens
@@ -1453,7 +1456,7 @@ PrintNumberAtCursor:
 	LD R0 $PrintNumberAtCursor_Ones
 	ADD R0 '0'
 	CALL PrintAtCursor
-
+	POP R1
 	RET
 
 	PrintNumberAtCursor_Thousands: .db 0
@@ -1461,7 +1464,7 @@ PrintNumberAtCursor:
 	PrintNumberAtCursor_Tens: .db 0
 	PrintNumberAtCursor_Ones: .db 0
 
-; R1->ptr
+; R1 -> ptr
 PrintStringAtCursor:
 	DD R1
 	LDD R0

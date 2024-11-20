@@ -64,9 +64,11 @@ vfs_unregister_fileptr:
 	STD 0
 	RET
 
-; R0 Disk number
-; R1 ptr to absolute path
-; R2 ptr to new folder name
+; R0 -> disk number
+; R1 -> ptr to path
+; R2 -> ptr to new folder name zero padded to 12 characters
+; R0 <- error code (Nominal 0)
+; Destroys: R3
 #SHARE vfs_mkdir
 vfs_mkdir:
 	PSH R0
@@ -81,11 +83,11 @@ vfs_mkdir:
 	CALD
 	RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to path
 ; R0 <- error code (Nominal 0)
 ; R3 <- ptr to malloc'd listdir obj, or 0 on fail
-; 
+; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
 #SHARE vfs_list
 vfs_list:
 	PSH R0
@@ -100,9 +102,11 @@ vfs_list:
 	CALD
 	RET
 
-; R0 Disk number
-; R1 ptr to absolute path
-; R2 ptr to new folder name
+; R0 -> disk number
+; R1 -> ptr to path
+; R2 -> ptr to folder name zero padded to 12 characters
+; R0 <- error code (Nominal 0)
+; Destroys: R3
 #SHARE vfs_rmdir
 vfs_rmdir:
 	PSH R0
@@ -117,12 +121,12 @@ vfs_rmdir:
 	CALD
 	RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to absolute path
 ; R2 -> ptr to file name
 ; R3 -> fopen mode (1 to create if not exist, else 0)
-; R0 <- Error code (Nominal 0)
-; R1 <- File Pointer
+; R0 <- error code (Nominal 0)
+; R1 <- file Pointer
 #SHARE vfs_fopen
 vfs_fopen:
 	PSH R0
@@ -137,10 +141,11 @@ vfs_fopen:
 	CALD
 	RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to absolute path
-; R2 -> ptr to file name
-; R0 <- Error code (Nominal 0)
+; R2 -> ptr to file name zero padded to 12 characters
+; R0 <- error code (Nominal 0)
+; Destroys: R3
 #SHARE vfs_rm
 vfs_rm:
 	PSH R0
@@ -155,11 +160,11 @@ vfs_rm:
 	CALD
 	RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to absolute path
-; R2 -> ptr to file name
-; R0 <- Error code (Nominal 0)
-; R3 <- File Pointer to malloc'd stat struct
+; R2 -> ptr to file name zero padded to 12 characters
+; R0 <- error code (Nominal 0)
+; R3 <- file pointer to malloc'd stat struct
 ; 3 bytes: [directory entry flags, first page, file size]
 #SHARE vfs_stat
 vfs_stat:
@@ -175,8 +180,8 @@ vfs_stat:
 	CALD
 	RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
+; R0 -> file pointer
+; R0 <- error code (Nominal 0)
 #SHARE vfs_fclose
 vfs_fclose:
 	PSH R0
@@ -191,11 +196,11 @@ vfs_fclose:
 	CALD
 	RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
-; R1 -> Buffer to read from
+; R0 -> file pointer
+; R1 -> buffer to read from
+; R2 -> emount of bytes to read
+; R0 <- error code (Nominal 0)
 ; R1 <- bytes read
-; R2 -> Amount of bytes to read
 #SHARE vfs_fwrite
 vfs_fwrite:
 	PSH R0
@@ -210,11 +215,11 @@ vfs_fwrite:
 	CALD
 	RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
-; R1 -> Buffer to read into
+; R0 -> file Pointer
+; R1 -> buffer to read into
+; R2 -> amount of bytes to read
+; R0 <- error code (Nominal 0)
 ; R1 <- bytes read
-; R2 -> Amount of bytes to read
 #SHARE vfs_fread
 vfs_fread:
 	PSH R0
@@ -229,9 +234,9 @@ vfs_fread:
 	CALD
 	RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
+; R0 -> file pointer
 ; R1 -> position to seek to
+; R0 <- error code (Nominal 0)
 #SHARE vfs_fseek
 vfs_fseek:
 	PSH R0

@@ -15,10 +15,10 @@ ramdisk_init:
 	RET
 
 
-; R0 -> Disk number
+; R0 -> disk number
+; R1 -> address
+; R2 -> size
 ; R0 <- Table entry on success, 0xffff on fail
-; R1 address
-; R2 size
 ramdisk_register:
 	; The disk number can be zero, 
 	; so we need to check the ramdisk address to verify empty
@@ -102,8 +102,8 @@ ramdisk_format:
 
 ramdisk_compareNames_counter: .db 0
 
-; R0 is the first name
-; R2 is the second name
+; R0 -> first name
+; R2 -> second name
 ; Returns in a conditional
 ramdisk_compareNames:
 	PSH
@@ -154,10 +154,10 @@ ramdisk_haschild:
 
 ; Checks if the given page has the given child name
 ; Returns in conditions register
-; R0 <- pointer to child
 ; R1 -> page number
 ; R2 -> pointer to name to check
 ; R3 -> address of fs start
+; R0 <- pointer to child
 ramdisk_getchild:
 	PSH R1
 	PSH R2
@@ -259,9 +259,9 @@ ramdisk_isfull:
 
 ; Gets a pointer to the first free entry on the given page
 ; Returns in conditions register
-; R0 <- pointer to new entry
 ; R1 -> page number
 ; R3 -> address of fs start
+; R0 <- pointer to new entry
 ramdisk_firstFree:
 	PSH R1
 	PSH R2
@@ -309,7 +309,7 @@ ramdisk_firstFree:
 	POP R1
 	RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to path
 ; R2 -> ptr to folder name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
@@ -407,7 +407,7 @@ ramdisk_RMDIR:
 		LD R0 0x0004
 		RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to path
 ; R2 -> ptr to new folder name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
@@ -512,7 +512,7 @@ ramdisk_MKDIR:
 		LD R0 0x0004
 		RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to path
 ; R0 <- error code (Nominal 0)
 ; R3 <- ptr to malloc'd listdir obj, or 0 on fail
@@ -627,12 +627,12 @@ ramdisk_LIST:
 		LD R0 0x0001
 		RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R1 -> ptr to absolute path
 ; R2 -> ptr to file name
 ; R3 -> fopen mode (1 to create if not exist, else 0)
-; R0 <- Error code (Nominal 0)
-; R1 <- File Pointer
+; R0 <- error code (Nominal 0)
+; R1 <- file Pointer
 ramdisk_FOPEN:
 	ST R3 $ramdisk_FOPEN_mode
 	ST R0 $ramdisk_FOPEN_disknumber
@@ -844,10 +844,10 @@ ramdisk_FOPEN:
 		LD R0 0x0007
 		RET
 
-; R0 -> Disk number
+; R0 -> disk number
+; R1 -> ptr to absolute path
+; R2 -> ptr to file name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
-; R1 ptr to path
-; R2 ptr to folder name zero padded to 12 characters
 ; Destroys: R3
 ramdisk_RM:
 	CALL ramdisk_getinfo
@@ -914,11 +914,11 @@ ramdisk_RM:
 		LD R0 0x0003
 		RET
 
-; R0 -> Disk number
-; R1 -> ptr to path
-; R2 -> ptr to folder name zero padded to 12 characters
+; R0 -> disk number
+; R1 -> ptr to absolute path
+; R2 -> ptr to file name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
-; R3 <- File Pointer to malloc'd stat struct
+; R3 <- file pointer to malloc'd stat struct
 ; 3 bytes: [directory entry flags, first page, file size]
 ramdisk_STAT:
 	CALL ramdisk_getinfo
@@ -976,8 +976,8 @@ ramdisk_STAT:
 		LD R0 0x0001
 		RET
 
-; R0 -> File Handle
-; R0 <- Error code (Nominal 0)
+; R0 -> file pointer
+; R0 <- error code (Nominal 0)
 ramdisk_FCLOSE:
 	CALL ramdisk_getlocalfile
 	SHL R0 2 ; Multiply by 4, the size of each table entry
@@ -992,11 +992,11 @@ ramdisk_FCLOSE:
 	LD R0 0 ; No errors
 	RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
-; R1 -> Buffer to read from
+; R0 -> file pointer
+; R1 -> buffer to read from
+; R2 -> emount of bytes to read
+; R0 <- error code (Nominal 0)
 ; R1 <- bytes read
-; R2 -> Amount of bytes to read
 ramdisk_FWRITE:
 	CALL ramdisk_getlocalfile
 	; R0 has a pointer to the local file table entry
@@ -1214,11 +1214,11 @@ ramdisk_FWRITE:
 		LD R1 $ramdisk_FWRITE_byteswritten
 		RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
-; R1 -> Buffer to read into
+; R0 -> file Pointer
+; R1 -> buffer to read into
+; R2 -> amount of bytes to read
+; R0 <- error code (Nominal 0)
 ; R1 <- bytes read
-; R2 -> Amount of bytes to read
 ramdisk_FREAD:
 	CALL ramdisk_getlocalfile
 	; R0 has a pointer to the local file table entry
@@ -1421,9 +1421,9 @@ ramdisk_FREAD:
 		LD R1 $ramdisk_FREAD_bytesread
 		RET
 
-; R0 -> File Pointer
-; R0 <- Error code (Nominal 0)
+; R0 -> file pointer
 ; R1 -> position to seek to
+; R0 <- error code (Nominal 0)
 ramdisk_FSEEK:
 	CALL ramdisk_getlocalfile
 	; R0 has a pointer to the local file table entry
@@ -1452,7 +1452,7 @@ ramdisk_FSEEK:
 		LD R0 0
 		RET
 
-; R1 -> Page number to deallocate
+; R1 -> page number to deallocate
 ; R3 -> fs address
 ramdisk_deallocatePage:
 	PSH
@@ -1495,8 +1495,8 @@ ramdisk_deallocatePage:
 	POP R3
 	RET
 
-; R1 <- The page number of the new page or 0xffff on fail
 ; R3 -> fs address
+; R1 <- The page number of the new page or 0xffff on fail
 ramdisk_allocateFreePage:
 	PSH R3
 	PSH R2
@@ -1582,7 +1582,7 @@ ramdisk_allocateFreePage:
 	POP R3
 	RET
 
-; R0 -> Disk number
+; R0 -> disk number
 ; R0 <- Pointer to item in table entry
 ramdisk_getinfo:
 	PSH R1
@@ -1630,7 +1630,7 @@ ramdisk_getlocalfile:
 	POP R1
 	RET
 
-; R0 Pointer to item in table entry
+; R0 -> Pointer to item in table entry
 ; R1 -> ptr to absolute path string
 ; R1 <- Page number, 0xfff on fail
 ramdisk_traverse:
