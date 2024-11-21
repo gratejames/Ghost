@@ -15,3 +15,16 @@ STR_SHELL_ERROR_UNKNOWN:
 STR_SHELL_NOTIF_HALT:
 .ds "!Halting"
 .db 0
+
+STR_SHELL_ERROR_INTPARSE:
+.ds "Number parser: unknown error"
+.db 0
+.ds "Number parser: No input given"
+.db 0
+.ds "Number parser: Non numeric character"
+.db 0
+.ds "Number parser: Unknown base, cannot start with 0"
+.db 0
+.ds "Number parser: Non hexadecimal character"
+.db 0
+.db 0

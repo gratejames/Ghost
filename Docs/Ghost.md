@@ -26,7 +26,7 @@
 		+ [x] fread (hesitantly)
 		+ [x] fseek (0xffff is 'end')
 	+ [x] stat (return a stat struct from vfs_stat)
-	+ [ ] rewrite fs functions to use other subfunctions
+	+ [x] rewrite fs functions to use other subfunctions
 	+ [x] fix free page counter
 	+ [x] make fs bitmap work right
 	+ [x] cat
@@ -37,9 +37,9 @@
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
 + [ ] AN EDITOR
-+ [ ] Memory access
-	+ [ ] peek
-	+ [ ] poke
++ [x] Memory access
+	+ [x] peek
+	+ [x] poke
 + [ ] Combine path and directory functions
 
 # Glossary
