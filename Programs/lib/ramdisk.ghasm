@@ -150,10 +150,27 @@ ramdisk_compareNames:
 ramdisk_haschild:
 	PSH R0
 	CALL ramdisk_getchild
+	CALL invert_conditional_flag
 	POP R0
+	RET
+
+invert_conditional_flag:
+	PSH R0
+	JMPC invert_flag_set
+	; flag not set
+	LD R0 0
+	CEZ R0
+	POP R0
+	RET
+	invert_flag_set:
+	; flag set
+	LD R0 0
+	CNZ R0
+	POP R0
+	RET
 
 ; Checks if the given page has the given child name
-; Returns in conditions register
+; Conditional flag set on error
 ; R1 -> page number
 ; R2 -> pointer to name to check
 ; R3 -> address of fs start
@@ -199,14 +216,14 @@ ramdisk_getchild:
 	ramdisk_getchild_match:
 	SUB R0 2 ; Walk back from name pointer to entry pointer
 	LD R1 0
-	CEZ R1 ; Return True
+	CNZ R1 ; Return False
 	POP R3
 	POP R2
 	POP R1
 	RET
 	ramdisk_getchild_noMatch:
 	LD R0 0
-	CNZ R0 ; Return False
+	CEZ R0 ; Return True
 	POP R3
 	POP R2
 	POP R1
@@ -217,48 +234,13 @@ ramdisk_getchild:
 ; R1 -> page number
 ; R3 -> address of fs start
 ramdisk_isfull:
-	PSH
-	LDZ R1
-	SHL R0 7
-	ADD R3
-	STZ R3
-	; Address of page (R3) = fs start + Page number * page size	
-	CNZ R1
-	LD R1 0 ; Offset within page
-	JMPC ramdisk_isfull_loop
-	LD R1 48 ; First page has an offset of 48, not 0
-	ramdisk_isfull_loop:
-		CE R1 128
-		JMPC ramdisk_isfull_full
-		; R1: Page offset of the current entry
-		; R3: Address of the page start
-		LDZ R3
-		ADD R1
-		ADD R1 16
-		; R0: Address of current entry
-		PSH R0
-		DD R0
-		LDD R0		; Read entry flags
-		AND R0 0b01
-		CEZ R0		; If it's not allocated...
-		POP R0
-		JMPC ramdisk_isfull_notfull ; ... we're done
-
-		JMP ramdisk_isfull_loop
-
-	ramdisk_isfull_notfull:
-	LD R1 0
-	CNZ R1 ; Return False
-	POP
-	RET
-	ramdisk_isfull_full:
-	LD R0 0
-	CEZ R0 ; Return True
-	POP
+	PSH R0
+	CALL ramdisk_firstFree ; True if there's an error, ie the dir is full
+	POP R0
 	RET
 
 ; Gets a pointer to the first free entry on the given page
-; Returns in conditions register
+; Conditional flag set on error
 ; R1 -> page number
 ; R3 -> address of fs start
 ; R0 <- pointer to new entry
@@ -296,14 +278,14 @@ ramdisk_firstFree:
 
 	ramdisk_firstFree_success:
 	LD R1 0
-	CEZ R1 ; Return True
+	CNZ R1 ; Return False
 	POP R3
 	POP R2
 	POP R1
 	RET
 	ramdisk_firstFree_full:
 	LD R0 0
-	CNZ R0 ; Return False
+	CEZ R0 ; Return True
 	POP R3
 	POP R2
 	POP R1
@@ -330,9 +312,7 @@ ramdisk_RMDIR:
 	PSH R3
 
 	CALL ramdisk_getchild
-	JMPC ramdisk_RMDIR_foundTarget
-	JMP ramdisk_RMDIR_NotFound
-	ramdisk_RMDIR_foundTarget:
+	JMPC ramdisk_RMDIR_NotFound
 	; R0 now has the pointer to the allocated directory entry
 	DD R0
 	LDD R1
@@ -798,7 +778,6 @@ ramdisk_FOPEN:
 	POP R1
 
 	CALL ramdisk_getchild
-	CEZ R0
 	JMPC ramdisk_FOPEN_CouldntOpen
 	; R0 has child table entry number
 	PSH R0
@@ -881,9 +860,7 @@ ramdisk_RM:
 	PSH R3
 
 	CALL ramdisk_getchild
-	JMPC ramdisk_RM_foundTarget
-	JMP ramdisk_RM_NotFound
-	ramdisk_RM_foundTarget:
+	JMPC ramdisk_RM_NotFound
 	; R0 now has the pointer to the allocated directory entry
 	DD R0
 	LDD R1
@@ -952,9 +929,7 @@ ramdisk_STAT:
 	STR R3 $ramdisk_PendingFSAddress
 
 	CALL ramdisk_getchild
-	JMPC ramdisk_STAT_foundTarget
-	JMP ramdisk_STAT_NotFound
-	ramdisk_STAT_foundTarget:
+	JMPC ramdisk_STAT_NotFound
 
 	STZ R2
 	LD R0 3
