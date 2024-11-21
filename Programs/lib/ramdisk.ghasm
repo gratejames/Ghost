@@ -476,6 +476,22 @@ ramdisk_MKDIR:
 	DD R0
 	STD R1 ; Store the page of the directory in its parent's entry
 
+	PSH R0 ; We need to make set all the new child directory entries as unallocated
+	; R1 has the page number for the new directory
+	LDZ R1
+	SHL R0 7
+	ADD R3 ; Page Number * 128 + fs address
+	; R0 has the page address
+	LD R2 8
+	ramdsk_MKDIR_clearchildren_loop:
+		DD R0
+		STD 0
+		DEC R2
+		ADD R0 16
+		CNZ R2
+		JMPC ramdsk_MKDIR_clearchildren_loop
+	POP R0
+
 	INC R0
 	POP R1 ; Ptr to new folder name
 	; R0 points to the filename field of the directory entry

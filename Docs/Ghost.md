@@ -9,7 +9,7 @@
 + [ ] vfs
 	+ [x] ramdisk
 	+ [x] mkdir
-		+ [ ] Clearing child directory flags
+		+ [x] Clearing child directory flags
 	+ [x] rmdir
 	+ [x] touch
 	+ [x] rm
