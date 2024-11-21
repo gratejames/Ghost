@@ -490,6 +490,11 @@ ramdisk_MKDIR:
 		CNE R2 12
 		JMPC ramdisk_MKDIR_copyname
 
+	INCD ; Zero the size bites as well
+	STD 0
+	INCD
+	STD 0
+
 	LD R0 0x0000
 	RET
 

@@ -10,7 +10,7 @@
 	+ [x] ramdisk
 	+ [x] mkdir
 		+ [x] Clearing child directory flags
-		+ [ ] Clearing child directory size
+		+ [x] Clearing parent directory size
 	+ [x] rmdir
 	+ [x] touch
 	+ [x] rm
