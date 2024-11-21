@@ -14,7 +14,6 @@ ramdisk_init:
 	CALL ramdisk_format
 	RET
 
-
 ; R0 -> disk number
 ; R1 -> address
 ; R2 -> size
@@ -98,197 +97,6 @@ ramdisk_format:
 		CLT R0 32
 		JMPC ramdisk_format_bitmap_loop
 	ADD R1 12
-	RET
-
-ramdisk_compareNames_counter: .db 0
-
-; R0 -> first name
-; R2 -> second name
-; Returns in a conditional
-ramdisk_compareNames:
-	PSH
-	STZ R1
-	ST 12 $ramdisk_compareNames_counter
-	ramdisk_compareNames_loop:
-		DD R1
-		LDD R0
-		DD R2
-		LDD R3
-		INC R1
-		INC R2 ; Increment Ptrs for next time 'round
-		PSH R0
-			LD R0 $ramdisk_compareNames_counter
-			DEC R0
-			ST R0 $ramdisk_compareNames_counter
-		POP R0
-		; R0 is character
-		; R1 is ptr
-		; R2 is ptr
-		; R3 is character
-		PSH R0
-			XOR R3 ; Compare R0 and R3
-			CEZ R0
-		POP R0
-		JMPC ramdisk_compareNames_match
-		ramdisk_compareNames_notmatch:
-			LD R1 0
-			CNZ R1 ; Return False
-			POP
-			RET
-
-		ramdisk_compareNames_match:
-			; Ok, so the characters match
-			; If the counter is at zero, we're done. Else, Continue
-			CNZ $ramdisk_compareNames_counter
-			JMPC ramdisk_compareNames_loop
-			; Fall through to the case were they all match!
-			LD R1 0
-			CEZ R1 ; Return True
-			POP
-			RET
-
-ramdisk_haschild:
-	PSH R0
-	CALL ramdisk_getchild
-	CALL invert_conditional_flag
-	POP R0
-	RET
-
-invert_conditional_flag:
-	PSH R0
-	JMPC invert_flag_set
-	; flag not set
-	LD R0 0
-	CEZ R0
-	POP R0
-	RET
-	invert_flag_set:
-	; flag set
-	LD R0 0
-	CNZ R0
-	POP R0
-	RET
-
-; Checks if the given page has the given child name
-; Conditional flag set on error
-; R1 -> page number
-; R2 -> pointer to name to check
-; R3 -> address of fs start
-; R0 <- pointer to child
-ramdisk_getchild:
-	PSH R1
-	PSH R2
-	PSH R3
-	LDZ R1
-	SHL R0 7
-	ADD R3
-	STZ R3
-	; Address of page (R3) = fs start + Page number * page size	
-	CNZ R1
-	LD R1 0 ; Offset within page
-	JMPC ramdisk_getchild_loop
-	LD R1 48 ; First page has an offset of 48, not 0
-	ramdisk_getchild_loop:
-		CE R1 128
-		JMPC ramdisk_getchild_noMatch
-		; R1: Page offset of the current entry
-		; R3: Address of the page start
-		LDZ R3
-		ADD R1
-		ADD R1 16
-		; R0: Address of current entry
-		PSH R0
-		DD R0
-		LDD R0		; Read entry flags
-		AND R0 0b01
-		CEZ R0		; If it's not allocated...
-		POP R0
-		JMPC ramdisk_getchild_loop ; ... skip to the next
-		; Now we know the entry is allocated.
-		ADD R0 2
-		; R0 has the address of the current entry's name
-		; R2 has the address of the name to check
-		CALL ramdisk_compareNames
-		JMPC ramdisk_getchild_match
-		; Otherwise, loop
-		JMP ramdisk_getchild_loop
-
-	ramdisk_getchild_match:
-	SUB R0 2 ; Walk back from name pointer to entry pointer
-	LD R1 0
-	CNZ R1 ; Return False
-	POP R3
-	POP R2
-	POP R1
-	RET
-	ramdisk_getchild_noMatch:
-	LD R0 0
-	CEZ R0 ; Return True
-	POP R3
-	POP R2
-	POP R1
-	RET
-
-; Checks if the given page has any free entries
-; Returns in conditions register
-; R1 -> page number
-; R3 -> address of fs start
-ramdisk_isfull:
-	PSH R0
-	CALL ramdisk_firstFree ; True if there's an error, ie the dir is full
-	POP R0
-	RET
-
-; Gets a pointer to the first free entry on the given page
-; Conditional flag set on error
-; R1 -> page number
-; R3 -> address of fs start
-; R0 <- pointer to new entry
-ramdisk_firstFree:
-	PSH R1
-	PSH R2
-	PSH R3
-	LDZ R1
-	SHL R0 7
-	ADD R3
-	STZ R3
-	; Address of page (R3) = fs start + Page number * page size	
-	CNZ R1
-	LD R1 0 ; Offset within page
-	JMPC ramdisk_firstFree_loop
-	LD R1 48 ; First page has an offset of 48, not 0
-	ramdisk_firstFree_loop:
-		CE R1 128
-		JMPC ramdisk_firstFree_full
-		; R1: Page offset of the current entry
-		; R3: Address of the page start
-		LDZ R3
-		ADD R1
-		ADD R1 16
-		; R0: Address of current entry
-		PSH R0
-		DD R0
-		LDD R0		; Read entry flags
-		AND R0 0b01
-		CEZ R0		; If it's not allocated...
-		POP R0
-		JMPC ramdisk_firstFree_success ; ... we're done
-
-		JMP ramdisk_firstFree_loop
-
-	ramdisk_firstFree_success:
-	LD R1 0
-	CNZ R1 ; Return False
-	POP R3
-	POP R2
-	POP R1
-	RET
-	ramdisk_firstFree_full:
-	LD R0 0
-	CEZ R0 ; Return True
-	POP R3
-	POP R2
-	POP R1
 	RET
 
 ; R0 -> disk number
@@ -1737,7 +1545,204 @@ ramdisk_traverse:
 	POP R0
 	RET
 
-ramdisk_traverse_path_segment: .dz 13
+	ramdisk_traverse_path_segment: .dz 13
+
+; R0 -> first name
+; R2 -> second name
+; Returns in a conditional
+ramdisk_compareNames:
+	PSH
+	STZ R1
+	ST 12 $ramdisk_compareNames_counter
+	ramdisk_compareNames_loop:
+		DD R1
+		LDD R0
+		DD R2
+		LDD R3
+		INC R1
+		INC R2 ; Increment Ptrs for next time 'round
+		PSH R0
+			LD R0 $ramdisk_compareNames_counter
+			DEC R0
+			ST R0 $ramdisk_compareNames_counter
+		POP R0
+		; R0 is character
+		; R1 is ptr
+		; R2 is ptr
+		; R3 is character
+		PSH R0
+			XOR R3 ; Compare R0 and R3
+			CEZ R0
+		POP R0
+		JMPC ramdisk_compareNames_match
+		ramdisk_compareNames_notmatch:
+			LD R1 0
+			CNZ R1 ; Return False
+			POP
+			RET
+
+		ramdisk_compareNames_match:
+			; Ok, so the characters match
+			; If the counter is at zero, we're done. Else, Continue
+			CNZ $ramdisk_compareNames_counter
+			JMPC ramdisk_compareNames_loop
+			; Fall through to the case were they all match!
+			LD R1 0
+			CEZ R1 ; Return True
+			POP
+			RET
+	ramdisk_compareNames_counter: .db 0
+
+; Inverts conditional flag
+invert_conditional_flag:
+	PSH R0
+	JMPC invert_flag_set
+	; flag not set
+	LD R0 0
+	CEZ R0
+	POP R0
+	RET
+	invert_flag_set:
+	; flag set
+	LD R0 0
+	CNZ R0
+	POP R0
+	RET
+
+; Checks if the given page has the given child name
+; Conditional flag set on found
+; R1 -> page number
+; R2 -> pointer to name to check
+; R3 -> address of fs start
+ramdisk_haschild:
+	PSH R0
+	CALL ramdisk_getchild
+	CALL invert_conditional_flag
+	POP R0
+	RET
+
+; Checks if the given page has the given child name
+; Conditional flag set on error
+; R1 -> page number
+; R2 -> pointer to name to check
+; R3 -> address of fs start
+; R0 <- pointer to child
+ramdisk_getchild:
+	PSH R1
+	PSH R2
+	PSH R3
+	LDZ R1
+	SHL R0 7
+	ADD R3
+	STZ R3
+	; Address of page (R3) = fs start + Page number * page size	
+	CNZ R1
+	LD R1 0 ; Offset within page
+	JMPC ramdisk_getchild_loop
+	LD R1 48 ; First page has an offset of 48, not 0
+	ramdisk_getchild_loop:
+		CE R1 128
+		JMPC ramdisk_getchild_noMatch
+		; R1: Page offset of the current entry
+		; R3: Address of the page start
+		LDZ R3
+		ADD R1
+		ADD R1 16
+		; R0: Address of current entry
+		PSH R0
+		DD R0
+		LDD R0		; Read entry flags
+		AND R0 0b01
+		CEZ R0		; If it's not allocated...
+		POP R0
+		JMPC ramdisk_getchild_loop ; ... skip to the next
+		; Now we know the entry is allocated.
+		ADD R0 2
+		; R0 has the address of the current entry's name
+		; R2 has the address of the name to check
+		CALL ramdisk_compareNames
+		JMPC ramdisk_getchild_match
+		; Otherwise, loop
+		JMP ramdisk_getchild_loop
+
+	ramdisk_getchild_match:
+	SUB R0 2 ; Walk back from name pointer to entry pointer
+	LD R1 0
+	CNZ R1 ; Return False
+	POP R3
+	POP R2
+	POP R1
+	RET
+	ramdisk_getchild_noMatch:
+	LD R0 0
+	CEZ R0 ; Return True
+	POP R3
+	POP R2
+	POP R1
+	RET
+
+; Checks if the given page has any free entries
+; Conditional flag set on full
+; R1 -> page number
+; R3 -> address of fs start
+ramdisk_isfull:
+	PSH R0
+	CALL ramdisk_firstFree ; True if there's an error, ie the dir is full
+	POP R0
+	RET
+
+; Gets a pointer to the first free entry on the given page
+; Conditional flag set on error
+; R1 -> page number
+; R3 -> address of fs start
+; R0 <- pointer to new entry
+ramdisk_firstFree:
+	PSH R1
+	PSH R2
+	PSH R3
+	LDZ R1
+	SHL R0 7
+	ADD R3
+	STZ R3
+	; Address of page (R3) = fs start + Page number * page size	
+	CNZ R1
+	LD R1 0 ; Offset within page
+	JMPC ramdisk_firstFree_loop
+	LD R1 48 ; First page has an offset of 48, not 0
+	ramdisk_firstFree_loop:
+		CE R1 128
+		JMPC ramdisk_firstFree_full
+		; R1: Page offset of the current entry
+		; R3: Address of the page start
+		LDZ R3
+		ADD R1
+		ADD R1 16
+		; R0: Address of current entry
+		PSH R0
+		DD R0
+		LDD R0		; Read entry flags
+		AND R0 0b01
+		CEZ R0		; If it's not allocated...
+		POP R0
+		JMPC ramdisk_firstFree_success ; ... we're done
+
+		JMP ramdisk_firstFree_loop
+
+	ramdisk_firstFree_success:
+	LD R1 0
+	CNZ R1 ; Return False
+	POP R3
+	POP R2
+	POP R1
+	RET
+	ramdisk_firstFree_full:
+	LD R0 0
+	CEZ R0 ; Return True
+	POP R3
+	POP R2
+	POP R1
+	RET
+
 
 #DEF ramdisk_TableSize 2
 ; Each entry is 4 bytes
