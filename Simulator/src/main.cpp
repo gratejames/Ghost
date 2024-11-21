@@ -269,34 +269,32 @@ void EventsFunc() {
         case SDL_KEYDOWN:
           if (event.key.repeat!=0)
             break;
-          if (event.key.keysym.mod & KMOD_CTRL) {
-            if (event.key.keysym.sym == SDLK_d) {
-              if (debuggingPanelActive) {
-                SDL_HideWindow(dbgwindow);
-                debuggingPanelActive = false;
-              } else {
-                SDL_ShowWindow(dbgwindow);
-                debuggingPanelActive = true;
-              }
-            } else if (event.key.keysym.sym == SDLK_h) {
-              processor->broken = !processor->broken;
-              std::cout << "Debugger break" << std::endl;
-            } else if (event.key.keysym.sym == SDLK_SPACE) {
+          if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_d) {
+            if (debuggingPanelActive) {
+              SDL_HideWindow(dbgwindow);
+              debuggingPanelActive = false;
+            } else {
+              SDL_ShowWindow(dbgwindow);
+              debuggingPanelActive = true;
+            }
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_h) {
+            processor->broken = !processor->broken;
+            std::cout << "Debugger break" << std::endl;
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_SPACE) {
               if (processor->broken) {
                 std::cout << "Debugger step" << std::endl;
                 processor->tick();
               } else {
                 std::cout << "Couldn't step - still running" << std::endl;
               }
-            } else if (event.key.keysym.sym == SDLK_UP) {
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_UP) {
               if (debuggerPage > 0) {
                 debuggerPage--;
               }
-            } else if (event.key.keysym.sym == SDLK_DOWN) {
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_DOWN) {
               if (debuggerPage < 63) {
                 debuggerPage++;
               }
-            }
           } else if (event.key.keysym.sym == SDLK_KP_0) {
             processor->memLog(0, 0x15); // If numpad 0 key pressed, log first 0x15 of memory
           } else {
