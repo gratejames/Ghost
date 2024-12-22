@@ -4,12 +4,16 @@ STR_SHELL_ERROR_NOARG:
 .ds "!Must provide an argument"
 .db 0
 
+STR_SHELL_ERROR_NODISK:
+.ds "!Current disk is inactive."
+.db 0
+
 STR_SHELL_ERROR_NOCMD:
-.ds "!Command Not Found"
+.ds "!Command not found"
 .db 0
 
 STR_SHELL_ERROR_UNKNOWN:
-.ds "!Unknown Error"
+.ds "!Unknown error"
 .db 0
 
 STR_SHELL_NOTIF_HALT:
@@ -17,7 +21,7 @@ STR_SHELL_NOTIF_HALT:
 .db 0
 
 STR_SHELL_ERROR_INTPARSE:
-.ds "Number parser: unknown error"
+.ds "Number parser: Unknown error"
 .db 0
 .ds "Number parser: No input given"
 .db 0

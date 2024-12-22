@@ -64,6 +64,7 @@ ramdisk_register:
 
 ; R0 -> Table entry in ramdisk_Table
 ramdisk_format:
+	PSH R0
 	SHL R0 2
 	ADD R0 ramdisk_Table
 	INC R0
@@ -97,6 +98,7 @@ ramdisk_format:
 		CLT R0 32
 		JMPC ramdisk_format_bitmap_loop
 	ADD R1 12
+	POP R0
 	RET
 
 ; R0 -> disk number

@@ -27,6 +27,16 @@ vfs_register:
 		LD R0 0xffff ; -1, no space in driver table
 		RET
 
+; R0 -> disk number
+; Returns in conditional
+#SHARE vfs_disk_active
+vfs_disk_active:
+	ADD R0 DiskTable
+	DD R0
+	LDD R0 ; Load the pointer to the drivers
+	CNZ R0
+	RET
+
 ; R0 -> Address to file functions table
 ; R0 <- Global file table entry on success, 0xffff on fail
 ; Destroys: R1
