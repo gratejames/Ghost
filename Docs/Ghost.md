@@ -37,6 +37,7 @@
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
 + [ ] AN EDITOR
++ [ ] path variable
 + [x] Memory access
 	+ [x] peek
 	+ [x] poke

@@ -1,5 +1,12 @@
 #SHARE *
 
+STR_SHELL_STARTUP:
+.ds "!Starting GhOSt..."
+.db 0
+STR_SHELL_STARTUP_RAMDISK:
+.ds "!ramdisk up"
+.db 0
+
 STR_SHELL_ERROR_NOARG:
 .ds "!Must provide an argument"
 .db 0
