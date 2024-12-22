@@ -631,23 +631,23 @@ CMD_CAT:
 		PSH R0
 		; R0 is file pointer
 		LD R1 CMD_CAT_buffer
-		LD R2 20
+		LD R2 64
 		; R0 -> File Pointer
-		; R0 <- Error code (Nominal 0)
 		; R1 -> Buffer to read into
-		; R1 <- bytes read
 		; R2 -> Amount of bytes to read
+		; R0 <- Error code (Nominal 0)
+		; R1 <- bytes read
 		CALL vfs_fread
 		CNZ R0
 		POP R0
 		JMPC PRINT_CMD_CAT_ERROR_fread
 
-		CNE R1 20
+		CNE R1 64
 		JMPC CMD_CAT_freadloop_done
 
 		PSH
 		LD R1 CMD_CAT_buffer
-		CALL PrintLineAtCursor
+		CALL PrintStringAtCursor
 		POP
 
 		JMP CMD_CAT_freadloop
@@ -668,7 +668,7 @@ CMD_CAT:
 	CALL free
 	RET
 
-	CMD_CAT_buffer: .dz 21
+	CMD_CAT_buffer: .dz 65
 
 	CMD_CAT_NOARG:
 		LD R1 STR_SHELL_ERROR_NOARG
