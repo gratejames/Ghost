@@ -1500,9 +1500,7 @@ ramdisk_traverse:
 		CALL ramdisk_getchild
 	POP R2
 	POP R1
-	JMPC ramdisk_traverse_segment_success ; If found, no problem. Otherwise jmp to error
-	JMP ramdisk_traverse_error
-	ramdisk_traverse_segment_success:
+	JMPC ramdisk_traverse_error
 	; R0 is the pointer to the directory entry
 	; R1 is the pointer in the path string that now points after the current segment
 	; R2 has the current page in the fs
