@@ -32,7 +32,6 @@ startup:
 	CALL ramdisk_init
 	ST R0 $currentDisk
 
-
 	LD R1 STR_SHELL_STARTUP_RAMDISK
 	CALL PrintLineAtCursor
 
@@ -718,26 +717,17 @@ CMD_CAT:
 		POP R0
 		JMPC PRINT_CMD_CAT_ERROR_fread
 
-		CNE R1 64
-		JMPC CMD_CAT_freadloop_done
 
 		PSH
+		DBG R1
+		LDZ R1
 		LD R1 CMD_CAT_buffer
-		CALL PrintStringAtCursor
+		CALL PrintBufAtCursor
 		POP
 
 		JMP CMD_CAT_freadloop
 
 	CMD_CAT_freadloop_done:
-	PSH R0
-	LD R0 CMD_CAT_buffer
-	ADD R1
-	DD R0
-	STD 0
-	LD R1 CMD_CAT_buffer
-	CALL PrintLineAtCursor
-	POP R0
-
 	CALL vfs_fclose
 
 	POP R0
@@ -1685,6 +1675,25 @@ PrintNumberAtCursor:
 	PrintNumberAtCursor_Tens: .db 0
 	PrintNumberAtCursor_Ones: .db 0
 
+; R0 -> length
+; R1 -> ptr
+PrintBufAtCursor:
+	PSH R0
+	CEZ R0
+	DD R1
+	LDD R0
+	JMPC PrintBufAtCursorEnd
+		PSH R1
+		CALL PrintAtCursor
+		POP R1
+		INC R1
+		POP R0
+		DEC R0
+		JMP PrintBufAtCursor
+	PrintBufAtCursorEnd:
+		POP R0
+		RET
+
 ; R1 -> ptr
 PrintStringAtCursor:
 	DD R1
@@ -1733,8 +1742,6 @@ absoluteDirectory:
 
 startupScript:
 .ds "mkdir /bin/"
-.db 0xa
-.ds "echo Startup Script"
 .db 0
 
 Font:
