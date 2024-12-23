@@ -1165,14 +1165,6 @@ ramdisk_FREAD:
 		POP R2 ; Increment bytes written
 
 		PSH R2
-		LD R2 $ramdisk_FREAD_size_ptr
-		DD R2
-		LDD R2
-		INC R2
-		STD R2
-		POP R2 ; Increment file size
-
-		PSH R2
 		LD R2 $ramdisk_FREAD_cursor_ptr
 		DD R2
 		LDD R2
