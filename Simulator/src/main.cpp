@@ -187,13 +187,15 @@ void createDebugText() {
 
   {
     std::stringstream input_text;
-	  unsigned short Registers[5] = {};
+	  unsigned short Registers[7] = {};
     processor->readRegisterState(Registers);
     input_text << "| PC 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[0] << " ";
     input_text << "| R0 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[1] << " ";
     input_text << "R1 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[2] << " ";
     input_text << "R2 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[3] << " ";
-    input_text << "R3 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[4] << " |";
+    input_text << "R3 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[4] << " | ";
+    input_text << "DD 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[5] << " ";
+    input_text << "AO 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[6] << " |";
     font.draw(dbgrenderer, 10, 10+64*26+13, NFont::Scale(2.0f), input_text.str().c_str());
   }
 

@@ -122,6 +122,8 @@ void cpu::readRegisterState(unsigned short Registers[]) {
 	Registers[2] = R1;
 	Registers[3] = R2;
 	Registers[4] = R3;
+	Registers[5] = DD;
+	Registers[6] = offsetRegister;
 }
 
 int cpu::pallette16_888(unsigned short x) {
