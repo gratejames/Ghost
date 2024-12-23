@@ -25,6 +25,7 @@
 		+ [x] fwrite
 		+ [x] fread (hesitantly)
 		+ [x] fseek (0xffff is 'end')
+		+ [ ] fstat. Same as stat, but takes a file pointer instead of a path
 	+ [x] stat (return a stat struct from vfs_stat)
 	+ [x] rewrite fs functions to use other subfunctions
 	+ [x] fix free page counter
@@ -45,6 +46,8 @@
 	+ [x] poke
 + [ ] Combine path and directory functions
 + [ ] Handle whitespace better in commands
++ [ ] Executables
++ [ ] Virtual Addressing
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
