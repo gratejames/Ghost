@@ -1133,16 +1133,29 @@ ramdisk_FREAD:
 		; R2 has the address of the buffer
 		; R3 has the fs address
 
+		; Check if the page is exhausted
 		PSH R0
 		SUB R1 ; R0 = R0 - R1
 		CEZ R0
 		POP R0
 		JMPC ramdisk_FREAD_writeloop_pagedone ; Check if the page is done
 
+		; Check if the buffer is exhausted
 		PSH R2
 		LD R2 $ramdisk_FREAD_bufsize
 		CEZ R2
 		POP R2
+		JMPC ramdisk_FREAD_writeloop_bufferdone
+
+		; Check if the file size is exhausted
+		PSH
+		DD $ramdisk_FREAD_size_ptr
+		LDD R0
+		DD $ramdisk_FREAD_cursor_ptr
+		LDD R1
+		SUB R1
+		CEZ R0
+		POP
 		JMPC ramdisk_FREAD_writeloop_bufferdone
 
 		PSH R3
@@ -1162,6 +1175,7 @@ ramdisk_FREAD:
 		LD R2 $ramdisk_FREAD_bytesread
 		INC R2
 		ST R2 $ramdisk_FREAD_bytesread
+		DBG R2
 		POP R2 ; Increment bytes written
 
 		PSH R2
@@ -1211,12 +1225,6 @@ ramdisk_FREAD:
 		POP R1
 		LD R0 0x0001
 		LD R1 0 ; Couldn't catch cursor up - wrote nothing
-		RET
-	ramdisk_FREAD_AllocPageFailed:
-		POP R0 ; Pop from ret
-		POP R1
-		LD R0 0x0002
-		LD R1 $ramdisk_FREAD_bytesread
 		RET
 
 ; R0 -> file pointer

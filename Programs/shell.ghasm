@@ -725,10 +725,15 @@ CMD_CAT:
 		CALL PrintBufAtCursor
 		POP
 
+		CNE R1 64
+		JMPC CMD_CAT_freadloop_done
+
 		JMP CMD_CAT_freadloop
 
 	CMD_CAT_freadloop_done:
 	CALL vfs_fclose
+
+	CALL CursorNewline
 
 	POP R0
 	CALL free
