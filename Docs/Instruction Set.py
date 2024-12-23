@@ -206,7 +206,7 @@ def setAtDD(value):
 def pushStack(value):
 	return f"\t\tpushToStack({value});\n"
 def jumpTo(address, noAdd=False):
-	return f"\t\tPC = {address}{'' if noAdd else '-1'};\n"
+	return f"\t\tPC = {address}{'' if noAdd else '-1'}+offsetRegister;\n"
 def conditional(interior):
 	lines = len(interior.split("\n"))
 	if lines == 2:
@@ -219,7 +219,7 @@ def debugOutChar(value):
 	# return f"\t\tstd::cout << (char){value};\n\t\tif (flushDebugChar)\n\t\t\tstd::cout << std::endl;\n"
 	return "\t\tvalue = " + value + ";\n\t\tif (value != '\\n') \n\t\t\tstd::cout << (char)value;\n\t\telse if (flushDebugChar || value == '\\n')\n\t\t\tstd::cout << std::endl;\n"
 def setOffset(value):
-	return f"\t\t// offsetRegister = {value};\n"
+	return f"\t\toffsetRegister = {value};\n"
 
 cppFilePath = "/home/flicker/Desktop/Ghost/Simulator/src/cpu.cpp"
 
@@ -391,9 +391,9 @@ for i in range(0, 0x100):
 	elif mne == "JMPD":
 		content = jumpTo(getDD())
 	elif mne == "CALA":
-		content = pushStack("PC+1") + jumpTo(getArgument())
+		content = pushStack("PC+1-offsetRegister") + jumpTo(getArgument())
 	elif mne == "CALD":
-		content = pushStack("PC") + jumpTo(getDD())
+		content = pushStack("PC-offsetRegister") + jumpTo(getDD())
 	elif mne == "RET":
 		content = jumpTo(popStack(), noAdd=True)
 	elif mne == "JPCA":

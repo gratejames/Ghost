@@ -199,13 +199,13 @@ int cpu::getColorAt(int x) {
 }
 
 unsigned short cpu::getAtAddress(unsigned short address) {
-	return MEMORY[address];
+	return MEMORY[address + offsetRegister];
 }
 unsigned short cpu::getArgument() {
 	return MEMORY[++PC];
 }
 void cpu::setValueAtAddress(unsigned short value, unsigned short address) {
-	MEMORY[address] = value;
+	MEMORY[address + offsetRegister] = value;
 }
 void cpu::pushToStack(unsigned short value) {
 	unsigned short addr = ++MEMORY[StackMemory];
@@ -942,47 +942,47 @@ void cpu::executeFunction(unsigned short instruction) {
 		jump = R3 > getAtAddress(getArgument());
 		break;
 	case 0xd8: // JMPA
-		PC = getArgument()-1;
+		PC = getArgument()-1+offsetRegister;
 		break;
 	case 0xd9: // JMPD
-		PC = DD-1;
+		PC = DD-1+offsetRegister;
 		break;
 	case 0xda: // CALA
-		pushToStack(PC+1);
-		PC = getArgument()-1;
+		pushToStack(PC+1-offsetRegister);
+		PC = getArgument()-1+offsetRegister;
 		break;
 	case 0xdb: // CALD
-		pushToStack(PC);
-		PC = DD-1;
+		pushToStack(PC-offsetRegister);
+		PC = DD-1+offsetRegister;
 		break;
 	case 0xdc: // RET
-		PC = popFromStack();
+		PC = popFromStack()+offsetRegister;
 		break;
 	case 0xdd: // JPCA
 		value = getArgument();
 		if(jump)
-			PC = value-1;
+			PC = value-1+offsetRegister;
 		break;
 	case 0xde: // JPCD
 		if(jump)
-			PC = DD-1;
+			PC = DD-1+offsetRegister;
 		break;
 	case 0xdf: // CLCA
 		value = getArgument();
 		if(jump) {
 			pushToStack(PC);
-			PC = value-1;
+			PC = value-1+offsetRegister;
 		}
 		break;
 	case 0xe0: // CLCD
 		if(jump) {
 			pushToStack(PC);
-			PC = DD-1;
+			PC = DD-1+offsetRegister;
 		}
 		break;
 	case 0xe1: // RETC
 		if(jump)
-			PC = popFromStack();
+			PC = popFromStack()+offsetRegister;
 		break;
 	case 0xe2: // BRK
 		std::cout << "\nCPU BREAK" << std::endl;
@@ -1053,22 +1053,22 @@ void cpu::executeFunction(unsigned short instruction) {
 			std::cout << std::endl;
 		break;
 	case 0xf0: // ADOR0
-		// offsetRegister = R0;
+		offsetRegister = R0;
 		break;
 	case 0xf1: // ADOR1
-		// offsetRegister = R1;
+		offsetRegister = R1;
 		break;
 	case 0xf2: // ADOR2
-		// offsetRegister = R2;
+		offsetRegister = R2;
 		break;
 	case 0xf3: // ADOR3
-		// offsetRegister = R3;
+		offsetRegister = R3;
 		break;
 	case 0xf4: // ADOV
-		// offsetRegister = getArgument();
+		offsetRegister = getArgument();
 		break;
 	case 0xf5: // ADOA
-		// offsetRegister = getAtAddress(getArgument());
+		offsetRegister = getAtAddress(getArgument());
 		break;
 	case 0xf6: // INCD
 		DD++;
