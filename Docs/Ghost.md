@@ -32,16 +32,19 @@
 	+ [x] cat
 	+ [ ] maybe unregister fileystem/disk number at some point?
 	+ [ ] change disk number command
+		+ [ ] Why? I can't remember why this would be needed?
 	+ [ ] current disk number command (Integrate into pwd?)
 		+ [ ] should absolute paths be disknum:/path/... ? 0:/folders/file.ext ?
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
 + [ ] AN EDITOR
 + [ ] path variable
++ [ ] make stdout a file pointer
 + [x] Memory access
 	+ [x] peek
 	+ [x] poke
 + [ ] Combine path and directory functions
++ [ ] Handle whitespace better in commands
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
