@@ -19,6 +19,10 @@ STR_SHELL_ERROR_NOCMD:
 .ds "!Command not found"
 .db 0
 
+STR_SHELL_ERROR_MALLOC:
+.ds "!Malloc failed - OOM!"
+.db 0
+
 STR_SHELL_ERROR_UNKNOWN:
 .ds "!Unknown error"
 .db 0

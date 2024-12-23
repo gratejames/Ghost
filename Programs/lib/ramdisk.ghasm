@@ -1175,7 +1175,6 @@ ramdisk_FREAD:
 		LD R2 $ramdisk_FREAD_bytesread
 		INC R2
 		ST R2 $ramdisk_FREAD_bytesread
-		DBG R2
 		POP R2 ; Increment bytes written
 
 		PSH R2

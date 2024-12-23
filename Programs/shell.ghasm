@@ -719,7 +719,6 @@ CMD_CAT:
 
 
 		PSH
-		DBG R1
 		LDZ R1
 		LD R1 CMD_CAT_buffer
 		CALL PrintBufAtCursor

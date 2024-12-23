@@ -63,12 +63,15 @@ STR_VFS_ERROR_FOPEN:
 .db 0
 .db 0
 
+STR_VFS_ERROR_FCLOSE:
+.ds "FREAD:Unknown error"
+.db 0
+.db 0
+
 STR_VFS_ERROR_FREAD:
 .ds "FREAD:Unknown error"
 .db 0
 .ds "FREAD:Cursor too large"
-.db 0
-.ds "FREAD:Failed to allocate a new page"
 .db 0
 .db 0
 
