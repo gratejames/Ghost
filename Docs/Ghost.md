@@ -49,7 +49,7 @@
 + [ ] Executables
 + [ ] Virtual Addressing
 + [ ] cd'ing into a file causes corruption?
-+ [ ] echo without argument causes stack problems
++ [x] echo without argument causes stack problems
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

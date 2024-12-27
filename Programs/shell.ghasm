@@ -598,8 +598,15 @@ CMD_CD:
 		RET
 
 CMD_ECHO:
+	SUB R0 4
+	CLT R0 1
+	JMPC CMD_ECHO_NOARG
 	CALL PrintLineAtCursor
 	RET
+	CMD_ECHO_NOARG:
+		LD R1 STR_SHELL_ERROR_NOARG
+		CALL PrintLineAtCursor
+		RET
 
 CMD_PWD:
 	LD R1 currentDirectory
