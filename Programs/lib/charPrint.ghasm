@@ -11,10 +11,20 @@ LD R1 $0xaf70				; Load the character
 PSH R1
 ; DBGC R1
 
+CE R1 0xa ; Check if it equals newline
+JMPC newlineCase
+
 SUB R1 ' '
 SHL R1 2 					; Multiply by 4 because each font character takes 4 bytes
 ADD R1 $0xaf73				; Add the address of the font
+JMP casesDone
 
+newlineCase:
+LD R1 $0xaf73
+ADD R1 94*4
+JMP casesDone
+
+casesDone:
 LD R0 0
 PSH R0
 LD R3 $0xaf72
