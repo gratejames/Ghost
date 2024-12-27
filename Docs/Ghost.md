@@ -48,6 +48,7 @@
 + [ ] Handle whitespace better in commands
 + [ ] Executables
 + [ ] Virtual Addressing
++ [ ] cd'ing into a file causes fs corruption?
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
