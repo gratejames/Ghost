@@ -31,13 +31,15 @@ def getID(fid, x, y):
 def saveFont(export=False):
 	with open("fontFile.json", "w+") as f:
 		f.write(json.dumps(storedFonts))
-	print("Saved!")
 	if not export:
+		print("Saved!")
 		return
+	print("Saved + exported!")
 	with open("font.hex", "w+") as f:
 		output = []
 		for char in range(ord(' '), ord('~')):
-			output.append(" ".join(    [("0x" + str(hex(byte)).replace("0x", "").zfill(4)) for byte in storedFonts.get(char, [0x0000,0x0000,0x0000,0x0000])]    ))
+			output.append(" ".join(    [("0x" + str(hex(byte)).replace("0x", "").zfill(4)) for byte in storedFonts.get(char, [32577, 21833, 21825, 32512])]    ))
+		output.append(" ".join(    [("0x" + str(hex(byte)).replace("0x", "").zfill(4)) for byte in [0, 0, 16933, 5376]])) # Newline
 		f.write("\n".join(output))
 	
 def loadFont():
@@ -87,7 +89,7 @@ while not done:
 		setupID(fontId)
 		
 	window.fill((255, 255, 255))
-	font.render_to(window, (10,10), 'Current character: '+ chr(fontId), (0, 0, 0),size=40)
+	font.render_to(window, (10,10), f'Current character ({fontId}): {chr(fontId)}', (0, 0, 0),size=40)
 	
 	for row in range(8):
 		for i in range(8):
