@@ -29,6 +29,9 @@ contexts:
 
     - match: '^#SHARE'
       scope: keyword.control.assembly
+
+    - match: '^#RAMFS'
+      scope: keyword.control.assembly
       
     - match: '^(\s)*(%INSTRUCTIONS%)\b'
       scope: keyword.control.assembly

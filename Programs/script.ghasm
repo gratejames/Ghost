@@ -1,0 +1,4 @@
+.ds "echo shhh"
+.db 0xa
+.ds "mkdir tada"
+.db 0

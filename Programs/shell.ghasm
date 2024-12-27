@@ -35,52 +35,6 @@ startup:
 	LD R1 STR_SHELL_STARTUP_RAMDISK
 	CALL PrintLineAtCursor
 
-	LD R0 startupScript
-	CALL runScript
-
-	LD R0 $currentDisk
-	LD R1 binFolder
-	LD R2 editFileName
-	LD R3 1
-	; R0 -> disk number
-	; R1 -> ptr to absolute path
-	; R2 -> ptr to file name
-	; R3 -> fopen mode (1 to create if not exist, else 0)
-	; R0 <- error code (Nominal 0)
-	; R1 <- file Pointer
-	CALL vfs_fopen
-	PSH R1
-
-	LDZ R1
-	LD R1 Editor
-	LD R2 EndEditor
-	SUB R2 Editor
-	; R0 -> file pointer
-	; R1 -> buffer to read from
-	; R2 -> emount of bytes to read
-	; R0 <- error code (Nominal 0)
-	; R1 <- bytes read
-	CALL vfs_fwrite
-
-	POP R0
-	CALL vfs_fclose
-
-	LD R0 $currentDisk
-	LD R1 binFolder
-	LD R2 editFileName
-
-	LD R3 Editor
-	ADD R3 28
-	DD R3
-	STD 0
-
-	; R0 -> disk number
-	; R1 -> ptr to absolute path
-	; R2 -> ptr to file name
-	; R3 -> fopen mode (1 to create if not exist, else 0)
-	; R0 <- error code (Nominal 0)
-	CALL ExecuteFile
-
 	ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
 
 	LD R0 '>'
@@ -345,6 +299,99 @@ ExecuteFile:
 		JMPC ExecuteFile_error_dofclose
 		RET
 	ExecuteFile_error_fclose:
+		LD R1 STR_VFS_ERROR_FCLOSE
+		CALL PrintErrorMessage
+		RET
+
+; R0 -> disk number
+; R1 -> ptr to absolute path
+; R2 -> ptr to file name
+; R0 <- error code (Nominal 0)
+ScriptFile:
+	LD R3 0
+	; R0 -> disk number
+	; R1 -> ptr to absolute path
+	; R2 -> ptr to file name
+	; R3 -> fopen mode (1 to create if not exist, else 0)
+	; R0 <- error code (Nominal 0)
+	; R1 <- file Pointer
+	PSH
+		CALL vfs_stat
+		CNZ R0
+		JMPC ScriptFile_error_stat
+		PSH R3
+		ADD R3 2
+		DD R3
+		LDD R3
+		ST R3 $ScriptFile_filesize
+		POP R0
+		CALL free
+	POP
+	CALL vfs_fopen
+	CNZ R0
+	JMPC ScriptFile_error_fopen
+	PSH R1
+	LDZ R1
+
+	; R0 has the file pointer
+	; ScriptFile_filesize has the file size
+	PSH R0
+	LD R0 $ScriptFile_filesize
+	CALL malloc
+	STZ R1
+	POP R0
+	CEZ R1
+	JMPC ScriptFile_error_malloc
+
+	LD R2 $ScriptFile_filesize
+	; R0 -> file Pointer
+	; R1 -> buffer to read into
+	; R2 -> amount of bytes to read
+	; R0 <- error code (Nominal 0)
+	; R1 <- bytes read
+	PSH R1
+	CALL vfs_fread
+	CNZ R0
+	POP R1
+	JMPC ScriptFile_error_fread
+
+	; R1 has the buffer pointer to the new executable
+	PSH
+	LDZ R1
+	CALL runScript
+	POP
+
+	ScriptFile_error_dofclose:
+	POP R0
+	; ; R0 -> file pointer
+	; ; R0 <- error code (Nominal 0)
+	CALL vfs_fclose
+	CNZ R0
+	JMPC ScriptFile_error_fclose
+	RET
+
+	ScriptFile_filesize: .db 0
+
+	ScriptFile_error_malloc:
+		POP R0
+		LD R1 STR_SHELL_ERROR_MALLOC
+		CALL PrintStringAtCursor
+		RET
+	ScriptFile_error_stat:
+		POP
+		LD R1 STR_VFS_ERROR_STAT
+		CALL PrintErrorMessage
+		RET
+	ScriptFile_error_fopen:
+		LD R1 STR_VFS_ERROR_FOPEN
+		CALL PrintErrorMessage
+		RET
+	ScriptFile_error_fread:
+		LD R1 STR_VFS_ERROR_FREAD
+		CALL PrintErrorMessage
+		JMPC ScriptFile_error_dofclose
+		RET
+	ScriptFile_error_fclose:
 		LD R1 STR_VFS_ERROR_FCLOSE
 		CALL PrintErrorMessage
 		RET
@@ -730,7 +777,7 @@ CMD_CLEAR:
 CMD_TOUCH:
 	SUB R0 5
 	CLT R0 1
-	JMPC CMD_MKDIR_NOARG
+	JMPC CMD_TOUCH_NOARG
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	;
@@ -1159,6 +1206,68 @@ CMD_POKE:
 	PRINT_CMD_POKE_ERROR:
 		LD R1 STR_SHELL_ERROR_INTPARSE
 		CALL PrintErrorMessage
+		RET
+
+CMD_SH:
+	SUB R0 2
+	CLT R0 1
+	JMPC CMD_SH_NOARG
+	; R1 has pointer to 0 terminated string
+	; Need to convert to an 12 char padded string
+	;
+	CALL MakeAbsoluteFile
+	CALL SplitPath
+	CALL CHECK_DISK_ACTIVE
+	PSH R2
+
+	; R1 has pointer to path
+	; R2 has pointer to file name
+	; Stack has pointer to file name to free it
+
+	LD R0 $currentDisk ; Disk
+	; LD R1 currentDirectory ; Ptr to path
+	; R2 is pointer to file name
+
+	CALL ScriptFile
+
+	POP R0
+	CALL free
+	RET
+
+	CMD_SH_NOARG:
+		LD R1 STR_SHELL_ERROR_NOARG
+		CALL PrintLineAtCursor
+		RET
+
+CMD_RUN:
+	SUB R0 3
+	CLT R0 1
+	JMPC CMD_RUN_NOARG
+	; R1 has pointer to 0 terminated string
+	; Need to convert to an 12 char padded string
+	;
+	CALL MakeAbsoluteFile
+	CALL SplitPath
+	CALL CHECK_DISK_ACTIVE
+	PSH R2
+
+	; R1 has pointer to path
+	; R2 has pointer to file name
+	; Stack has pointer to file name to free it
+
+	LD R0 $currentDisk ; Disk
+	; LD R1 currentDirectory ; Ptr to path
+	; R2 is pointer to file name
+
+	CALL ExecuteFile
+
+	POP R0
+	CALL free
+	RET
+
+	CMD_RUN_NOARG:
+		LD R1 STR_SHELL_ERROR_NOARG
+		CALL PrintLineAtCursor
 		RET
 
 ; R1 -> ptr to zero or space terminated number string
@@ -1880,25 +1989,8 @@ absoluteDirectory:
 .ds "/"
 .dz (12+1)*8 +1
 
-binFolder:
-.ds "/bin/"
-.db 0
-
-editFileName:
-.ds "edit"
-.dz 8
-
-startupScript:
-.ds "mkdir /bin/"
-.db 0
-
 Font:
 #INC ./fontGen/font.hex
-
-; Includes that requires above definitions
-Editor:
-#INC ./editor.hex
-EndEditor:
 
 ; Table Format: string0ptr0...string0ptr00
 shellExec_Table:
@@ -1965,6 +2057,14 @@ shellExec_Table:
 	.ds "poke"
 	.db 0
 	.db CMD_POKE
+	.db 0
+	.ds "sh"
+	.db 0
+	.db CMD_SH
+	.db 0
+	.ds "run"
+	.db 0
+	.db CMD_RUN
 	.db 0
 	.db 0
 
@@ -2042,7 +2142,7 @@ CharMem:
 	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
 	.db 0
 
-; #DEF RAMDISKSIZE 0x1000
-#DEF RAMDISKSIZE 512
-RAMDISK: .dz RAMDISKSIZE
+#DEF RAMDISKSIZE 0x1000
+RAMDISK:
+#RAMFS RAMDISKSIZE ramdisk1.txt
 .ds "IMPORTANT"

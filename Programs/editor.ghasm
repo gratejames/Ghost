@@ -24,16 +24,17 @@
 ; STD R0
 
 LD R0 dbgStr
-; ADD R0 $StartAddress
-; LD R3 dbgLp
-; ADD R3 $StartAddress
 dbgLp:
 	DD R0
 	LDD R1
 	DBGC R1
-	CNZ R1
+	CEZ R1
 	INC R0
-	JMPC dbgLp
+	JMPC dbgLpDone
+
+	JMP dbgLp
+
+dbgLpDone:
 RET
 
 StartAddress: .db 0
@@ -42,4 +43,5 @@ dbgStr:
  .ds "Executable! Woah! Maybe even too much text to have on a single page of the fs? We will soon see! Hopefully the string data will make it easy to see any gaps without just wordlessly crashing lol. "
  .ds "Naaaah I still need waaaaaaaaaaaaaaaaaaaay more text before I get to that point. But maybe this second line will do it? It's not like it matters a *whole* lot, since the fs current doesn't "
  .ds "even have enough pages to store the root dir, the bin dir, the and 2 pages of exec file I don't think. I suppose we're about to find out! And test my error checking!"
+ .db 0xa
  .db 0

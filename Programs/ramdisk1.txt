@@ -1,0 +1,3 @@
+/bin/edit: editor.ghasm
+/str.txt: str.hex
+/test.sh: script.ghasm

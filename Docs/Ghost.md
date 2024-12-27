@@ -48,7 +48,8 @@
 + [ ] Handle whitespace better in commands
 + [ ] Executables
 + [ ] Virtual Addressing
-+ [ ] cd'ing into a file causes fs corruption?
++ [ ] cd'ing into a file causes corruption?
++ [ ] echo without argument causes stack problems
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

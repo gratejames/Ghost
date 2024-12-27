@@ -3,6 +3,166 @@ import sys
 import re
 import AssemblerDefs
 
+def intToHexString(num):
+	if num > 0xffff:
+		print(f"! Found the value {str(hex(num))}, which is greater than 0xffff. Rolling to {'0x' + ('0000' + str(hex(num))[2:])[-4:]}")
+	return "0x" + (("0" * 4) + str(hex(num))[2:])[-4:]
+
+class ramfs:
+	size = 0
+	structure = {"contents":[], "type":"dir"}
+	# [{"type":"dir", "name":"dir", "contents":[,]},]
+	bitmap = []
+	freePages = 0
+	MEMORY = []
+
+	def __init__(self, size):
+		self.size = size
+		self.structure = {"contents":[], "type":"dir"}
+
+	def addFile(self, source, dest):
+		if source.endswith(".hex"):
+			with open(source, 'r') as f:
+				fileContents = f.read()
+		elif source.endswith(".ghasm"):
+			subAssembler = assembler()
+			subAssembler.loadFile(source)
+			fileContents = " ".join(subAssembler.assemble(org=0, warnHLT=-1).split())
+		else:
+			print(f"Unsupported filetype for ramds item: '{source.split('.')[-1]}'")
+			return
+
+		path = "/".join(dest.split("/")[:-1]) + "/"
+		name = dest.split("/")[-1]
+		self.mkpath(path)
+		folder = self.traverse(path)
+		files = self.listdir(path)
+		if name in files:
+			return
+
+		folder["contents"].append({"type":"file", "name":name, "contents":[eval(x) for x in fileContents.strip().split(" ")]})
+
+	def getFolder(self, parent, name):
+		for folder in parent["contents"]:
+			if folder["name"] == name:
+				return folder
+
+	def traverse(self, path):
+		currentFolder = self.structure
+		for segment in path.split("/")[1:]:
+			if segment != "":
+				currentFolder = self.getFolder(currentFolder, segment)
+		return currentFolder
+
+	def mkpath(self, path):
+		cwd = "/"
+		for segment in path.split("/")[1:-1]:
+			self.mkdir(cwd, segment)
+			cwd += segment + "/"
+
+
+	def mkdir(self, path, folderName):
+		alreadyExist = self.listdir(path)
+		if folderName in alreadyExist:
+			return
+
+		folder = self.traverse(path)
+		folder["contents"].append({"type":"dir", "name":folderName, "contents":[]})
+
+
+	def listdir(self, path):
+		folder = self.traverse(path)
+		return [sub["name"] for sub in folder["contents"]]
+
+	def nextFreePage(self):
+		self.freePages -= 1
+		try:
+			nextFreeI = self.bitmap.index(False)
+		except ValueError:
+			print("ramfs full, could not allocate page")
+			exit(1)
+
+		self.bitmap[nextFreeI] = True
+		return nextFreeI
+
+	# Write a files contents, returning the first page
+	def saveFile(self, item):
+		page0 = self.nextFreePage()
+		fileContents = item["contents"]
+		print(fileContents)
+		cursor = 0
+		curPage = page0
+		#
+		while cursor != len(fileContents):
+			print("Writing page", curPage, end="")
+			curPageAddr = curPage * 128
+			if len(fileContents)-cursor > 127: # If we have more than one page, after this one
+				nextPage = self.nextFreePage()
+				self.MEMORY[curPageAddr] = nextPage
+			else:
+				nextPage = None
+			print(", Next", nextPage, end=" ")
+			for byte in range(cursor, min(cursor+127, len(fileContents))):
+				self.MEMORY[curPageAddr + byte%127+1] = fileContents[cursor+byte%127]
+				# print(f".{hex(curPageAddr + cursor%127)}", end="")
+				print(".", end="")
+			cursor = min(cursor+127, len(fileContents))
+			curPage = nextPage
+			print()
+
+		return page0
+
+
+	def exportFolder(self, curFolder, page=0):
+		startAddress = 0
+		if page == 0:
+			startAddress = 48
+		startAddress += page * 128
+		for item in curFolder:
+			if item["type"] == "dir":
+				self.MEMORY[startAddress+0] = 0b11
+				newPage = self.nextFreePage()
+				self.MEMORY[startAddress+1] = newPage
+				self.exportFolder(item["contents"], newPage)
+			elif item["type"] == "file":
+				self.MEMORY[startAddress+0] = 0b01
+				self.MEMORY[startAddress+1] = self.saveFile(item)
+				self.MEMORY[startAddress+15] = len(item["contents"])
+			else:
+				print("Unknown type", item["type"])
+
+			for i, ch in enumerate(item["name"]):
+				self.MEMORY[startAddress+2+i] = ord(ch)
+				if i > 12:
+					print("Name too long, trimming:", item["name"][:12])
+					break
+
+
+			startAddress += 16
+
+	def export(self):
+		print(self.structure)
+		self.MEMORY = [0] * self.size
+		self.MEMORY[0] = ord("G")
+		self.freePages = self.size//128
+		self.bitmap = [False for i in range(self.freePages)]
+		self.bitmap[0] = True
+
+		self.exportFolder(self.structure["contents"])
+
+		# Write out the current Values
+		self.MEMORY[3] = self.freePages
+		for i in range(4, min(36, 5+self.freePages//16)):
+			for b in range(16):
+				# print(i, b, self.MEMORY[i])
+				if i-4 < self.freePages//16 or (i-4 == self.freePages//16 and self.freePages%16 > b):
+					self.MEMORY[i] = (self.MEMORY[i] << 1) + int(self.bitmap[(i-4)*16 + b])
+				else:
+					self.MEMORY[i] = self.MEMORY[i] << 1
+		print(self.MEMORY)
+		return " ".join([intToHexString(x) for x in self.MEMORY])
+
+
 class assembler:
 	TypeLengths = {"Value": 1, "Address": 1, "Instruction": 1, "Register": 0}  # Length in bytes of each type used below
 
@@ -74,7 +234,7 @@ class assembler:
 				target = line[i + 1]
 				if line[i + 2] != "'":
 					self.die(f"\nX Error resolving char '{line[i] + target + line[i + 2] }': no closing apostraphe, on line {self.lineNumber+1}")
-				target = self.intToHexString(ord(target))
+				target = intToHexString(ord(target))
 				line = line[:i] + target + line[i + 3:]
 			i += 1
 		return line
@@ -94,7 +254,7 @@ class assembler:
 			val = "".join(line.split(" ")[1:])
 			if dataType == "Byte":
 				try:
-					line = self.intToHexString(eval(val, {**self.definitions}))
+					line = intToHexString(eval(val, {**self.definitions}))
 				except NameError as e:
 					self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}")
 			elif dataType == "String":
@@ -199,6 +359,8 @@ class assembler:
 		# 	return line
 		if line.startswith("#DATA"):  # Data
 			return line
+		if line.startswith("#RAMFS"): # ramfs
+			return line
 		# Validating
 		if words[0] in AssemblerDefs.Instructions.keys():
 			ArgumentTypes = self.argumentTypes(" ".join(words[1:]))
@@ -264,11 +426,6 @@ class assembler:
 		# 		return False
 		return True
 
-	def intToHexString(self, num):
-		if num > 0xffff:
-			print(f"! Found the value {str(hex(num))}, which is greater than 0xffff. Rolling to {'0x' + ('0000' + str(hex(num))[2:])[-4:]}")
-		return "0x" + (("0" * 4) + str(hex(num))[2:])[-4:]
-
 	def parseString(self, line):
 		if line[0] != '"':
 			self.die(f"\nX Error parsing string, expected \" to open the string but got {line[0]} on line {self.lineNumber+1}")
@@ -276,8 +433,33 @@ class assembler:
 		if line[-1] != '"':
 			self.die(f"\nX Error parsing string, expected \" to close the string but got {line[-1]} on line {self.lineNumber+1}")
 
-		line = " ".join(self.intToHexString(ord(char)) for char in line[1:-1])
+		line = " ".join(intToHexString(ord(char)) for char in line[1:-1])
 		return line
+
+	def mkramfs(self, line):
+		items = line.split()
+		if len(items) != 3:
+			print("RAMFS Usage: `#RAMFS size textfile`")
+		_, fs_size, textfile = items
+
+		with open(textfile, 'r') as f:
+			fileLines = f.read()
+
+		print("Construction ramfs:")
+
+		thisfs = ramfs(eval(fs_size))#intToHexString(eval(val, {**self.definitions}))
+
+		for fsItem in fileLines.split("\n"):
+			fsItems = fsItem.split(":")
+			if len(fsItems) != 2:
+				print("RAMFS des: `dest`: `source`")
+				continue
+			dest, source = fsItems
+			dest, source = dest.strip(), source.strip()
+			print(f"Packing {source} to {dest}")
+			thisfs.addFile(source, dest)
+
+		return thisfs.export()
 	
 	def assemble(self, org=0, warnHLT=1, nested=0, definitions={}):
 		self.definitions = definitions.copy()
@@ -363,9 +545,10 @@ class assembler:
 			for definition in self.definitions.keys():
 				if definition in line:
 					pat = r"(\s\$?)(" + definition + r")(?=[\s+\-\/*]|$)"
-					line = re.sub(pat, r"\g<1>" + str(self.intToHexString(self.definitions[definition])), line)
-
-			if line.startswith("#DATA"):
+					line = re.sub(pat, r"\g<1>" + str(intToHexString(self.definitions[definition])), line)
+			if line.startswith("#RAMFS"):
+				line = self.mkramfs(line)
+			elif line.startswith("#DATA"):
 				line = line[5:]
 			else:
 				words = line.split(" ")
@@ -379,7 +562,7 @@ class assembler:
 						continue
 					if any([(op in word) for op in "-+/*"]):
 						try:
-							word = self.intToHexString(eval(word, {**self.definitions}))
+							word = intToHexString(eval(word, {**self.definitions}))
 						except NameError as e:
 							# self.die(f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}") # lineNumber can no longer be trusted after macro'd lines are unfolded
 							self.die(f"\nX Could not resolve name '{e.name}'")
@@ -388,11 +571,11 @@ class assembler:
 						Binary = AssemblerDefs.Instructions[word]["Binary"]
 						if "RR" in Binary:
 							Binary = Binary.replace("RR", str(bin(["R0", "R1", "R2", "R3"].index(words[wordNumber + 1])))[2:].zfill(2))
-						word = self.intToHexString(int(Binary, 2))
+						word = intToHexString(int(Binary, 2))
 
 					if not self.isValidFinalHex(word):
 						try:
-							newWord = self.intToHexString(int(word, 0))
+							newWord = intToHexString(int(word, 0))
 							# print(f"! Assumed token '{word}' to '{newWord}'")
 							word = newWord
 						except ValueError:
