@@ -24,6 +24,7 @@ public:
 	bool flushDebugChar = false;
 	unsigned short MEMORY[0x10000] = {};
 	void readRegisterState(unsigned short Registers[]);
+	void ROMdump();
 
 private:
 	std::string romFileName;
@@ -38,6 +39,14 @@ private:
 	unsigned short instruction = 0;		// ^
 	unsigned short offsetRegister = 0;
 	bool jump = false;
+
+	int dumpFileNumber = 0;
+
+	std::string previousDebug;
+	unsigned short PendingIOData[8] = {};
+	int PendingDataSize = 0;
+	bool interuptHandling = true;
+	const std::set <unsigned short> AllowedInterrupts {0x5e, 0x5f};
 
 	unsigned short getAtAddress(unsigned short address);
 	unsigned short getArgument();

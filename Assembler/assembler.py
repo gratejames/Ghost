@@ -89,26 +89,26 @@ class ramfs:
 	def saveFile(self, item):
 		page0 = self.nextFreePage()
 		fileContents = item["contents"]
-		print(fileContents)
+		# print(fileContents)
 		cursor = 0
 		curPage = page0
 		#
 		while cursor != len(fileContents):
-			print("Writing page", curPage, end="")
+			# print("Writing page", curPage, end="")
 			curPageAddr = curPage * 128
 			if len(fileContents)-cursor > 127: # If we have more than one page, after this one
 				nextPage = self.nextFreePage()
 				self.MEMORY[curPageAddr] = nextPage
 			else:
 				nextPage = None
-			print(", Next", nextPage, end=" ")
+			# print(", Next", nextPage, end=" ")
 			for byte in range(cursor, min(cursor+127, len(fileContents))):
 				self.MEMORY[curPageAddr + byte%127+1] = fileContents[cursor+byte%127]
 				# print(f".{hex(curPageAddr + cursor%127)}", end="")
-				print(".", end="")
+				# print(".", end="")
 			cursor = min(cursor+127, len(fileContents))
 			curPage = nextPage
-			print()
+			# print()
 
 		return page0
 
@@ -144,7 +144,7 @@ class ramfs:
 		print(self.structure)
 		self.MEMORY = [0] * self.size
 		self.MEMORY[0] = ord("G")
-		self.freePages = self.size//128
+		self.freePages = self.size//128 - 1
 		self.bitmap = [False for i in range(self.freePages)]
 		self.bitmap[0] = True
 
@@ -152,13 +152,14 @@ class ramfs:
 
 		# Write out the current Values
 		self.MEMORY[3] = self.freePages
+		# print(self.freePages, self.bitmap)
 		for i in range(4, min(36, 5+self.freePages//16)):
 			for b in range(16):
-				# print(i, b, self.MEMORY[i])
 				if i-4 < self.freePages//16 or (i-4 == self.freePages//16 and self.freePages%16 > b):
 					self.MEMORY[i] = (self.MEMORY[i] << 1) + int(self.bitmap[(i-4)*16 + b])
 				else:
 					self.MEMORY[i] = self.MEMORY[i] << 1
+				# print(i, b, hex(self.MEMORY[i]))
 		print(self.MEMORY)
 		return " ".join([intToHexString(x) for x in self.MEMORY])
 

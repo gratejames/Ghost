@@ -279,6 +279,8 @@ void EventsFunc() {
               SDL_ShowWindow(dbgwindow);
               debuggingPanelActive = true;
             }
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_e) {
+            processor->ROMdump();
           } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_h) {
             processor->broken = !processor->broken;
             std::cout << "Debugger break" << std::endl;

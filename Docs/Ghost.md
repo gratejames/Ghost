@@ -46,10 +46,12 @@
 	+ [x] poke
 + [ ] Combine path and directory functions
 + [ ] Handle whitespace better in commands
-+ [ ] Executables
-+ [ ] Virtual Addressing
++ [x] Executables
++ [x] Virtual Addressing
 + [ ] cd'ing into a file causes corruption?
 + [x] echo without argument causes stack problems
++ [ ] memory leak in ls
++ [x] 'cd bin;mkdir test;ls test;mkdir test;ls test'
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

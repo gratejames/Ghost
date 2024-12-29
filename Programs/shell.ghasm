@@ -29,7 +29,7 @@ startup:
 
 	LD R0 RAMDISK
 	LD R1 RAMDISKSIZE
-	CALL ramdisk_init
+	CALL ramdisk_load
 	ST R0 $currentDisk
 
 	LD R1 STR_SHELL_STARTUP_RAMDISK
@@ -561,8 +561,22 @@ CMD_CD:
 	CLT R0 1
 	JMPC CMD_CD_NOARG
 	CALL MakeAbsoluteDir
+
+	PSH R1
+	LD R2 CMD_CD_newDirectory
+	CMD_CD_LOOP_1:
+		DD R1
+		LDD R0
+		DD R2
+		STD R0
+		INC R1
+		INC R2
+		CNZ R0
+		JMPC CMD_CD_LOOP_1
+	POP R1
+
+	CALL SplitDirectory
 	CALL CHECK_DISK_ACTIVE
-	; R1 has pointer to whole path
 	PSH
 	LD R0 $currentDisk ; Disk
 	CALL vfs_list
@@ -572,9 +586,10 @@ CMD_CD:
 	CALL free
 	POP
 
+	LD R1 CMD_CD_newDirectory
 	LD R2 currentDirectory
 
-	CMD_CD_LOOP:
+	CMD_CD_LOOP_2:
 		DD R1
 		LDD R0
 		DD R2
@@ -582,7 +597,7 @@ CMD_CD:
 		INC R1
 		INC R2
 		CNZ R0
-		JMPC CMD_CD_LOOP
+		JMPC CMD_CD_LOOP_2
 	RET
 	CMD_CD_NOARG:
 	LD R1 STR_SHELL_ERROR_NOARG
@@ -596,6 +611,10 @@ CMD_CD:
 		CALL PrintErrorMessage
 		POP
 		RET
+
+	CMD_CD_newDirectory: 
+		.ds "/"
+		.dz (12+1)*8 +1
 
 CMD_ECHO:
 	SUB R0 4
@@ -614,9 +633,15 @@ CMD_PWD:
 	RET
 
 CMD_LS:
+	SUB R0 2
+	CGT R0 1
+	JMPC CMD_LS_ARG
+	LD R1 currentDirectory
+	CMD_LS_ARG:
+	CALL MakeAbsoluteDir
+	CALL SplitDirectory
 	CALL CHECK_DISK_ACTIVE
 	LD R0 $currentDisk ; Disk
-	LD R1 currentDirectory ; Ptr to path
 	CALL vfs_list
 	CNZ R0
 	JMPC PRINT_CMD_LS_ERROR

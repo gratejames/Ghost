@@ -14,6 +14,18 @@ ramdisk_init:
 	CALL ramdisk_format
 	RET
 
+#SHARE ramdisk_load
+ramdisk_load:
+	PSH R0
+	PSH R1
+	LD R0 ramdisk_DriverTable
+	CALL vfs_register
+	POP R2
+	POP R1
+	CALL ramdisk_register
+	RET
+
+
 ; R0 -> disk number
 ; R1 -> address
 ; R2 -> size
@@ -325,24 +337,50 @@ ramdisk_MKDIR:
 
 ; R0 -> disk number
 ; R1 -> ptr to path
+; R2 -> ptr to folder name zero padded to 12 characters
 ; R0 <- error code (Nominal 0)
 ; R3 <- ptr to malloc'd listdir obj, or 0 on fail
 ; Listdir obj is 8, 12 character 0 padded strings (Not necessarily 0 terminated)
 ramdisk_LIST:
 	CALL ramdisk_getinfo
-	; R0 is the pointer in the ramdisk table for this fs
 	CALL ramdisk_traverse
 	CE R1 0xffff
 	JMPC ramdisk_LIST_TraverseFail
+
+	; R0 is the pointer in the ramdisk table
 	; R1 has the page number
+	; R2 has the ptr to the folder name
 
-	; R2 has the ptr to the new folder name
-
-	STZ R3		; Copy table pointer to R3
-	ADD R3 1 	; Get the second item in the table
-	DD R3
+	ADD R0 1 	; Get the second item in the table
+	DD R0
 	LDD R3		; Read the address of the fs
 	STR R3 $ramdisk_PendingFSAddress
+
+	DD R2
+	LDD R0
+	CEZ R0
+	JMPC ZeroPage ; Path is '/', list root folder
+
+	CALL ramdisk_getchild
+	JMPC ramdisk_LIST_ChildFail
+	; R0 now has the pointer to the allocated directory entry
+	DD R0
+	LDD R1
+	AND R1 0b10
+	CEZ R1
+	JMPC ramdisk_LIST_NotADir
+	INC R0
+	DD R0
+	LDD R1
+	JMP rootSplitDone
+	
+	ZeroPage:
+	LD R1 0
+
+	rootSplitDone:
+	; POP R3
+	; DEC R0
+
 
 	LD R0 96
 	CALL malloc
@@ -350,7 +388,7 @@ ramdisk_LIST:
 
 	PSH R3
 
-	; R0 is the pointer in the ramdisk table
+	; R0 is empty
 	; R1 has the page number
 	; R2 is empty
 	; R3 is ptr to malloc'd listdir obj
@@ -433,9 +471,15 @@ ramdisk_LIST:
 	RET
 
 	ramdisk_LIST_TraverseFail:
-		POP R3
-		LD R3 0
 		LD R0 0x0001
+		RET
+
+	ramdisk_LIST_ChildFail:
+		LD R0 0x0002
+		RET
+
+	ramdisk_LIST_NotADir:
+		LD R0 0x0003
 		RET
 
 ; R0 -> disk number
@@ -1453,6 +1497,8 @@ ramdisk_traverse:
 	LD R2 0 ; Page to start on
 	DD R1
 	LDD R0 ; Holds first char of path
+	CE R0 0
+	JMPC ramdisk_traverse_done ; If the path is just '/', then we're done!
 	CNE R0 '/'
 	JMPC ramdisk_traverse_error ; Ahh! Path not absolute!
 	INC R1
