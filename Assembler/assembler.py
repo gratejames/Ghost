@@ -20,7 +20,7 @@ class ramfs:
 		self.size = size
 		self.structure = {"contents":[], "type":"dir"}
 
-	def addFile(self, source, dest):
+	def addFile(self, source, dest, flags):
 		if source.endswith(".hex"):
 			with open(source, 'r') as f:
 				fileContents = f.read()
@@ -29,8 +29,11 @@ class ramfs:
 			subAssembler.loadFile(source)
 			fileContents = " ".join(subAssembler.assemble(org=0, warnHLT=-1).split())
 		else:
-			print(f"Unsupported filetype for ramds item: '{source.split('.')[-1]}'")
-			return
+			print(f"Unsupported filetype for ramfs item: '{source.split('.')[-1]}'")
+			exit(1)
+
+		flagByte = 0
+		flagByte += 0b100 if "x" in flags else 0
 
 		path = "/".join(dest.split("/")[:-1]) + "/"
 		name = dest.split("/")[-1]
@@ -40,7 +43,7 @@ class ramfs:
 		if name in files:
 			return
 
-		folder["contents"].append({"type":"file", "name":name, "contents":[eval(x) for x in fileContents.strip().split(" ")]})
+		folder["contents"].append({"type":"file", "name":name, "flags":flagByte, "contents":[eval(x) for x in fileContents.strip().split(" ")]})
 
 	def getFolder(self, parent, name):
 		for folder in parent["contents"]:
@@ -125,11 +128,12 @@ class ramfs:
 				self.MEMORY[startAddress+1] = newPage
 				self.exportFolder(item["contents"], newPage)
 			elif item["type"] == "file":
-				self.MEMORY[startAddress+0] = 0b01
+				self.MEMORY[startAddress+0] = item["flags"] + 0b01
 				self.MEMORY[startAddress+1] = self.saveFile(item)
 				self.MEMORY[startAddress+15] = len(item["contents"])
 			else:
 				print("Unknown type", item["type"])
+				exit(1)
 
 			for i, ch in enumerate(item["name"]):
 				self.MEMORY[startAddress+2+i] = ord(ch)
@@ -160,7 +164,7 @@ class ramfs:
 				else:
 					self.MEMORY[i] = self.MEMORY[i] << 1
 				# print(i, b, hex(self.MEMORY[i]))
-		print(self.MEMORY)
+		# print(self.MEMORY)
 		return " ".join([intToHexString(x) for x in self.MEMORY])
 
 
@@ -451,14 +455,20 @@ class assembler:
 		thisfs = ramfs(eval(fs_size))#intToHexString(eval(val, {**self.definitions}))
 
 		for fsItem in fileLines.split("\n"):
+			setflags = set()
 			fsItems = fsItem.split(":")
 			if len(fsItems) != 2:
-				print("RAMFS des: `dest`: `source`")
-				continue
-			dest, source = fsItems
-			dest, source = dest.strip(), source.strip()
+				print("RAMFS des: `dest`: `source` +(flags)")
+				exit(1)
+			dest, source = [x.strip() for x in fsItems]
+			source, *flags = source.split(" +")
+			if len(flags) != 0:
+				for flag in flags:
+					print(flag)
+					setflags.add(flag)
+				
 			print(f"Packing {source} to {dest}")
-			thisfs.addFile(source, dest)
+			thisfs.addFile(source, dest, setflags)
 
 		return thisfs.export()
 	

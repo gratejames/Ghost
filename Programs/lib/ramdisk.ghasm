@@ -642,7 +642,8 @@ ramdisk_FOPEN:
 	PSH R0
 	DD R0
 	LDD R1
-	CNE R1 0b01 ; Make sure it's not a directory, and is allocated ; TODO
+	AND R1 0b11
+	CNE R1 0b01 ; Make sure it's not a directory, and is allocated
 	JMPC ramdisk_FOPEN_DirNotFile
 
 	; INC R0
@@ -825,6 +826,57 @@ ramdisk_STAT:
 	ramdisk_STAT_NotFound:
 		LD R0 0x0001
 		RET
+
+; R0 -> disk number
+; R1 -> ptr to absolute path
+; R2 -> ptr to file name zero padded to 12 characters
+; R3 -> flags byte ptr
+; R0 <- error code (Nominal 0)
+; flags 2 bytes: [flags, mask]
+ramdisk_FLAGS:
+	DD R3
+	LDD R3
+	AND R3 0xfffc
+	ST R3 $ramdisk_FLAGS_Flags
+	INCD
+	LDD R3
+	NOT R3
+	OR R3 0b11
+	ST R3 $ramdisk_FLAGS_Mask
+	CALL ramdisk_getinfo
+	CALL ramdisk_traverse
+	CE R1 0xffff
+	JMPC ramdisk_LIST_TraverseFail
+	; R0 is the pointer in the ramdisk table for this fs
+	; R1 has the page number
+	; R2 has the ptr to the new folder name
+
+	STZ R3		; Copy table pointer to R3
+	ADD R3 1 	; Get the second item in the table
+	DD R3
+	LDD R3		; Read the address of the fs
+	STR R3 $ramdisk_PendingFSAddress
+
+	CALL ramdisk_getchild
+	JMPC ramdisk_FLAGS_NotFound
+
+	DD R0
+	LDD R0
+		DBG R0
+	AND R0 $ramdisk_FLAGS_Mask
+		DBG R0
+	ADD R0 $ramdisk_FLAGS_Flags
+		DBG R0
+	STD R0
+
+	LD R0 0
+
+	RET
+	ramdisk_FLAGS_NotFound:
+		LD R0 0x0001
+		RET
+	ramdisk_FLAGS_Flags: .db 0
+	ramdisk_FLAGS_Mask: .db 0
 
 ; R0 -> file pointer
 ; R0 <- error code (Nominal 0)
@@ -1671,7 +1723,7 @@ ramdisk_haschild:
 ; R1 -> page number
 ; R2 -> pointer to name to check
 ; R3 -> address of fs start
-; R0 <- pointer to child
+; R0 <- pointer to child entry
 ramdisk_getchild:
 	PSH R1
 	PSH R2
@@ -1815,6 +1867,7 @@ ramdisk_DriverTable:
 	.db ramdisk_FOPEN
 	.db ramdisk_RM
 	.db ramdisk_STAT
+	.db ramdisk_FLAGS
 
 ; Each driver table has:
 ramdisk_FileFuncsTable:

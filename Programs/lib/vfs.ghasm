@@ -190,6 +190,26 @@ vfs_stat:
 	CALD
 	RET
 
+; R0 -> disk number
+; R1 -> ptr to absolute path
+; R2 -> ptr to file name zero padded to 12 characters
+; R3 -> flags byte ptr
+; R0 <- error code (Nominal 0)
+; flags 2 bytes: [flags, mask]
+#SHARE vfs_flags
+vfs_flags:
+	PSH R0
+	ADD R0 DiskTable
+	DD R0
+	LDD R0 ; Load the pointer to the drivers
+	ADD R0 6 ; Load the seventh driver: flags
+	DD R0
+	LDD R0 ; Load the pointer to the flags function
+	DD R0
+	POP R0
+	CALD
+	RET
+
 ; R0 -> file pointer
 ; R0 <- error code (Nominal 0)
 #SHARE vfs_fclose

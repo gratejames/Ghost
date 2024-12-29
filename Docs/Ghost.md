@@ -40,18 +40,28 @@
 + [x] Show registers on simulator's memory monitor
 + [ ] AN EDITOR
 + [ ] path variable
+	+ [ ] changable/extensible command table
+	+ [ ] loading into the command table from a given folder
 + [ ] make stdout a file pointer
 + [x] Memory access
 	+ [x] peek
 	+ [x] poke
 + [ ] Combine path and directory functions
 + [ ] Handle whitespace better in commands
+	+ [ ] string trim routine - incrememnt pointer and write zeroes over whitespace
 + [x] Executables
 + [x] Virtual Addressing
-+ [ ] cd'ing into a file causes corruption?
++ [x] cd'ing into a file causes corruption?
 + [x] echo without argument causes stack problems
-+ [ ] memory leak in ls
++ [x] memory leak in ls
 + [x] 'cd bin;mkdir test;ls test;mkdir test;ls test'
++ [x] execute byte?
+	+ [x] stat
+	+ [x] execute
+	+ [x] fsAssembler
+	+ [x] commands to add or remove flags
++ [x] Clean code so that mallocs are never in functions and the functions are instead given function pointers from prior mallocs
++ [x] Maybe no spaces in paths? Just make shell parsing *that* much simpler?
 
 # Glossary
 Register:           R0,R1,R2,R3                             , store into

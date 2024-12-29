@@ -228,6 +228,11 @@ ExecuteFile:
 		CNZ R0
 		JMPC ExecuteFile_error_stat
 		PSH R3
+		DD R3
+		LD R2
+		AND R2 0b100
+		CEZ R2
+		JMPC ExecuteFile_error_notExec
 		ADD R3 2
 		DD R3
 		LDD R3
@@ -270,8 +275,8 @@ ExecuteFile:
 
 	ExecuteFile_error_dofclose:
 	POP R0
-	; ; R0 -> file pointer
-	; ; R0 <- error code (Nominal 0)
+	; R0 -> file pointer
+	; R0 <- error code (Nominal 0)
 	CALL vfs_fclose
 	CNZ R0
 	JMPC ExecuteFile_error_fclose
@@ -280,14 +285,21 @@ ExecuteFile:
 	ExecuteFile_filesize: .db 0
 
 	ExecuteFile_error_malloc:
-		POP R0
 		LD R1 STR_SHELL_ERROR_MALLOC
 		CALL PrintStringAtCursor
+		POP R0
 		RET
 	ExecuteFile_error_stat:
-		POP
 		LD R1 STR_VFS_ERROR_STAT
 		CALL PrintErrorMessage
+		POP
+		RET
+	ExecuteFile_error_notExec:
+		LD R1 STR_SHELL_ERROR_NOTEXEC
+		CALL PrintLineAtCursor
+		POP R0
+		CALL free
+		POP
 		RET
 	ExecuteFile_error_fopen:
 		LD R1 STR_VFS_ERROR_FOPEN
@@ -296,8 +308,7 @@ ExecuteFile:
 	ExecuteFile_error_fread:
 		LD R1 STR_VFS_ERROR_FREAD
 		CALL PrintErrorMessage
-		JMPC ExecuteFile_error_dofclose
-		RET
+		JMP ExecuteFile_error_dofclose
 	ExecuteFile_error_fclose:
 		LD R1 STR_VFS_ERROR_FCLOSE
 		CALL PrintErrorMessage
@@ -306,7 +317,6 @@ ExecuteFile:
 ; R0 -> disk number
 ; R1 -> ptr to absolute path
 ; R2 -> ptr to file name
-; R0 <- error code (Nominal 0)
 ScriptFile:
 	LD R3 0
 	; R0 -> disk number
@@ -373,14 +383,14 @@ ScriptFile:
 	ScriptFile_filesize: .db 0
 
 	ScriptFile_error_malloc:
-		POP R0
 		LD R1 STR_SHELL_ERROR_MALLOC
 		CALL PrintStringAtCursor
+		POP R0
 		RET
 	ScriptFile_error_stat:
-		POP
 		LD R1 STR_VFS_ERROR_STAT
 		CALL PrintErrorMessage
+		POP
 		RET
 	ScriptFile_error_fopen:
 		LD R1 STR_VFS_ERROR_FOPEN
@@ -389,8 +399,7 @@ ScriptFile:
 	ScriptFile_error_fread:
 		LD R1 STR_VFS_ERROR_FREAD
 		CALL PrintErrorMessage
-		JMPC ScriptFile_error_dofclose
-		RET
+		JMP ScriptFile_error_dofclose
 	ScriptFile_error_fclose:
 		LD R1 STR_VFS_ERROR_FCLOSE
 		CALL PrintErrorMessage
@@ -408,7 +417,6 @@ runScript:
 			DD R0
 			INC R0
 			LDD R2
-			; DBGC R2
 			CE R2 0xa ; Newline
 			JMPC runScript_LineDone
 			CEZ R2
@@ -576,6 +584,8 @@ CMD_CD:
 	POP R1
 
 	CALL SplitDirectory
+	CE R2 0xffff
+	JMPC CMD_CD_badpath_invalid
 	CALL CHECK_DISK_ACTIVE
 	PSH
 	LD R0 $currentDisk ; Disk
@@ -611,6 +621,10 @@ CMD_CD:
 		CALL PrintErrorMessage
 		POP
 		RET
+	CMD_CD_badpath_invalid:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 
 	CMD_CD_newDirectory: 
 		.ds "/"
@@ -640,6 +654,9 @@ CMD_LS:
 	CMD_LS_ARG:
 	CALL MakeAbsoluteDir
 	CALL SplitDirectory
+	CE R2 0xffff
+	JMPC CMD_LS_badpath
+	PSH R2
 	CALL CHECK_DISK_ACTIVE
 	LD R0 $currentDisk ; Disk
 	CALL vfs_list
@@ -685,15 +702,20 @@ CMD_LS:
 	POP R1
 	POP R0
 	CALL free
+	POP R0
+	CALL free
 	RET
 
 	PRINT_CMD_LS_ERROR:
-		PSH R1
 		LD R1 STR_VFS_ERROR_LIST
 		; R0 has the error number
 		; R1 has the error message table
 		CALL PrintErrorMessage
 		POP R1
+		RET
+	CMD_LS_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
 		RET
 
 CMD_MKDIR:
@@ -704,6 +726,8 @@ CMD_MKDIR:
 	JMPC CMD_MKDIR_NOARG
 	CALL MakeAbsoluteDir
 	CALL SplitDirectory
+	CE R2 0xffff
+	JMPC CMD_MKDIR_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -730,7 +754,10 @@ CMD_MKDIR:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
-
+	CMD_MKDIR_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 	PRINT_CMD_MKDIR_ERROR:
 		PSH R1
 		LD R1 STR_VFS_ERROR_MKDIR
@@ -748,6 +775,8 @@ CMD_RMDIR:
 	JMPC CMD_RMDIR_NOARG
 	CALL MakeAbsoluteDir
 	CALL SplitDirectory
+	CE R2 0xffff
+	JMPC CMD_RMDIR_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -774,7 +803,10 @@ CMD_RMDIR:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
-
+	CMD_RMDIR_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 	PRINT_CMD_RMDIR_ERROR:
 		PSH R1
 		LD R1 STR_VFS_ERROR_RMDIR
@@ -815,6 +847,8 @@ CMD_TOUCH:
 	;
 	CALL MakeAbsoluteFile
 	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_TOUCH_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -840,7 +874,10 @@ CMD_TOUCH:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
-
+	CMD_TOUCH_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 	PRINT_CMD_TOUCH_ERROR:
 		PSH R1
 		LD R1 STR_VFS_ERROR_FOPEN
@@ -860,6 +897,8 @@ CMD_RM:
 	;
 	CALL MakeAbsoluteFile
 	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_RM_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -882,7 +921,10 @@ CMD_RM:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
-
+	CMD_RM_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 	PRINT_CMD_RM_ERROR:
 		PSH R1
 		LD R1 STR_VFS_ERROR_RM
@@ -901,6 +943,8 @@ CMD_CAT:
 	; Need to convert to an 12 char padded string
 	CALL MakeAbsoluteFile
 	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_CAT_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -959,7 +1003,10 @@ CMD_CAT:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
-
+	CMD_CAT_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 	PRINT_CMD_CAT_ERROR_fread:
 		PSH R1
 		LD R1 STR_VFS_ERROR_FREAD
@@ -988,6 +1035,8 @@ CMD_STAT:
 	; Need to convert to an 12 char padded string
 	CALL MakeAbsoluteFile
 	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_STAT_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -1007,12 +1056,21 @@ CMD_STAT:
 	; Filetype
 	DD R3
 	LDD R0 ; Flags
+	PSH R0
+	AND R0 0b100
+	CNZ R0
+	LD R0 'E'
+	JMPC CMD_STAT_executable
+	LD R0 'N'
+	CMD_STAT_executable:
+	CALL PrintAtCursor
+	POP R0
 	AND R0 0b10
 	CNZ R0
 	LD R0 'D'
-	JMPC CMD_STAT_notFile
+	JMPC CMD_STAT_directory
 	LD R0 'F'
-	CMD_STAT_notFile:
+	CMD_STAT_directory:
 	CALL PrintAtCursor
 
 	INC R3
@@ -1048,7 +1106,10 @@ CMD_STAT:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
-
+	CMD_STAT_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 	PRINT_CMD_STAT_ERROR:
 		PSH R1
 		LD R1 STR_VFS_ERROR_STAT
@@ -1249,6 +1310,8 @@ CMD_SH:
 	;
 	CALL MakeAbsoluteFile
 	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_SH_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -1270,6 +1333,10 @@ CMD_SH:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
+	CMD_SH_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
 
 CMD_RUN:
 	SUB R0 3
@@ -1280,6 +1347,8 @@ CMD_RUN:
 	;
 	CALL MakeAbsoluteFile
 	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_RUN_badpath
 	CALL CHECK_DISK_ACTIVE
 	PSH R2
 
@@ -1301,6 +1370,157 @@ CMD_RUN:
 		LD R1 STR_SHELL_ERROR_NOARG
 		CALL PrintLineAtCursor
 		RET
+	CMD_RUN_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
+
+CMD_FLAGS:
+	SUB R0 5
+	CLT R0 1
+	JMPC CMD_FLAGS_NOARG
+	; R0 has the argument length
+	; R1 has the argument string
+	ST 0 $CMD_FLAGS_flag
+	ST 0 $CMD_FLAGS_mask
+
+	PSH R1
+	CMD_FLAGS_splitscan:
+	INC R1
+	DD R1
+	LDD R2
+	CEZ R2
+	JMPC CMD_FLAGS_noflags
+	CNE R2 ' '
+	JMPC CMD_FLAGS_splitscan
+	DD R1
+	STD 0
+	CMD_FLAGS_flagLoop:
+	INC R1
+	; now R1 points to the beginning of the flags
+	DD R1
+	LDD R2
+	CE R2 '+'
+	JMPC CMD_FLAGS_ADD
+	CE R2 '-'
+	JMPC CMD_FLAGS_SUB
+	JMP CMD_FLAGS_SYNTAX
+
+	CMD_FLAGS_ADD:
+	INC R1
+	DD R1
+	LDD R2
+	CE R2 'x'
+	LD R3 0b100
+	JMPC CMD_FLAGS_ADD_do
+	JMP CMD_FLAGS_unknownFlag
+
+	CMD_FLAGS_ADD_do:
+	LDZ R3
+	PSH R0
+	LD R3 $CMD_FLAGS_flag
+	OR R3 ; R0 = new flag bit OR old flag bit
+	ST R0 $CMD_FLAGS_flag
+	POP R0
+	LD R3 $CMD_FLAGS_mask
+	OR R3 ; R0 = new mask bit OR old mask bit
+	ST R0 $CMD_FLAGS_mask
+	JMP CMD_FLAG_doneOne
+	
+	CMD_FLAGS_SUB:
+	INC R1
+	DD R1
+	LDD R2
+	CE R2 'x'
+	LD R3 0b100
+	JMPC CMD_FLAGS_SUB_do
+	JMP CMD_FLAGS_unknownFlag
+
+	CMD_FLAGS_SUB_do:
+	LDZ R3
+	; Disable by setting in mask but not in flag
+	LD R3 $CMD_FLAGS_mask
+	OR R3 ; R0 = new mask bit OR old mask bit
+	ST R0 $CMD_FLAGS_mask
+	JMP CMD_FLAG_doneOne
+
+	CMD_FLAG_doneOne:
+	INC R1
+	DD R1
+	LDD R2
+	CE R2 ' '
+	JMPC CMD_FLAGS_flagLoop
+	CNE R2 0
+	JMPC CMD_FLAGS_SYNTAX
+
+	POP R1
+
+	CALL MakeAbsoluteFile
+	CALL SplitPath
+	CE R2 0xffff
+	JMPC CMD_FLAGS_badpath
+	CALL CHECK_DISK_ACTIVE
+	PSH R2
+
+	; R1 has pointer to path
+	; R2 has pointer to file name
+	; Stack has pointer to file name to free it
+
+	LD R0 $currentDisk ; Disk
+	; LD R1 currentDirectory ; Ptr to path
+	; R2 is pointer to file name
+	LD R3 CMD_FLAGS_flag
+	; DBG $CMD_FLAGS_flag
+	; DBG $CMD_FLAGS_mask
+	CALL vfs_flags
+	CNZ R0
+	JMPC PRINT_CMD_FLAGS_ERROR
+	POP R0
+	CALL free
+	RET
+
+	CMD_FLAGS_NOARG:
+		LD R1 STR_SHELL_ERROR_NOARG
+		CALL PrintLineAtCursor
+		RET
+	CMD_FLAGS_noflags:
+		LD R1 STR_SHELL_ERROR_NOARG
+		CALL PrintLineAtCursor
+		POP R1
+		RET
+	CMD_FLAGS_SYNTAX:
+		LD R1 CMD_FLAGS_syntax_str
+		CALL PrintLineAtCursor
+		POP R1
+		RET
+	CMD_FLAGS_unknownFlag:
+		LD R1 CMD_FLAGS_unknownFlag_str
+		CALL PrintLineAtCursor
+		POP R1
+		RET
+	CMD_FLAGS_badpath:
+		LD R1 STR_SHELL_ERROR_BADPATH
+		CALL PrintLineAtCursor
+		RET
+	PRINT_CMD_FLAGS_ERROR:
+		LD R1 STR_VFS_ERROR_FLAGS
+		CALL PrintErrorMessage
+		POP R0
+		RET
+	CMD_FLAGS_noflags_str:
+		.ds "FLAGS:Must provide flags"
+		.db 0
+	CMD_FLAGS_syntax_str:
+		.ds "FLAGS:INVALID SYNTAX"
+		.db 0xa
+		.ds "Arguments must be + or -, then the flag letter"
+		.db 0
+	CMD_FLAGS_unknownFlag_str:
+		.ds "FLAGS:Unknown flag"
+		.db 0
+	CMD_FLAGS_flag: .db 0
+	CMD_FLAGS_mask: .db 0
+
 
 ; R1 -> ptr to zero or space terminated number string
 ; R0 <- error code (Nominal 0)
@@ -1551,7 +1771,9 @@ SplitDirectory:
 	PSH R1
 	; R1 pointer right after last slash, to folder name in place
 	; Stack has pointer to path
-	CALL char12
+	CALL fileNamePrep
+	CE R1 0xffff
+	JMPC SplitDirectory_forbiddenChar
 
 	; Now that we have the new folder name out of the way,
 	; Write a zero after the middle slash
@@ -1565,6 +1787,11 @@ SplitDirectory:
 
 	PSH R1
 	POP R2
+	POP R1
+	RET
+	SplitDirectory_forbiddenChar:
+	LD R2 0xffff
+	POP R1
 	POP R1
 	RET
 
@@ -1607,7 +1834,9 @@ SplitPath:
 	; POP
 	; R1 pointer right after last slash, to folder name in place
 	; Stack has pointer to path
-	CALL char12
+	CALL fileNamePrep
+	CE R1 0xffff
+	JMPC SplitPath_forbiddenChar
 
 	; Now that we have the new folder name out of the way,
 	; Write a zero after the middle slash
@@ -1621,6 +1850,11 @@ SplitPath:
 
 	PSH R1
 	POP R2
+	POP R1
+	RET
+	SplitPath_forbiddenChar:
+	LD R2 0xffff
+	POP R1
 	POP R1
 	RET
 
@@ -1776,41 +2010,86 @@ MakeAbsoluteFile:
 	STD 0
 	JMP MakeAbsoluteFile_Done ; Now we've got a trailing slash!
 
+; R2 -> character to check
+; Conditional will be true if char is forbidden, else false
+checkForbiddenCharacter:
+	PSH R2
+	PSH R0
+	LD R0 ForbiddenChars
+	DD R0
+	checkForbiddenCharacter_loop:
+		LDD R0
+		CEZ R0
+		JMPC checkForbiddenCharacter_notFound
+		XOR R2
+		CNZ R0
+		INCD
+		JMPC checkForbiddenCharacter_loop
+
+	; checkForbiddenCharacter_found
+	LD R0 0
+	CEZ R0
+	POP R0
+	POP R2
+	RET
+	checkForbiddenCharacter_notFound:
+	LD R0 0
+	CNZ R0
+	POP R0
+	POP R2
+	RET
+
+
+	ForbiddenChars:
+		.ds "+-/\~!@#$%^&* "
+		.db 0
 ; R1 -> ptr to 0 terminated string
 ; R1 <- ptr to malloc'd 12 byte string
-char12:
+fileNamePrep:
 	PSH R0
 	PSH R2
 	PSH R3
 	LD R0 12
 	LD R3 12
-	CALL malloc
+	CALL malloc ; TODO check fail
 	PSH R0
 	; R0 has ptr to new buffer
 	; R1 has point to old string
-	char12_copyloop:
+	fileNamePrep_copyloop:
 		DD R1
 		LDD R2
+		; We should check for forbidden characters
+		CALL checkForbiddenCharacter
+		JMPC fileNamePrep_forbidden
+
 		DD R0
 		STD R2 ; Copy from one buffer to the other
 		INC R0
 		INC R1
 		DEC R3
 		CEZ R3
-		JMPC char12_outofroom
+		JMPC fileNamePrep_outofroom
 		CNZ R2
-		JMPC char12_copyloop
+		JMPC fileNamePrep_copyloop
 	; Now we've hit a zero, fill in the rest with zeroes
-	char12_clearloop:
+	fileNamePrep_clearloop:
 		DD R0
 		STD 0 ; Copy from one buffer to the other
 		INC R0
 		DEC R3
 		CNZ R3
-		JMPC char12_clearloop
+		JMPC fileNamePrep_clearloop
 
-	char12_outofroom:
+	fileNamePrep_outofroom:
 	POP R1
+	POP R3
+	POP R2
+	POP R0
+	RET
+	fileNamePrep_forbidden:
+	POP R0
+	CALL free
+	LD R1 0xffff
 	POP R3
 	POP R2
 	POP R0
@@ -2097,6 +2376,10 @@ shellExec_Table:
 	.ds "run"
 	.db 0
 	.db CMD_RUN
+	.db 0
+	.ds "flags"
+	.db 0
+	.db CMD_FLAGS
 	.db 0
 	.db 0
 

@@ -11,6 +11,14 @@ STR_SHELL_ERROR_NOARG:
 .ds "!Must provide an argument"
 .db 0
 
+STR_SHELL_ERROR_BADPATH:
+.ds "!File path includes a forbidden character"
+.db 0
+
+STR_SHELL_ERROR_NOTEXEC:
+.ds "!File is not marked as executable"
+.db 0
+
 STR_SHELL_ERROR_NODISK:
 .ds "!Current disk is inactive."
 .db 0

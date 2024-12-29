@@ -85,3 +85,10 @@ STR_VFS_ERROR_STAT:
 .ds "STAT:Could not find file"
 .db 0
 .db 0
+
+STR_VFS_ERROR_FLAGS:
+.ds "FLAGS:Unknown error"
+.db 0
+.ds "FLAGS:Could not find file"
+.db 0
+.db 0
