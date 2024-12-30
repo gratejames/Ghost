@@ -42,6 +42,9 @@
 + [ ] path variable
 	+ [ ] changable/extensible command table
 	+ [ ] loading into the command table from a given folder
+	+ [ ] Maybe, instead of having a list of 0 separated string/ptr pairs, we instead have a list of alternating string and function pointers.
+		+ [ ] How to have function pointer to executable file? It would have to point to a small function that loads the filename and calls the execute routine?
+		+ [ ] This still is inherently limited - how many functions should be allowed?
 + [ ] make stdout a file pointer
 + [x] Memory access
 	+ [x] peek
