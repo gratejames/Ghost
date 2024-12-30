@@ -568,8 +568,8 @@ CMD_CD:
 	SUB R0 2
 	CLT R0 1
 	JMPC CMD_CD_NOARG
+	CALL trimString
 	CALL MakeAbsoluteDir
-
 	PSH R1
 	LD R2 CMD_CD_newDirectory
 	CMD_CD_LOOP_1:
@@ -652,6 +652,7 @@ CMD_LS:
 	JMPC CMD_LS_ARG
 	LD R1 currentDirectory
 	CMD_LS_ARG:
+	CALL trimString
 	CALL MakeAbsoluteDir
 	CALL SplitDirectory
 	CE R2 0xffff
@@ -724,6 +725,7 @@ CMD_MKDIR:
 	SUB R0 5
 	CLT R0 1
 	JMPC CMD_MKDIR_NOARG
+	CALL trimString
 	CALL MakeAbsoluteDir
 	CALL SplitDirectory
 	CE R2 0xffff
@@ -773,6 +775,7 @@ CMD_RMDIR:
 	SUB R0 5
 	CLT R0 1
 	JMPC CMD_RMDIR_NOARG
+	CALL trimString
 	CALL MakeAbsoluteDir
 	CALL SplitDirectory
 	CE R2 0xffff
@@ -842,6 +845,7 @@ CMD_TOUCH:
 	SUB R0 5
 	CLT R0 1
 	JMPC CMD_TOUCH_NOARG
+	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	;
@@ -892,6 +896,7 @@ CMD_RM:
 	SUB R0 2
 	CLT R0 1
 	JMPC CMD_RM_NOARG
+	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	;
@@ -939,6 +944,7 @@ CMD_CAT:
 	SUB R0 3
 	CLT R0 1
 	JMPC CMD_CAT_NOARG
+	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	CALL MakeAbsoluteFile
@@ -1028,9 +1034,10 @@ CMD_CAT:
 		RET
 
 CMD_STAT:
-	SUB R0 2
+	SUB R0 4
 	CLT R0 1
 	JMPC CMD_STAT_NOARG
+	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	CALL MakeAbsoluteFile
@@ -1305,6 +1312,7 @@ CMD_SH:
 	SUB R0 2
 	CLT R0 1
 	JMPC CMD_SH_NOARG
+	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	;
@@ -1342,6 +1350,7 @@ CMD_RUN:
 	SUB R0 3
 	CLT R0 1
 	JMPC CMD_RUN_NOARG
+	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	;
@@ -1521,6 +1530,33 @@ CMD_FLAGS:
 	CMD_FLAGS_flag: .db 0
 	CMD_FLAGS_mask: .db 0
 
+trimString:
+	SUB R0 2
+	trimString_starttrim:
+	; trim string beginning
+	DD R1
+	LDD R2
+	CNE R2 ' '
+	JMPC trimString_endtrim
+	STD 0
+	INC R1
+	DEC R0
+	JMP trimString_starttrim
+
+	trimString_endtrim:
+	ADD R1 ; R0 + R1 should be the end of the string
+	trimString_endtrim_loop:
+	;trim string end
+	DD R0
+	LDD R2
+	CNE R2 ' '
+	JMPC trimString_endtrim_done
+	STD 0
+	DEC R0
+	JMP trimString_endtrim_loop
+
+	trimString_endtrim_done:
+	RET
 
 ; R1 -> ptr to zero or space terminated number string
 ; R0 <- error code (Nominal 0)

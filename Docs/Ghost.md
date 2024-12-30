@@ -48,7 +48,8 @@
 	+ [x] poke
 + [ ] Combine path and directory functions
 + [ ] Handle whitespace better in commands
-	+ [ ] string trim routine - incrememnt pointer and write zeroes over whitespace
+	+ [x] string trim routine - incrememnt pointer and write zeroes over whitespace
+	+ [ ] Do similar in flags command
 + [x] Executables
 + [x] Virtual Addressing
 + [x] cd'ing into a file causes corruption?
