@@ -434,6 +434,8 @@ for i in range(0, 0x100):
 		content = "\t\tinteruptHandling = false;\n"
 	elif mne == "IEN":
 		content = "\t\tinteruptHandling = true;\n"
+	elif mne == "ADO":
+		content = f"\t\tR0 = AO;\n"
 	else:
 		print(mne)
 		raise NotImplementedError

@@ -350,6 +350,10 @@ Instructions = {
     "IEN": {
         "Binary": "0b11111001",
         "Arguments": "None"
+    },
+    "ADO": {
+        "Binary": "0b11111010",
+        "Arguments": "None"
     }
 }
 Shorthand = {
