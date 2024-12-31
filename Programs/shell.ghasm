@@ -214,9 +214,9 @@ KeyboardInterrupt:
 ; R0 -> disk number
 ; R1 -> ptr to absolute path
 ; R2 -> ptr to file name
+; R3 -> ptr to arguments string
 ; R0 <- error code (Nominal 0)
 ExecuteFile:
-	LD R3 0
 	; R0 -> disk number
 	; R1 -> ptr to absolute path
 	; R2 -> ptr to file name
@@ -240,14 +240,18 @@ ExecuteFile:
 		POP R0
 		CALL free
 	POP
+	PSH R3
+	LD R3 0
 	CALL vfs_fopen
 	CNZ R0
+	POP R3
 	JMPC ExecuteFile_error_fopen
 	PSH R1
 	LDZ R1
 
 	; R0 has the file pointer
 	; ExecuteFile_filesize has the file size
+	PSH R3
 	PSH R0
 	LD R0 $ExecuteFile_filesize
 	CALL malloc
@@ -288,6 +292,7 @@ ExecuteFile:
 		LD R1 STR_SHELL_ERROR_MALLOC
 		CALL PrintStringAtCursor
 		POP R0
+		POP R3
 		RET
 	ExecuteFile_error_stat:
 		LD R1 STR_VFS_ERROR_STAT
@@ -308,6 +313,7 @@ ExecuteFile:
 	ExecuteFile_error_fread:
 		LD R1 STR_VFS_ERROR_FREAD
 		CALL PrintErrorMessage
+		POP R3
 		JMP ExecuteFile_error_dofclose
 	ExecuteFile_error_fclose:
 		LD R1 STR_VFS_ERROR_FCLOSE
@@ -1350,10 +1356,29 @@ CMD_RUN:
 	SUB R0 3
 	CLT R0 1
 	JMPC CMD_RUN_NOARG
-	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
-	;
+
+	PSH R1
+	POP R3
+	CMD_RUN_spaceLoop:
+		DD R3
+		LDD R2
+		CEZ R2
+		JMPC CMD_RUN_spaceLoop_exit
+		INC R3
+		CNE R2 ' '
+		JMPC CMD_RUN_spaceLoop
+		; It's a space!
+		STD 0 ; Overright with a zero for other functions
+		; Then leave R3 as the next character for the arguments.
+	DBGC 'B'
+	DD R3
+	LDD R2
+	DBGC R2
+	DBG R3
+	CMD_RUN_spaceLoop_exit:
+	CALL trimString
 	CALL MakeAbsoluteFile
 	CALL SplitPath
 	CE R2 0xffff
@@ -1815,8 +1840,8 @@ SplitDirectory:
 	; Write a zero after the middle slash
 	; And use that for the path
 
-	POP R3
-	DD R3
+	POP R2
+	DD R2
 	LDD R0
 	STD 0
 
@@ -1878,8 +1903,8 @@ SplitPath:
 	; Write a zero after the middle slash
 	; And use that for the path
 
-	POP R3
-	DD R3
+	POP R2
+	DD R2
 	LDD R0
 	STD 0
 

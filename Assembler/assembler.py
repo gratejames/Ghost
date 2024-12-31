@@ -145,7 +145,7 @@ class ramfs:
 			startAddress += 16
 
 	def export(self):
-		print(self.structure)
+		# print(self.structure)
 		self.MEMORY = [0] * self.size
 		self.MEMORY[0] = ord("G")
 		self.freePages = self.size//128 - 1

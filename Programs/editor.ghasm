@@ -22,11 +22,19 @@
 ; ADD R1 StartAddress
 ; DD R1
 ; STD R0
+AOR
+; DBG R0
 
-DBG R1
-DD R1
+DBGC '~'
+PSH R0
+LDZ R3
+POP R3
+SUB R3
+DD R0
 LDD R2
 DBGC R2
+; DBG R3
+; DBG R0
 RET
 
 ; LD R0 dbgStr

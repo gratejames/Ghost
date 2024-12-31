@@ -43,6 +43,8 @@ def checkCommands():
 		return
 	if not mne.isalpha():
 		print(f"Nonalphanumeric mnemonic of '{mne}' at Index {hex(Index)}")
+		items[4] = ""
+		items[5] = ""
 		return
 	unique_mnemonics.append(mne)
 	instructionIndex = int(items[1], 16)
@@ -74,10 +76,10 @@ def registerShortcuts():
 			for i, arg in enumerate(argList):
 				if i != 0 and arg == "Register":
 					print(f"First argument must be the register, at Index {hex(Index)}")
-					continue
+					return
 				if arg not in ["Register", "Value", "Address"]:
 					print(f"Argument not in [Register, Type, Address]: {arg}, at Index {hex(Index)}")
-					continue
+					return
 		shortcutResolver[shortcut][arguments] = mne
 		pythonExportShorthand[shortcut][arguments.replace(',', '')] = mne
 	if mne != "":
@@ -434,8 +436,8 @@ for i in range(0, 0x100):
 		content = "\t\tinteruptHandling = false;\n"
 	elif mne == "IEN":
 		content = "\t\tinteruptHandling = true;\n"
-	elif mne == "ADO":
-		content = f"\t\tR0 = AO;\n"
+	elif mne == "AOR":
+		content = f"\t\tR0 = offsetRegister;\n"
 	else:
 		print(mne)
 		raise NotImplementedError

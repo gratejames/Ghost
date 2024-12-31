@@ -351,7 +351,7 @@ Instructions = {
         "Binary": "0b11111001",
         "Arguments": "None"
     },
-    "ADO": {
+    "AOR": {
         "Binary": "0b11111010",
         "Arguments": "None"
     }
