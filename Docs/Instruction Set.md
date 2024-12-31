@@ -94,10 +94,11 @@
 | 0b11101010   | 0xea | Output address to the debugging terminal as char  | Address → DBG (Char)                | DBCA | DBGC  | Address           |        |
 | 0b11101011   | 0xeb | Output value to the debugging terminal as char    | Value → DBG (Char)                  | DBCV | DBGC  | Value             | PASS   |
 | 0b111011RR   | 0xec | Send register to the debugging terminal as char   | Register → DBG (Char)               | DBCR | DBGC  | Register          |        |
-| 0b111100RR   | 0xf0 | Load register to AddressOffset                    | Register → AddressOffset            | ADOR | ADO   | Register          | NYI    |
-| 0b11110100   | 0xf4 | Load value to AddressOffset                       | Value → AddressOffset               | ADOV | ADO   | Value             | NYI    |
-| 0b11110101   | 0xf5 | Load address to AddressOffset                     | Address → AddressOffset             | ADOA | ADO   | Address           | NYI    |
+| 0b111100RR   | 0xf0 | Load register to AddressOffset                    | Register → AddressOffset            | ADOR | ADO   | Register          | PASS   |
+| 0b11110100   | 0xf4 | Load value to AddressOffset                       | Value → AddressOffset               | ADOV | ADO   | Value             | PASS   |
+| 0b11110101   | 0xf5 | Load address to AddressOffset                     | Address → AddressOffset             | ADOA | ADO   | Address           | PASS   |
 | 0b11110110   | 0xf6 | Increment the addressRegister                     |                                     | INCD |       | None              |        |
 | 0b11110111   | 0xf7 | Decrement the addressRegister                     |                                     | DECD |       | None              |        |
 | 0b11111000   | 0xf8 | Disable Interrupts                                |                                     | IDIS |       | None              |        |
 | 0b11111001   | 0xf9 | Enable Interrupts                                 |                                     | IEN  |       | None              |        |
+| 0b11111010   | 0xfa | Copy the AO into R0                               |                                     | ADO  |       | None              |        |

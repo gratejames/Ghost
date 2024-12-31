@@ -54,7 +54,12 @@
 	+ [x] string trim routine - incrememnt pointer and write zeroes over whitespace
 	+ [ ] Do similar in flags command
 + [x] Executables
-+ [x] Virtual Addressing
+	+ [ ] How to pass arguments? Lists of strings + number of args, like c? String of args and and length of arguments like other cmds?
+	+ [x] Virtual Addressing
+		+ [ ] Oh gosh interrupts are broken now aren't they...
+			+ [ ] Set AO to zero on interrupts calls? Perhaps push it to the stack? Does this make a case for allowing user-settable interrups?
+				+ [ ] Is there even a way to read the AO?
+	+ [ ] Neither arguments nor interrupts can work unless I can read from the AO
 + [x] cd'ing into a file causes corruption?
 + [x] echo without argument causes stack problems
 + [x] memory leak in ls

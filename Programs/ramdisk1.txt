@@ -1,3 +1,3 @@
-/bin/edit: editor.ghasm +xx +x
+/bin/edit: editor.ghasm +x
 /str.txt: str.hex
 /test.sh: script.ghasm
