@@ -68,7 +68,7 @@ STR_VFS_ERROR_FOPEN:
 .db 0
 
 STR_VFS_ERROR_FCLOSE:
-.ds "FREAD:Unknown error"
+.ds "FCLOSE:Unknown error"
 .db 0
 .db 0
 

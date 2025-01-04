@@ -44,6 +44,15 @@ bool debuggingPanelActive = false;
 SDL_Window *dbgwindow = NULL;
 SDL_Renderer *dbgrenderer;
 
+enum DebuggerMode {
+  DM_NORMAL,
+  DM_JUMP_STACK,
+  DM_JUMP_PC,
+  DM_FOLLOW_PC
+};
+
+int debuggerMode = DM_NORMAL;
+
 int main (int argc, char **argv) {
   cxxopts::Options options("Ghost Simulator SDL", "Simulator for the fantasy console GHOST");
   options.add_options()
@@ -180,22 +189,41 @@ bool init() {
   return true;
 }
 
+unsigned short getDebugPageOf(unsigned short addr) {
+  return addr / (1024);
+}
+
 void createDebugText() {
-  // NFont font(dbgrenderer, "../src/fonts/cherry-13-r.bdf", 13);
   SDL_RWops* rwops = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
   NFont font(dbgrenderer, rwops, 0, 13, NFont::Color{255, 255, 255});
-
+  SDL_RWops* rwops2 = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
+  NFont PCfont(dbgrenderer, rwops2, 0, 13, NFont::Color{224, 164, 44});
+  SDL_RWops* rwops3 = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
+  NFont SPfont(dbgrenderer, rwops3, 0, 13, NFont::Color{66, 201, 158});
+  unsigned short Registers[9] = {};
+  processor->readRegisterState(Registers);
+  if (debuggerMode == DM_NORMAL) {
+    ;
+  } else if (debuggerMode == DM_JUMP_STACK) {
+    debuggerPage = getDebugPageOf(0xf000);
+    debuggerMode = DM_NORMAL;
+  } else if (debuggerMode == DM_JUMP_PC) {
+    debuggerPage = getDebugPageOf(Registers[0]);
+    debuggerMode = DM_NORMAL;
+  } else if (debuggerMode == DM_FOLLOW_PC) {
+    debuggerPage = getDebugPageOf(Registers[0]);
+  }
   {
     std::stringstream input_text;
-	  unsigned short Registers[7] = {};
-    processor->readRegisterState(Registers);
-    input_text << "| PC 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[0] << " ";
-    input_text << "| R0 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[1] << " ";
+    input_text << "| PC 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[0] << " | ";
+    input_text << "R0 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[1] << " ";
     input_text << "R1 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[2] << " ";
     input_text << "R2 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[3] << " ";
     input_text << "R3 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[4] << " | ";
     input_text << "DD 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[5] << " ";
-    input_text << "AO 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[6] << " |";
+    input_text << "AO 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[6] << " | ";
+    input_text << "SP 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[7] << ": ";
+    input_text << "0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[8] << " |";
     font.draw(dbgrenderer, 10, 10+64*26+13, NFont::Scale(2.0f), input_text.str().c_str());
   }
 
@@ -207,7 +235,8 @@ void createDebugText() {
     }
     input_text << "| ";
     for (int col = 0; col < 16; col++) {
-      char c = (char)processor->MEMORY[debuggerPage * 64 * 16 + row * 16 + col];
+      unsigned short addr = debuggerPage * 64 * 16 + row * 16 + col;
+      char c = (char)processor->MEMORY[addr];
       if (c == 0) {
         input_text << ".";
       } else if (c == '%') {
@@ -220,6 +249,27 @@ void createDebugText() {
     }
     input_text << " |";
     font.draw(dbgrenderer, 10, 10 + row*26, NFont::Scale(2.0f), input_text.str().c_str());
+    // If on PC page
+    if (debuggerPage == getDebugPageOf(Registers[0])) {
+      if (row == (Registers[0]%1024)/16) {
+        std::stringstream highlight;
+        highlight << std::hex << std::setw(4) << std::setfill('0');
+        highlight << processor->MEMORY[Registers[0]];
+        int PCcol = Registers[0]%16;
+        PCfont.draw(dbgrenderer, 10 + (11+PCcol*5)*14, 10 + row*26, NFont::Scale(2.0f), highlight.str().c_str());
+      }
+    }
+    // If on SP page
+    if (debuggerPage == getDebugPageOf(0xf000 + Registers[7])) {
+      int addr = 0xf000 + Registers[7];
+      if (row == (addr%1024)/16) {
+        std::stringstream highlight;
+        highlight << std::hex << std::setw(4) << std::setfill('0');
+        highlight << processor->MEMORY[addr];
+        int SPcol = addr%16;
+        SPfont.draw(dbgrenderer, 10 + (11+SPcol*5)*14, 10 + row*26, NFont::Scale(2.0f), highlight.str().c_str());
+      }
+    }
   }
 }
 
@@ -295,12 +345,32 @@ void EventsFunc() {
               if (debuggerPage > 0) {
                 debuggerPage--;
               }
+              debuggerMode = DM_NORMAL;
           } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_DOWN) {
               if (debuggerPage < 63) {
                 debuggerPage++;
               }
-          } else if (event.key.keysym.sym == SDLK_KP_0) {
-            processor->memLog(0, 0x15); // If numpad 0 key pressed, log first 0x15 of memory
+              debuggerMode = DM_NORMAL;
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_PAGEUP) {
+              if (debuggerPage > 0+7) {
+                debuggerPage-=8;
+              }
+              debuggerMode = DM_NORMAL;
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_PAGEDOWN) {
+              if (debuggerPage < 63-7) {
+                debuggerPage+=8;
+              }
+              debuggerMode = DM_NORMAL;
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_j) {
+              debuggerMode = DM_JUMP_PC;
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_p) {
+              debuggerMode = DM_JUMP_STACK;
+          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_f) {
+              if (debuggerMode == DM_FOLLOW_PC) {
+                debuggerMode = DM_NORMAL;
+              } else {
+                debuggerMode = DM_FOLLOW_PC;
+              }
           } else {
             processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 1);
           }

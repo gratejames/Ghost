@@ -1,4 +1,8 @@
-.ds "echo shhh"
-.db 0xa
-.ds "mkdir tada"
+; .ds "run /bin/edit /str.txt"
+.ds "run /bin/edit"
+; .ds "stat /str.txt"
+; .db 0xa
+; .ds "flags /str.txt +x"
+; .db 0xa
+; .ds "stat /str.txt"
 .db 0

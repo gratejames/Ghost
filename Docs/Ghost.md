@@ -71,7 +71,30 @@
 	+ [x] commands to add or remove flags
 + [x] Clean code so that mallocs are never in functions and the functions are instead given function pointers from prior mallocs
 + [x] Maybe no spaces in paths? Just make shell parsing *that* much simpler?
-
++ [ ] In the debugger:
+	+ [x] Highlight
+		+ [x] the current PC
+		+ [x] the current SP
+	+ [ ] Decode the current PC?
+		+ [ ] Are the assembly instruction names available?
+	+ [x] Show the stack
+		+ [ ] Just the SP maybe?
+		+ [x] Peek one of the stack?
+		+ [ ] Or maybe a fixed number?
+	+ [x] shortcuts
+		+ [x] pg up/down: +/- 0x2000?
+		+ [x] Jump to stack page
+		+ [x] Jump to PC
+			+ [x] Follow the PC?
+# Simulator Keybinds
++ ctr+shift+d: Debug Window
++ ctr+shift+Up/down: Scroll debug window (1 pg)
++ ctr+shift+Page up/down: Scroll debug window (8 pg)
++ ctr+shift+j: Jump debugger to PC
++ ctr+shift+p: Jump debugger to Stack
++ ctr+shift+e: Export romdump
++ ctr+shift+h: Break/unbreak
++ ctr+shift+space: Step
 # Glossary
 Register:           R0,R1,R2,R3                             , store into
 \$Register:          The value that the register points to   , store at

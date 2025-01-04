@@ -116,7 +116,10 @@ void cpu::readRegisterState(unsigned short Registers[]) {
 	Registers[4] = R3;
 	Registers[5] = DD;
 	Registers[6] = offsetRegister;
+	Registers[7] = MEMORY[StackMemory];
+	Registers[8] = MEMORY[StackMemory + MEMORY[StackMemory]];
 }
+
 
 int cpu::pallette16_888(unsigned short x) {
 	if (x>0xf)
