@@ -607,7 +607,7 @@ ramdisk_FOPEN:
 			POP R1
 			SHL R1 2 ; Multiply by 4, the size of each table entry
 			ADD R1 ramdisk_FileTable
-			ADD R1 1 ; Read from the page pointer instead
+			ADD R1 3 ; Read from the page pointer instead
 			DD R1
 			LDD R1
 			CNZ R1
@@ -882,12 +882,10 @@ ramdisk_FLAGS:
 ; R0 <- error code (Nominal 0)
 ramdisk_FCLOSE:
 	CALL ramdisk_getlocalfile
-	SHL R0 2 ; Multiply by 4, the size of each table entry
-	ADD R0 ramdisk_FileTable
-	INC R0
+	ADD R0 3
 	DD R0
 	STD 0 ; Zero the page pointer
-	DEC R0
+	SUB R0 3
 	DD R0
 	LDD R0 ; Load the index into the global
 	CALL vfs_unregister_fileptr

@@ -1,5 +1,5 @@
-; .ds "run /bin/edit /str.txt"
-.ds "run /bin/edit"
+.ds "run /bin/edit /str.txt"
+; .ds "run /bin/edit"
 ; .ds "stat /str.txt"
 ; .db 0xa
 ; .ds "flags /str.txt +x"

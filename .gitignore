@@ -13,3 +13,4 @@ Simulator/Simulator.code-workspace
 *.hex
 ghost.sublime-workspace
 *.prof
+Programs/tests

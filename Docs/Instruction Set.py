@@ -232,7 +232,7 @@ debuggingString1 = "const std::string InstructionDebugging[0x100] {"
 debuggingString1Pos = cppFile.find(debuggingString1) + len(debuggingString1)
 debuggingString1End = cppFile[debuggingString1Pos:].find("}") + debuggingString1Pos
 
-cppFile = cppFile[:debuggingString1Pos] + (", ".join('"' + instructions.get(i, "Unused") + '"' for i in range(0x100))) + cppFile[debuggingString1End:]
+cppFile = cppFile[:debuggingString1Pos] + (", ".join('"' + instructions.get(i, "NONE") + '"' for i in range(0x100))) + cppFile[debuggingString1End:]
 
 debuggingString2 = "const int InstructionDebuggingNumArgs[0x100] {"
 debuggingString2Pos = cppFile.find(debuggingString2) + len(debuggingString2)

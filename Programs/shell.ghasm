@@ -273,6 +273,8 @@ ExecuteFile:
 	JMPC ExecuteFile_error_fread
 
 	; R1 has the buffer pointer to the new executable
+
+	POP R3
 	ADO R1
 	CALL 0
 	ADO 0
@@ -1370,15 +1372,12 @@ CMD_RUN:
 		CNE R2 ' '
 		JMPC CMD_RUN_spaceLoop
 		; It's a space!
+		; TODO: spaceloop to find multiple spaces between arguments
 		STD 0 ; Overright with a zero for other functions
 		; Then leave R3 as the next character for the arguments.
-	DBGC 'B'
-	DD R3
-	LDD R2
-	DBGC R2
-	DBG R3
+
 	CMD_RUN_spaceLoop_exit:
-	CALL trimString
+	CALL trimString ; TODO: not working right
 	CALL MakeAbsoluteFile
 	CALL SplitPath
 	CE R2 0xffff

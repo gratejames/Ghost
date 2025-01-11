@@ -3,7 +3,7 @@
 + [x] Have .data prefixes make any sense please
 + [x] To and from R0 for better math
 + [ ] Text modes?
-+ [ ] Simulate external video card?
++ [x] ~~Simulate external video card?~~
 + [x] Interrupts should probably queue...
 	+ [x] Nope! Also, get rid of Interupt data - read it in from IO bit of memory!
 + [ ] vfs
@@ -33,7 +33,6 @@
 	+ [x] cat
 	+ [ ] maybe unregister fileystem/disk number at some point?
 	+ [ ] change disk number command
-		+ [ ] Why? I can't remember why this would be needed?
 	+ [ ] current disk number command (Integrate into pwd?)
 		+ [ ] should absolute paths be disknum:/path/... ? 0:/folders/file.ext ?
 + [x] AHH THE CAPITAL M IS TOO TALL
@@ -75,17 +74,20 @@
 	+ [x] Highlight
 		+ [x] the current PC
 		+ [x] the current SP
-	+ [ ] Decode the current PC?
-		+ [ ] Are the assembly instruction names available?
+	+ [x] Decode the current PC?
+		+ [x] Are the assembly instruction names available?
 	+ [x] Show the stack
-		+ [ ] Just the SP maybe?
+		+ [ ] ~~Just the SP maybe?~~
 		+ [x] Peek one of the stack?
-		+ [ ] Or maybe a fixed number?
+		+ [ ] ~~Or maybe a fixed number?~~
 	+ [x] shortcuts
 		+ [x] pg up/down: +/- 0x2000?
 		+ [x] Jump to stack page
 		+ [x] Jump to PC
 			+ [x] Follow the PC?
+	+ [ ] Debugger encounters condition where PC is mid-instruction
+		+ [ ] Is this even a problem?
+		+ [ ] Performance cost on debugger for fixing?
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
 + ctr+shift+Up/down: Scroll debug window (1 pg)
