@@ -273,8 +273,11 @@ ExecuteFile:
 	JMPC ExecuteFile_error_fread
 
 	; R1 has the buffer pointer to the new executable
+	POP R0
+	SUB R1
+	STZ R3
+	; R1 is adjusted for AO
 
-	POP R3
 	ADO R1
 	CALL 0
 	ADO 0
@@ -2204,15 +2207,16 @@ CursorNewline:
 ; R0 -> Character
 SetAtCursor:
 	PSH R1
-	ST R0 $0xaf70		; Character
+	PSH R2
+	PSH R3
 	LD R1 $Cursor
-	AND R1 0x003f
-	ST R1 $0xaf71		; X Pos
-	LD R1 $Cursor
-	SHR R1 6
-	ST R1 $0xaf72		; Y Pos
-	ST Font $0xaf73		; Font Address
+	AND R1 0x003f		; X Pos
+	LD R2 $Cursor
+	SHR R2 6			; Y Pos
+	LD R3 Font			; Font Address
 	INT 0x5f
+	POP R3
+	POP R2
 	POP R1
 	RET
 

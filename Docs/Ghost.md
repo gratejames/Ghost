@@ -56,13 +56,19 @@
 	+ [ ] How to pass arguments? Lists of strings + number of args, like c? String of args and and length of arguments like other cmds?
 	+ [x] Virtual Addressing
 		+ [ ] Oh gosh interrupts are broken now aren't they...
-			+ [ ] Set AO to zero on interrupts calls? Perhaps push it to the stack? Does this make a case for allowing user-settable interrups?
-				+ [ ] Is there even a way to read the AO?
+			+ [ ] Set AO to zero on interrupts calls? Perhaps push it to the stack?
+				+ [x] Is there even a way to read the AO?
+		+ [x] Does this make a case for allowing user-settable interrups?
+			+ [x] With register args?
+			+ [ ] Ideas
+				+ [ ] Screen clear
+				+ [ ] File ops
+				+ [ ] Malloc/free
 	+ [x] Neither arguments nor interrupts can work unless I can read from the AO
 + [x] cd'ing into a file causes corruption?
 + [x] echo without argument causes stack problems
 + [x] memory leak in ls
-+ [x] 'cd bin;mkdir test;ls test;mkdir test;ls test'
++ [x] Bug: 'cd bin;mkdir test;ls test;mkdir test;ls test'
 + [x] execute byte?
 	+ [x] stat
 	+ [x] execute
@@ -88,6 +94,7 @@
 	+ [ ] Debugger encounters condition where PC is mid-instruction
 		+ [ ] Is this even a problem?
 		+ [ ] Performance cost on debugger for fixing?
++ [ ] An actual debugger UI instead of just keyboard shortcuts? A toolbar?
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
 + ctr+shift+Up/down: Scroll debug window (1 pg)
@@ -131,15 +138,15 @@ Stack: 0xf000 - 0xffff (  4096 Bytes )
 	IO 1: Button Number
 #### 0x4f-5f: User defined, not called by hardware. Convention below.
 #### 0x5e: High Res. String Print
-	IO 0: String Address
-	IO 1: X Start Position
-	IO 2: Y Position
-	IO 3: Font Address
+	R0: String Address
+	R1: X Start Position
+	R2: Y Position
+	R3: Font Address
 #### 0x5f: High Res. Character Print
-	IO 0: Char Value
-	IO 1: X Position
-	IO 2: Y Position
-	IO 3: Font Address
+	R0: Char Value
+	R1: X Position
+	R2: Y Position
+	R3: Font Address
 ## Video
 Display settings (only lower 2 bits used):
     + 00 Standard: Full color low res       128x128, 16 bit rgb565

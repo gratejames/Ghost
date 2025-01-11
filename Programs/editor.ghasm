@@ -1,65 +1,18 @@
-; #SHARE CMD_EDIT
-; ; R0 is the length of the input
-; ; R1 is a pointer to the arguments (Starting on the first char after the space)
-; CMD_EDIT:
-; 	SUB R0 5
-; 	CEZ R0
-; 	JMPC NoArgumentGiven
-; 	RET
+DBGC '~'
 
-; ; R1 has pointer to 0 terminated string
-; ; Need to convert to an 12 char padded string
+PSH R3
+LDZ R3
+LD R1 0
+LD R2 0
+LD R3 Font
 
-; NoArgumentGiven:
-; 	LD R1 STR_SHELL_ERROR_NOARG
-; 	CALL PrintLineAtCursor
-; 	RET
+INT 0x5e
 
-; editFile:
-; 	RET
-; R0 has the initial address
-; STZ R1
-; ADD R1 StartAddress
-; DD R1
-; STD R0
-; AOR
-; DBG R0
+POP R3
 
 DBGC '~'
-; PSH R0
-; LDZ R3
-; POP R3
-; SUB R3
-; DD R0
-; LDD R2
-; DBGC R2
-; DBG R0
-DBGC '~'
-AOR
-DBG R0
-; DBGC 0xa
-; BRK
 RET
 
-; LD R0 dbgStr
-; dbgLp:
-; 	DD R0
-; 	LDD R1
-; 	DBGC R1
-; 	CEZ R1
-; 	INC R0
-; 	JMPC dbgLpDone
 
-; 	JMP dbgLp
-
-; dbgLpDone:
-; RET
-
-; StartAddress: .db 0
-
-; dbgStr:
-;  .ds "Executable! Woah! Maybe even too much text to have on a single page of the fs? We will soon see! Hopefully the string data will make it easy to see any gaps without just wordlessly crashing lol. "
-;  .ds "Naaaah I still need waaaaaaaaaaaaaaaaaaaay more text before I get to that point. But maybe this second line will do it? It's not like it matters a *whole* lot, since the fs current doesn't "
-;  .ds "even have enough pages to store the root dir, the bin dir, the and 2 pages of exec file I don't think. I suppose we're about to find out! And test my error checking!"
-;  .db 0xa
-;  .db 0
+Font:
+#INC ./fontGen/font.hex

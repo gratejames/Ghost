@@ -6,14 +6,26 @@
 #SHARE printString
 printString:
 PSH
-LD R0 $0xaf70		; The address of the string
-LD R1 $0xaf71 		; The X position
-
+PSH R0
+	AOR
+	ADO 0
+	ST R0 $PrevAO
+POP R0
+ADD R0 $PrevAO
+ADD R3 $PrevAO
+ST R2 $0xaf72
+; ST R3 $0xaf73
 CharPrintLoop:
 	DD R0			; The address of the char at the position R1
 	MV $0xaf70		; Move from at DD, the address of the pos R1 char, to the interrupt argument
-	ST R1 $0xaf71	; Store the X position to the x argument
+	; ST R1 $0xaf71	; Store the X position to the x argument
+	PSH
+	LD R0 $0xaf70
+	; LD R1 $0xaf71
+	LD R2 $0xaf72
+	; LD R3 $0xaf73
 	INT 0x5f		; Display the character
+	POP
 	INC R0
 	INC R1
 	CLT R1 0x0040
@@ -30,5 +42,8 @@ CharPrintLoop:
 	JMP CharPrintLoop
 
 Exit:
+ADO $PrevAO
 POP
 RET
+
+PrevAO: .db 0
