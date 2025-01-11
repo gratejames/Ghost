@@ -17,27 +17,26 @@ ADD R3 $PrevAO
 
 ST R1 $xPos
 ST R2 $yPos
-ST R3 $Font
 
-STZ R1
-PSH R1
+PSH R0
 
-CE R1 0xa ; Check if it equals newline
+CE R0 0xa ; Check if it equals newline
 JMPC newlineCase
 
-SUB R1 ' '
-SHL R1 2 					; Multiply by 4 because each font character takes 4 bytes
-ADD R1 $Font				; Add the address of the font
+SUB R0 ' '
+SHL R0 2 					; Multiply by 4 because each font character takes 4 bytes
+ADD R3				; Add the address of the font
 JMP casesDone
 
 newlineCase:
-LD R1 $Font
-ADD R1 94*4
+LDZ R3
+ADD R0 94*4
 JMP casesDone
 
 casesDone:
-LD R0 0
-PSH R0
+LD R1 0
+PSH R1
+STZ R1
 LD R3 $yPos
 SHL R3 9
 ADD R3 $xPos
@@ -112,4 +111,3 @@ PrevAO: .db 0
 
 xPos: .db 0
 yPos: .db 0
-Font: .db 0
