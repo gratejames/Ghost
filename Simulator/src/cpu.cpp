@@ -268,7 +268,7 @@ void cpu::ROMdump() {
 
 void cpu::callPendingInterrupt() {
 	if (MEMORY[InterruptTableStart + interruptToCall] != 0) {
-		pushToStack(PC-1);
+		pushToStack(PC-1-offsetRegister);
 		if (interruptToCall == 0x00) {
 			// pushToStack(R0);
 			// pushToStack(R1);
@@ -406,7 +406,7 @@ void cpu::executeFunction(unsigned short instruction) {
 			std::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
 			halted = true;
 		} else {
-			pushToStack(PC);
+			pushToStack(PC-offsetRegister);
 			PC = MEMORY[0xaf00 + value]-1;
 		}
 		break;
@@ -997,13 +997,13 @@ void cpu::executeFunction(unsigned short instruction) {
 	case 0xdf: // CLCA
 		value = getArgument();
 		if(jump) {
-			pushToStack(PC);
+			pushToStack(PC-offsetRegister);
 			PC = value-1+offsetRegister;
 		}
 		break;
 	case 0xe0: // CLCD
 		if(jump) {
-			pushToStack(PC);
+			pushToStack(PC-offsetRegister);
 			PC = DD-1+offsetRegister;
 		}
 		break;

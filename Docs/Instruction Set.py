@@ -282,7 +282,7 @@ for i in range(0, 0x100):
 \t\t\tstd::cout << "ERR: Invalid interrupt 0x" << std::hex << std::setw(2) << std::setfill('0') << value << std::endl;
 \t\t\thalted = true;
 \t\t} else {
-\t\t\tpushToStack(PC);
+\t\t\tpushToStack(PC-offsetRegister);
 \t\t\tPC = MEMORY[0xaf00 + value]-1;
 \t\t}
 """
@@ -403,9 +403,9 @@ for i in range(0, 0x100):
 	elif mne == "JPCD":
 		content = conditional(jumpTo(getDD()))
 	elif mne == "CLCA":
-		content = setValue(getArgument()) + conditional(pushStack("PC") + jumpTo(getValue()))
+		content = setValue(getArgument()) + conditional(pushStack("PC-offsetRegister") + jumpTo(getValue()))
 	elif mne == "CLCD":
-		content = conditional(pushStack("PC") + jumpTo(getDD()))
+		content = conditional(pushStack("PC-offsetRegister") + jumpTo(getDD()))
 	elif mne == "RETC":
 		content = conditional(jumpTo(popStack(), noAdd=True))
 	elif mne == "BRK":
