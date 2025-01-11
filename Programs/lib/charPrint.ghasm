@@ -7,20 +7,19 @@
 #SHARE printChar
 printChar:
 PSH
-; PSH R0
-; AOR
-; ADO 0
-; ST R0 $PrevAO
-; POP R0
-; ADD R0 $PrevAO
-; ADD R3 $PrevAO
+PSH R0
+AOR
+ADO 0
+ST R0 $PrevAO
+POP R0
+ADD R0 $PrevAO
+ADD R3 $PrevAO
 
-ST R0 $0xaf70
-ST R1 $0xaf71
-ST R2 $0xaf72
-ST R3 $0xaf73
+ST R1 $xPos
+ST R2 $yPos
+ST R3 $Font
 
-LD R1 $0xaf70				; Load the character
+STZ R1
 PSH R1
 
 CE R1 0xa ; Check if it equals newline
@@ -28,20 +27,20 @@ JMPC newlineCase
 
 SUB R1 ' '
 SHL R1 2 					; Multiply by 4 because each font character takes 4 bytes
-ADD R1 $0xaf73				; Add the address of the font
+ADD R1 $Font				; Add the address of the font
 JMP casesDone
 
 newlineCase:
-LD R1 $0xaf73
+LD R1 $Font
 ADD R1 94*4
 JMP casesDone
 
 casesDone:
 LD R0 0
 PSH R0
-LD R3 $0xaf72
+LD R3 $yPos
 SHL R3 9
-ADD R3 $0xaf71
+ADD R3 $xPos
 SHRO R3						; Divide by 2 because each address points to 2 chars
 ADD R3 ScreenAddress
 
@@ -49,7 +48,7 @@ DrawCharRow:
 	DD R1
 	INC R1
 
-	LD R2 $0xaf71
+	LD R2 $xPos
 	AND R2 1
 	CEZ R2					; Whether to draw in the first or second word of byte
 	JMPC DrawCharFirst
@@ -106,7 +105,11 @@ DrawCharReturn:
 	POP R0
 	POP R1
 	POP
-	; ADO $PrevAO
+	ADO $PrevAO
 	RET
 
-; PrevAO: .db 0
+PrevAO: .db 0
+
+xPos: .db 0
+yPos: .db 0
+Font: .db 0

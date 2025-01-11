@@ -13,26 +13,21 @@ PSH R0
 POP R0
 ADD R0 $PrevAO
 ADD R3 $PrevAO
-ST R2 $0xaf72
-; ST R3 $0xaf73
+ST R2 $yPos
 CharPrintLoop:
 	DD R0			; The address of the char at the position R1
-	MV $0xaf70		; Move from at DD, the address of the pos R1 char, to the interrupt argument
-	; ST R1 $0xaf71	; Store the X position to the x argument
-	PSH
-	LD R0 $0xaf70
-	; LD R1 $0xaf71
-	LD R2 $0xaf72
-	; LD R3 $0xaf73
+	PSH R0
+	LDD R0
+	LD R2 $yPos
 	INT 0x5f		; Display the character
-	POP
+	POP R0
 	INC R0
 	INC R1
 	CLT R1 0x0040
 	JMPC SkipAdd
-		LD R2 $0xaf72
+		LD R2 $yPos
 		ADD R2 1
-		ST R2 $0xaf72
+		ST R2 $yPos
 		LD R1 0
 	SkipAdd:
 	DD R0
@@ -47,3 +42,4 @@ POP
 RET
 
 PrevAO: .db 0
+yPos: .db 0
