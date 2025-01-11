@@ -12,7 +12,6 @@ AOR
 ADO 0
 ST R0 $PrevAO
 POP R0
-ADD R0 $PrevAO
 ADD R3 $PrevAO
 
 ST R1 $xPos

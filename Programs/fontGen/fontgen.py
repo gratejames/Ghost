@@ -41,7 +41,16 @@ def saveFont(export=False):
 			output.append(" ".join(    [("0x" + str(hex(byte)).replace("0x", "").zfill(4)) for byte in storedFonts.get(char, [32577, 21833, 21825, 32512])]    ))
 		output.append(" ".join(    [("0x" + str(hex(byte)).replace("0x", "").zfill(4)) for byte in [0, 0, 16933, 5376]])) # Newline
 		f.write("\n".join(output))
-	
+	with open("fontI.hex", "w+") as f:
+		output = []
+		for char in range(ord(' '), ord('~')):
+			output.append(" ".join(    [("0x" + str(hex(inverse(byte))).replace("0x", "").zfill(4)) for byte in storedFonts.get(char, inverse([32577, 21833, 21825, 32512]))]    ))
+		output.append(" ".join(    [("0x" + str(hex(inverse(byte))).replace("0x", "").zfill(4)) for byte in inverse([0, 0, 16933, 5376])])) # Newline
+		f.write("\n".join(output))
+
+def inverse(b):
+	return int('0b'+''.join(['1' if x=='0' else '0' for x in bin(b).replace("0b", "").zfill(16)]), 2)
+
 def loadFont():
 	with open("fontFile.json", "r") as f:
 		loadedFont = json.loads(f.read())
