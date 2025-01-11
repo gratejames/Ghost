@@ -23,7 +23,9 @@ public:
 	bool verbose = false;
 	bool flushDebugChar = false;
 	unsigned short MEMORY[0x10000] = {};
-	void readRegisterState(unsigned short Registers[]);
+	struct Instruction;
+	void readRegisterState(unsigned short registers[]);
+	void readCurrentInstruction(Instruction &inst);
 	void ROMdump();
 
 private:
@@ -65,4 +67,10 @@ private:
 	int drgb_888(unsigned short x);
 	int pallette16_888(unsigned short x);
 	int pallette2_888(unsigned short x);
+};
+
+struct cpu::Instruction {
+	unsigned short opcode;
+	int args;
+	std::string name;
 };

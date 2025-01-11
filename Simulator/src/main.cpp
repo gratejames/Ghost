@@ -215,15 +215,20 @@ void createDebugText() {
   }
   {
     std::stringstream input_text;
-    input_text << "| PC 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[0] << " | ";
-    input_text << "R0 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[1] << " ";
-    input_text << "R1 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[2] << " ";
-    input_text << "R2 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[3] << " ";
-    input_text << "R3 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[4] << " | ";
-    input_text << "DD 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[5] << " ";
-    input_text << "AO 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[6] << " | ";
-    input_text << "SP 0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[7] << ": ";
-    input_text << "0x" << std::hex << std::setw(4) << std::setfill('0') << Registers[8] << " |";
+    cpu::Instruction inst;
+    processor->readCurrentInstruction(inst);
+    input_text << std::hex << std::setfill('0');
+    input_text << "| PC 0x" << std::setw(4) << Registers[0] << " ";
+    input_text << "(" << std::setw(2) << inst.opcode << ":";
+    input_text << "" << std::setfill(' ') << std::setw(5) << inst.name << std::setfill('0') << ") ";
+    input_text << "| R0 0x" << std::setw(4) << Registers[1] << " ";
+    input_text << "R1 0x" << std::setw(4) << Registers[2] << " ";
+    input_text << "R2 0x" << std::setw(4) << Registers[3] << " ";
+    input_text << "R3 0x" << std::setw(4) << Registers[4] << " | ";
+    input_text << "DD 0x" << std::setw(4) << Registers[5] << " ";
+    input_text << "AO 0x" << std::setw(4) << Registers[6] << " | ";
+    input_text << "SP 0x" << std::setw(4) << Registers[7] << ": ";
+    input_text << "0x" << std::setw(4) << Registers[8] << " |";
     font.draw(dbgrenderer, 10, 10+64*26+13, NFont::Scale(2.0f), input_text.str().c_str());
   }
 
