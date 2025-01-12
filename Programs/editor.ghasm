@@ -1,18 +1,99 @@
-DBGC '~'
-
-PSH R3
-LDZ R3
-LD R1 0
-LD R2 0
-LD R3 Font
-
-INT 0x5e
-
-POP R3
+#DEF int_updateInterrupt 0x5c
+#DEF int_string 0x5e
+#DEF int_char 0x5f
 
 DBGC '~'
+
+ST R3 $argumentptr
+CALL findStringLength
+
+CALL DrawHeaderBar
+
+LD R0 0x00
+LD R1 KeyboardInterrupt
+INT int_updateInterrupt
+
+loop:
+	; CALL blinkCursor
+	; CALL delay
+	CEZ $isDone
+	JMPC loop
+
+DBGC '~'
+
 RET
 
+KeyboardInterrupt:
+IDIS
+PSH
+CPSH
+DBGC 'c'
+PSH R0
+AOR
+ADO 0
+ST R0 $PrevAO
+POP R0
+	DBGC $0xafd1
+	DBG $0xafd0
+	LD R0 $0xafd1
+ADO $PrevAO
+	CE R0 'q'
+	CALLC KI_q
+CPOP
+POP
+IEN
+RET
+KI_q:
+	DBGC 'Q'
+	ST 1 $isDone
+	RET
+
+PrevAO: .db 0
+
+findStringLength:
+	DD R3
+	LDD R1
+	CNZ R1
+	INC R3
+	JMPC findStringLength
+	DEC R3
+	SUB R3 $argumentptr
+	ST R3 $argumentlen
+	RET
+
+DrawHeaderBar:
+	LD R0 TitlePrefix
+	LD R1 0
+	LD R2 0
+	LD R3 FontI
+	INT int_string
+
+	LD R0 $argumentptr
+	LD R1 10
+	LD R2 0
+	LD R3 FontI
+	INT int_string
+
+
+	LD R1 10
+	ADD R1 $argumentlen
+	DrawHeaderBar_fill:
+		LD R0 ' '
+		LD R2 0
+		LD R3 FontI
+		INT int_char
+		INC R1
+		CLT R1 0x40
+		JMPC DrawHeaderBar_fill
+	RET
+
+TitlePrefix: .ds " Editing: "
+.db 0
+argumentptr: .db 0
+argumentlen: .db 0
+isDone: .db 0
 
 Font:
 #INC ./fontGen/font.hex
+FontI:
+#INC ./fontGen/fontI.hex

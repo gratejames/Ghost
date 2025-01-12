@@ -1,0 +1,35 @@
+#SHARE shellCWD
+shellCWD:
+	AOR
+	ADO 0
+	ST R0 $PrevAO
+
+	LD R0 currentDirectory
+	SUB R0 $PrevAO
+	LD R1 $currentDisk
+	ADO $PrevAO
+	RET
+
+; R0 is the interrupt number (not address)
+; R1 is the new address
+#SHARE updateInterrupt
+updateInterrupt:
+	; Need to account for AO
+	PSH R0
+	AOR
+	ADO 0
+	ST R0 $PrevAO
+	POP R0
+
+	ADD R1 $PrevAO
+
+	ADD R0 0xaf00
+	DBG R0
+	DBG R1
+	DD R0
+	STD R1
+	
+	ADO $PrevAO
+	RET
+
+PrevAO: .db 0

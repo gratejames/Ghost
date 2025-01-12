@@ -5,21 +5,52 @@ JMP PROG_START
 #INC ./lib/ramdisk.ghasm
 #INC ./lib/stringPrint.ghasm
 #INC ./lib/charPrint.ghasm
+Timer:				.db 0xffff
+Cursor: 			.db 0x0000 ; (ypos, xpos)
+LastCursor:			.db 0x0000 ; ^
+CommandEnd:			.db 0x0000 ; ^
+KB_Mods:			.db 0 ; 0000 0000 0000 win+alt+ctrl+shift
+
+currentDisk: .db 0
+
+currentDirectory:
+.ds "/"
+.dz (12+1)*8 +1
+
+absoluteDirectory:
+.ds "/"
+.dz (12+1)*8 +1
+
+#INC ./shellinterrupts.ghasm
 #INC ./shellstrings.ghasm
+Font:
+#INC ./fontGen/font.hex
 PROG_START:
-
-
-;; Char Print Routine (5f)
-; 0xaf70: Character
-; 0xaf71: X Pos
-; 0xaf72: Y Pos
-; 0xaf73: Font Address
 
 ; TODO: Self-test of sorts?
 startup:
 	ST 0b0000000000000001 $0xaff0	;; Background
 	ST 0b0000011111001000 $0xaff1	;; Forground
 	ST 3 $0xafef					;; Display mode
+
+	; Register file-ops interrupts
+
+	; ST free $0xaf4e
+	; ST malloc $0xaf4f
+	ST vfs_mkdir $0xaf50
+	ST vfs_list $0xaf51
+	ST vfs_rmdir $0xaf52
+	ST vfs_fopen $0xaf53
+	ST vfs_rm $0xaf54
+	ST vfs_stat $0xaf55
+	ST vfs_flags $0xaf56
+	ST vfs_fclose $0xaf57
+	ST vfs_fwrite $0xaf58
+	ST vfs_fread $0xaf59
+	ST vfs_fseek $0xaf5a
+	; ST printString $0xaf5b
+	ST updateInterrupt $0xaf5c
+	ST shellCWD $0xaf5d
 
 	ST printString $0xaf5e			;; Register printString as the string printing interrupt
 	ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
@@ -201,6 +232,7 @@ KeyboardInterrupt:
 
 		CALL CursorNewline
 
+		IEN
 		CALL handleUserInput
 
 		LD R0 '>'
@@ -281,6 +313,9 @@ ExecuteFile:
 	ADO R1
 	CALL 0
 	ADO 0
+	ST KeyboardInterrupt $0xaf00
+	ST 3 $0xafef					;; Display mode
+	CALL RefreshDisplay
 
 	ExecuteFile_error_dofclose:
 	POP R0
@@ -2358,25 +2393,6 @@ RefreshDisplay:
 		CNE R0 0x1000
 		JMPC RefreshDisplay_loop
 	RET
-
-Timer:				.db 0xffff
-Cursor: 			.db 0x0000 ; (ypos, xpos)
-LastCursor:			.db 0x0000 ; ^
-CommandEnd:			.db 0x0000 ; ^
-KB_Mods:			.db 0 ; 0000 0000 0000 win+alt+ctrl+shift
-
-currentDisk: .db 0
-
-currentDirectory:
-.ds "/"
-.dz (12+1)*8 +1
-
-absoluteDirectory:
-.ds "/"
-.dz (12+1)*8 +1
-
-Font:
-#INC ./fontGen/font.hex
 
 ; Table Format: string0ptr0...string0ptr00
 shellExec_Table:
