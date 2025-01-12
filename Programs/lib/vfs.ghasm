@@ -82,6 +82,11 @@ vfs_unregister_fileptr:
 #SHARE vfs_mkdir
 vfs_mkdir:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -91,6 +96,7 @@ vfs_mkdir:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> disk number
@@ -101,6 +107,11 @@ vfs_mkdir:
 #SHARE vfs_list
 vfs_list:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -110,6 +121,7 @@ vfs_list:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> disk number
@@ -120,6 +132,11 @@ vfs_list:
 #SHARE vfs_rmdir
 vfs_rmdir:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -129,6 +146,7 @@ vfs_rmdir:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> disk number
@@ -140,6 +158,11 @@ vfs_rmdir:
 #SHARE vfs_fopen
 vfs_fopen:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -149,6 +172,7 @@ vfs_fopen:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> disk number
@@ -159,6 +183,11 @@ vfs_fopen:
 #SHARE vfs_rm
 vfs_rm:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -168,6 +197,7 @@ vfs_rm:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> disk number
@@ -179,6 +209,11 @@ vfs_rm:
 #SHARE vfs_stat
 vfs_stat:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -188,6 +223,7 @@ vfs_stat:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> disk number
@@ -199,6 +235,11 @@ vfs_stat:
 #SHARE vfs_flags
 vfs_flags:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 DiskTable
 	DD R0
 	LDD R0 ; Load the pointer to the drivers
@@ -208,12 +249,18 @@ vfs_flags:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> file pointer
 ; R0 <- error code (Nominal 0)
 #SHARE vfs_fclose
 vfs_fclose:
+	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
 	PSH R0
 	ADD R0 FileTable
 	DD R0
@@ -224,6 +271,7 @@ vfs_fclose:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> file pointer
@@ -234,6 +282,11 @@ vfs_fclose:
 #SHARE vfs_fwrite
 vfs_fwrite:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 FileTable
 	DD R0
 	LDD R0 ; Load the pointer to the functions
@@ -243,6 +296,7 @@ vfs_fwrite:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> file Pointer
@@ -253,6 +307,11 @@ vfs_fwrite:
 #SHARE vfs_fread
 vfs_fread:
 	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
+	PSH R0
 	ADD R0 FileTable
 	DD R0
 	LDD R0 ; Load the pointer to the functions
@@ -262,6 +321,7 @@ vfs_fread:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
 
 ; R0 -> file pointer
@@ -269,6 +329,11 @@ vfs_fread:
 ; R0 <- error code (Nominal 0)
 #SHARE vfs_fseek
 vfs_fseek:
+	PSH R0
+		AOR
+		ADO 0
+		ST R0 $PrevAO
+	POP R0
 	PSH R0
 	ADD R0 FileTable
 	DD R0
@@ -279,7 +344,10 @@ vfs_fseek:
 	DD R0
 	POP R0
 	CALD
+	ADO $PrevAO
 	RET
+
+PrevAO: .db 0
 
 #DEF DiskTableSize 4
 ; 1 byte pointers to each drivers table
