@@ -354,6 +354,14 @@ Instructions = {
     "AOR": {
         "Binary": "0b11111010",
         "Arguments": "None"
+    },
+    "CPSH": {
+        "Binary": "0b11111011",
+        "Arguments": "None"
+    },
+    "CPOP": {
+        "Binary": "0b11111100",
+        "Arguments": "None"
     }
 }
 Shorthand = {

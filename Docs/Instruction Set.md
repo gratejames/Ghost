@@ -102,3 +102,5 @@
 | 0b11111000   | 0xf8 | Disable Interrupts                                |                                     | IDIS |       | None              |        |
 | 0b11111001   | 0xf9 | Enable Interrupts                                 |                                     | IEN  |       | None              |        |
 | 0b11111010   | 0xfa | Copy the AO into R0                               |                                     | AOR  |       | None              |        |
+| 0b11111010   | 0xfb | Push the conditional to the stack                 |                                     | CPSH |       | None              |        |
+| 0b11111010   | 0xfc | Pop the conditional from the stack                |                                     | CPOP |       | None              |        |

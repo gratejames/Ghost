@@ -438,6 +438,10 @@ for i in range(0, 0x100):
 		content = "\t\tinteruptHandling = true;\n"
 	elif mne == "AOR":
 		content = f"\t\tR0 = offsetRegister;\n"
+	elif mne == "CPSH":
+		content = pushStack('jump')
+	elif mne == "CPOP":
+		content = f"\t\tjump = {popStack()};\n"
 	else:
 		print(mne)
 		raise NotImplementedError

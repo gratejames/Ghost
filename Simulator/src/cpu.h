@@ -48,7 +48,7 @@ private:
 	unsigned short PendingIOData[8] = {};
 	int PendingDataSize = 0;
 	bool interuptHandling = true;
-	const std::set <unsigned short> AllowedInterrupts {0x5e, 0x5f};
+	const std::set <unsigned short> AllowedInterrupts {0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f};
 
 	unsigned short getAtAddress(unsigned short address);
 	unsigned short getArgument();
