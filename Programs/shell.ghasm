@@ -2341,11 +2341,22 @@ PrintLineAtCursor:
 	RET
 
 RefreshDisplay:
-	ST CharMem $0xaf70
-	ST 0 $0xaf71				;; Set the X position to 0
-	ST 0 $0xaf72				;; Set the Y position to 0
-	ST Font $0xaf73				;; Set the font to the font address
-	INT 0x5e
+	LD R0 0
+	RefreshDisplay_loop:
+		STZ R1
+		AND R1 0x003f		; X Pos
+		STZ R2
+		SHR R2 6			; Y Pos
+		LD R3 Font
+		PSH R0
+		ADD R0 CharMem
+		DD R0
+		LDD R0
+		INT 0x5f
+		POP R0
+		INC R0
+		CNE R0 0x1000
+		JMPC RefreshDisplay_loop
 	RET
 
 Timer:				.db 0xffff
