@@ -4,6 +4,7 @@
 + [x] To and from R0 for better math
 + [ ] Text modes?
 + [x] ~~Simulate external video card?~~
+	+ [ ] Immitate N64 - interrupt on each scanline?
 + [x] Interrupts should probably queue...
 	+ [x] Nope! Also, get rid of Interupt data - read it in from IO bit of memory!
 + [ ] vfs
@@ -38,6 +39,10 @@
 + [x] AHH THE CAPITAL M IS TOO TALL
 + [x] Show registers on simulator's memory monitor
 + [ ] AN EDITOR
+	+ [ ] Format path from inside executable
+	+ [ ] Exiting causes executable to be unrunable, but only from script (sh s)
+	+ [ ] handle no argument
+		+ [ ] make interrupts for shell printing, so that the program can print it's own error messages
 + [ ] path variable
 	+ [ ] changable/extensible command table
 	+ [ ] loading into the command table from a given folder
