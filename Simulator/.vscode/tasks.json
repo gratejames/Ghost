@@ -3,7 +3,8 @@
         {
             "type": "shell",
             "label": "make",
-            "command": "make",
+//            "command": "make",
+            "command": "ninja",
             "args": [
                 ""
             ],
