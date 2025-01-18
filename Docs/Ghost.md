@@ -4,7 +4,7 @@
 + [x] To and from R0 for better math
 + [ ] Text modes?
 + [x] ~~Simulate external video card?~~
-	+ [ ] Immitate N64 - interrupt on each scanline?
+	+ [ ] Immitate N64 - interrupt on each scanline? Nah, would have to sync the render and logic threads
 + [x] Interrupts should probably queue...
 	+ [x] Nope! Also, get rid of Interupt data - read it in from IO bit of memory!
 + [ ] vfs
@@ -60,8 +60,8 @@
 + [x] Executables
 	+ [ ] How to pass arguments? Lists of strings + number of args, like c? String of args and and length of arguments like other cmds?
 	+ [x] Virtual Addressing
-		+ [ ] Oh gosh interrupts are broken now aren't they...
-			+ [ ] Set AO to zero on interrupts calls? Perhaps push it to the stack?
+		+ [x] Oh gosh interrupts are broken now aren't they...
+			+ [x] Set AO to zero on interrupts calls? Perhaps push it to the stack?
 				+ [x] Is there even a way to read the AO?
 		+ [x] Does this make a case for allowing user-settable interrups?
 			+ [x] With register args?
@@ -69,6 +69,8 @@
 				+ [ ] Screen clear
 				+ [ ] File ops
 				+ [ ] Malloc/free
+				+ [x] Fetch CWD
+				+ [x] Set Keyboard Interrupt
 	+ [x] Neither arguments nor interrupts can work unless I can read from the AO
 + [x] cd'ing into a file causes corruption?
 + [x] echo without argument causes stack problems
@@ -99,7 +101,7 @@
 	+ [ ] Debugger encounters condition where PC is mid-instruction
 		+ [ ] Is this even a problem?
 		+ [ ] Performance cost on debugger for fixing?
-+ [ ] An actual debugger UI instead of just keyboard shortcuts? A toolbar?
++ [x] An actual debugger UI instead of just keyboard shortcuts? A menubar?
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
 + ctr+shift+Up/down: Scroll debug window (1 pg)
@@ -107,6 +109,7 @@
 + ctr+shift+j: Jump debugger to PC
 + ctr+shift+p: Jump debugger to Stack
 + ctr+shift+e: Export romdump
++ ctr+shift+m: Menubar
 + ctr+shift+h: Break/unbreak
 + ctr+shift+space: Step
 # Glossary

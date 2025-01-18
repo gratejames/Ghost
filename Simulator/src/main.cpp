@@ -359,7 +359,6 @@ void menuBarMouseClick(SDL_Event event) {
     }
     
     if (SDL_PointInRect(&mousePoint, &boundingRect)) {
-      std::cout << f.getText() << std::endl;
       f.toggle();
     } else {
       f.close();
