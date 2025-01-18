@@ -5,10 +5,12 @@
 #include <atomic>
 #include <thread>
 #include <fstream>
+#include <vector>
 
 #include "cxxopts.hpp"
 #include "NFont/NFont.cpp"
 #include "cpu.cpp"
+#include "menuBar/menuBar.cpp"
 
 #include "fonts/embedded_font.cpp"
 
@@ -18,12 +20,12 @@
 
 bool init();
 void deinit();
-void createDebugger();
-void destroyDebugger();
 void createDebugText();
 void EventsFunc();
 void TickerFunc();
-unsigned char asciiFromKeycode(SDL_Keycode kc);
+unsigned char asciiFromKeycode(SDL_Keycode);
+void menuBarDraw();
+void doAction(std::string);
 
 std::thread Events;
 std::thread Ticker;
@@ -44,6 +46,16 @@ bool debuggingPanelActive = false;
 SDL_Window *dbgwindow = NULL;
 SDL_Renderer *dbgrenderer;
 
+bool menuBarShown = true;
+const int menuBarHeight = 30;
+const SDL_Rect menuBarRect = {0, 0, WINSIZE*scale, menuBarHeight};
+
+SDL_Cursor* standardCursor;
+SDL_Cursor* interactCursor;
+bool mouseInMenuBar = false;
+bool mouseInItem = false;
+
+
 enum DebuggerMode {
   DM_NORMAL,
   DM_JUMP_STACK,
@@ -52,6 +64,8 @@ enum DebuggerMode {
 };
 
 int debuggerMode = DM_NORMAL;
+
+std::vector<menuFolder> menuFolders;
 
 int main (int argc, char **argv) {
   cxxopts::Options options("Ghost Simulator SDL", "Simulator for the fantasy console GHOST");
@@ -115,7 +129,15 @@ int main (int argc, char **argv) {
 
     SDL_UnlockTexture(texture);
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+
+    SDL_Rect placement = {
+      0,
+      menuBarHeight*menuBarShown,
+      WINSIZE*scale,
+      WINSIZE*scale + menuBarHeight*menuBarShown
+    };
+    SDL_RenderCopy(renderer, texture, nullptr, &placement);
+    menuBarDraw();
     SDL_RenderPresent(renderer);
     
     if (debuggingPanelActive) {
@@ -130,12 +152,16 @@ int main (int argc, char **argv) {
 }
 
 void deinit() {
-  destroyDebugger();
+  SDL_FreeCursor(standardCursor);
+  SDL_FreeCursor(interactCursor);
 
   Events.join();
   Ticker.join();
 
   /* Frees memory */
+  SDL_DestroyRenderer(dbgrenderer);
+  SDL_DestroyWindow(dbgwindow);
+
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
@@ -150,11 +176,12 @@ bool init() {
     return false;
   }
 
+  // Create the main window
   window = SDL_CreateWindow("Ghost Simulator", /* Title of the SDL window */
 			    SDL_WINDOWPOS_CENTERED, /* Position x of the window */
 			    SDL_WINDOWPOS_CENTERED, /* Position y of the window */
 			    WINSIZE*scale, /* Width of the window in pixels */
-			    WINSIZE*scale, /* Height of the window in pixels */
+			    WINSIZE*scale + menuBarHeight*menuBarShown, /* Height of the window in pixels */
 			    0); /* Additional flag(s) */
 
   if (window == NULL) {
@@ -170,7 +197,7 @@ bool init() {
     return false;
   }
 
-  SDL_SetRenderDrawColor(renderer, 255, 0, 255, 1);
+  SDL_SetRenderDrawColor(renderer, 50, 50, 50, 1); // Menubar color
 
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, WINSIZE, WINSIZE);
 
@@ -180,7 +207,56 @@ bool init() {
     return false;
   }
 
-  createDebugger();
+  // Create the debugger window
+  dbgwindow = SDL_CreateWindow("Ghost Debugger", /* Title of the SDL window */
+        0, /* Position x of the window */
+        SDL_WINDOWPOS_CENTERED, /* Position y of the window */
+        1580, /* Width of the window in pixels */
+        26*66 + 20, /* Height of the window in pixels */
+        0); /* Additional flag(s) */
+  if (dbgwindow == NULL) {
+    std::cerr << "SDL window failed to initialise:" << SDL_GetError() << std::endl;
+    return false;
+  }
+  SDL_HideWindow(dbgwindow);
+  dbgrenderer = SDL_CreateRenderer(dbgwindow, -1, 0);
+  if (dbgrenderer == NULL) {
+    std::cerr << "SDL renderer failed to initialize:" << SDL_GetError() << std::endl;
+    return false;
+  }
+  createDebugText();
+
+  // Build the menubar structure
+  standardCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
+  interactCursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND);
+
+  menuFolder GUI = menuFolder("File");
+  GUI.addItem(menuItem("Toggle Menubar", "Ctrl+Shift+m"));
+  GUI.addItem(menuItem("Dump ROM", "Ctrl+Shift+e"));
+  GUI.addItem(menuItem("Exit", "Ctrl+Shift+q"));
+  menuFolders.push_back(GUI);
+
+  menuFolder DBG = menuFolder("Debugger");
+  DBG.addItem(menuItem("Toggle Debugger", "Ctrl+Shift+d"));
+  DBG.addItem(menuItem("Step", "Ctrl+Shift+space"));
+  DBG.addItem(menuItem("Break", "Ctrl+Shift+h"));
+  menuFolders.push_back(DBG);
+
+  menuFolder VIEW = menuFolder("View");
+  VIEW.addItem(menuItem("Scroll Up", "Ctrl+Shift+up"));
+  VIEW.addItem(menuItem("Scroll Down", "Ctrl+Shift+down"));
+  VIEW.addItem(menuItem("Page Up", "Ctrl+Shift+pgup"));
+  VIEW.addItem(menuItem("Page Down", "Ctrl+Shift+pgdn"));
+  VIEW.addItem(menuItem("Jump to PC", "Ctrl+Shift+j"));
+  VIEW.addItem(menuItem("Jump to SP", "Ctrl+Shift+p"));
+  VIEW.addItem(menuItem("Follow PC", "Ctrl+Shift+f"));
+  menuFolders.push_back(VIEW);
+
+  int x = 14*2;
+  for(menuFolder& f : menuFolders) {
+    f.setPosition(x, 2);
+    x += f.getBoundingRect().w + 14*4;
+  }
 
   std::cout << "Engine Initialized" << std:: endl;
 
@@ -191,6 +267,165 @@ bool init() {
 
 unsigned short getDebugPageOf(unsigned short addr) {
   return addr / (1024);
+}
+
+void menuBarDraw() {
+  if (!menuBarShown) {
+    return;
+  }
+  SDL_RenderFillRect(renderer, &menuBarRect);
+  SDL_RWops* rwops = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
+  NFont font(renderer, rwops, 0, 13, NFont::Color{255, 255, 255});
+  SDL_RWops* rwops2 = SDL_RWFromMem(cherry_13_r_bdf, sizeof(cherry_13_r_bdf));
+  NFont font2nd(renderer, rwops2, 0, 13, NFont::Color{200, 200, 200});
+  for(menuFolder& f : menuFolders) {
+    const char* itemText = f.getText().c_str();
+    SDL_Rect bound = f.getBoundingRect();
+    SDL_Rect boundChildren = f.getBoundingItems();
+    if (f.isOpen()) {
+      SDL_RenderFillRect(renderer, &boundChildren);
+      for (menuItem& i : *f.getItems()) {
+        SDL_Rect bound_i = i.getBoundingRect();
+        bound_i.w = boundChildren.w;
+        if (mouseInItem && i.isHover()) {
+          SDL_SetRenderDrawColor(renderer, 100, 100, 100, 1);
+          SDL_RenderFillRect(renderer, &bound_i);
+          SDL_SetRenderDrawColor(renderer, 50, 50, 50, 1);
+        }
+        font.draw(renderer, bound_i.x+4, bound_i.y, NFont::Scale(2.0f), i.getText().c_str());
+        std::string kt = i.getKeyText();
+        int xpos = bound_i.x + bound_i.w - kt.size() * 14 - 4;
+        font2nd.draw(renderer, xpos, bound_i.y, NFont::Scale(2.0f), kt.c_str());
+      }
+    }
+    font.draw(renderer, bound.x+4, bound.y, NFont::Scale(2.0f), itemText);
+  }
+}
+
+void menuBarMouseMove(SDL_Event event) {
+  if (!menuBarShown) {
+    return;
+  }
+
+  bool newMouseInMenuBar = false;
+  mouseInItem = false;
+  SDL_Point mousePoint = {event.motion.x, event.motion.y};
+  for(menuFolder& f : menuFolders) {
+    SDL_Rect boundingRect = f.getBoundingRect();
+    if (SDL_PointInRect(&mousePoint, &boundingRect)) {
+      newMouseInMenuBar = true;
+      break;
+    }
+    SDL_Rect boundingItems = f.getBoundingItems();
+    if (f.isOpen() && SDL_PointInRect(&mousePoint, &boundingItems)) {
+      newMouseInMenuBar = true;
+      for (menuItem& i : *f.getItems()) {
+        SDL_Rect bound = i.getBoundingRect();
+        bound.w = boundingItems.w;
+        i.setHover(SDL_PointInRect(&mousePoint, &bound));
+        mouseInItem = true;
+      }
+      break;
+    }
+  }
+  
+  if (newMouseInMenuBar && !mouseInMenuBar) {
+    SDL_SetCursor(interactCursor);
+    mouseInMenuBar = true;
+  } else if (!newMouseInMenuBar && mouseInMenuBar) {
+    SDL_SetCursor(standardCursor);
+    mouseInMenuBar = false;
+  }
+}
+
+void menuBarMouseClick(SDL_Event event) {
+  if (!menuBarShown || !mouseInMenuBar) {
+    return;
+  }
+
+  SDL_Point mousePoint = {event.motion.x, event.motion.y};
+  for(menuFolder& f : menuFolders) {
+    SDL_Rect boundingRect = f.getBoundingRect();
+    SDL_Rect boundingItems = f.getBoundingItems();
+
+    if (f.isOpen() && SDL_PointInRect(&mousePoint, &boundingItems)) {
+      for (menuItem& i : *f.getItems()) {
+        SDL_Rect bound = i.getBoundingRect();
+        bound.w = boundingItems.w;
+        if (SDL_PointInRect(&mousePoint, &bound)) {
+          doAction(i.getText());
+        }
+      }
+    }
+    
+    if (SDL_PointInRect(&mousePoint, &boundingRect)) {
+      std::cout << f.getText() << std::endl;
+      f.toggle();
+    } else {
+      f.close();
+    }
+  }
+}
+
+void doAction(std::string instructionName) {
+  if (instructionName == "Exit") {
+    processor->verbose = false;
+    std::cout << "Engine Closing" << std::endl;
+    processor->closed = true;
+  } else if (instructionName == "Dump ROM") {
+    processor->ROMdump();
+  } else if (instructionName == "Toggle Menubar") {
+    menuBarShown = !menuBarShown;
+    SDL_SetWindowSize(window, WINSIZE*scale, WINSIZE*scale + menuBarHeight*menuBarShown);
+  } else if (instructionName == "Toggle Debugger") {
+    if (debuggingPanelActive)
+      SDL_HideWindow(dbgwindow);
+    else
+      SDL_ShowWindow(dbgwindow);
+    debuggingPanelActive = !debuggingPanelActive;
+  } else if (instructionName == "Break") {
+    processor->broken = !processor->broken;
+    std::cout << "Debugger break" << std::endl;
+  } else if (instructionName == "Step") {
+    if (processor->broken) {
+      std::cout << "Debugger step" << std::endl;
+      processor->tick();
+    } else {
+      std::cout << "Couldn't step - still running" << std::endl;
+    }
+  } else if (instructionName == "Scroll Up") {
+    if (debuggerPage > 0)
+      debuggerPage--;
+    debuggerMode = DM_NORMAL;
+  } else if (instructionName == "Scroll Down") {
+    if (debuggerPage < 63)
+      debuggerPage++;
+    debuggerMode = DM_NORMAL;
+  } else if (instructionName == "Page Down") {
+    if (debuggerPage < 63-7)
+      debuggerPage += 8;
+    else
+      debuggerPage = 63;
+    debuggerMode = DM_NORMAL;
+  } else if (instructionName == "Page Up") {
+    if (debuggerPage > 0+7)
+      debuggerPage -= 8;
+    else
+      debuggerPage = 0;
+    debuggerMode = DM_NORMAL;
+  } else if (instructionName == "Jump to PC") {
+    debuggerMode = DM_JUMP_PC;
+  } else if (instructionName == "Jump to SP") {
+    debuggerMode = DM_JUMP_STACK;
+  } else if (instructionName == "Follow PC") {
+    if (debuggerMode == DM_FOLLOW_PC) {
+      debuggerMode = DM_NORMAL;
+    } else {
+      debuggerMode = DM_FOLLOW_PC;
+    }
+  } else {
+    std::cout << "Internal error, unknown action " << instructionName << std::endl;
+  }
 }
 
 void createDebugText() {
@@ -278,28 +513,6 @@ void createDebugText() {
   }
 }
 
-void destroyDebugger() {
-  SDL_DestroyRenderer(dbgrenderer);
-  SDL_DestroyWindow(dbgwindow);
-}
-void createDebugger() {
-    dbgwindow = SDL_CreateWindow("Ghost Debugger", /* Title of the SDL window */
-			    0, /* Position x of the window */
-			    SDL_WINDOWPOS_CENTERED, /* Position y of the window */
-			    1580, /* Width of the window in pixels */
-			    26*66 + 20, /* Height of the window in pixels */
-			    0); /* Additional flag(s) */
-  if (dbgwindow == NULL) {
-    std::cerr << "SDL window failed to initialise:" << SDL_GetError() << std::endl;
-  }
-  SDL_HideWindow(dbgwindow);
-  dbgrenderer = SDL_CreateRenderer(dbgwindow, -1, 0);
-  if (dbgrenderer == NULL) {
-    std::cerr << "SDL renderer failed to initialize:" << SDL_GetError() << std::endl;
-  }
-  createDebugText();
-}
-
 void TickerFunc () {
   while (!processor->closed) {
     if (!processor->broken)
@@ -309,85 +522,86 @@ void TickerFunc () {
 
 void EventsFunc() {
   while (!processor->closed) {
-    if(SDL_PollEvent(&event)) {
-      switch (event.type) {
-        case SDL_QUIT:
+    if(!SDL_PollEvent(&event)) {
+      continue;
+    }
+    switch (event.type) {
+      case SDL_QUIT:
+        processor->verbose = false;
+        std::cout << "Engine Closing" << std::endl;
+        processor->closed = true;
+        break;
+      case SDL_WINDOWEVENT:
+        if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
           processor->verbose = false;
           std::cout << "Engine Closing" << std::endl;
           processor->closed = true;
+        }
+        break;
+      case SDL_KEYDOWN:
+        if (event.key.repeat!=0)
           break;
-        case SDL_WINDOWEVENT:
-          if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
-            processor->verbose = false;
-            std::cout << "Engine Closing" << std::endl;
-            processor->closed = true;
-          }
+        // If there's ctrl and shift, then it's a simulator keybind
+        if (!(event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT)) {
+          processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 1);
           break;
-        case SDL_KEYDOWN:
-          if (event.key.repeat!=0)
+        }
+        switch (event.key.keysym.sym) {
+          case SDLK_d:
+            doAction("Toggle Debugger");
             break;
-          if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_d) {
-            if (debuggingPanelActive) {
-              SDL_HideWindow(dbgwindow);
-              debuggingPanelActive = false;
-            } else {
-              SDL_ShowWindow(dbgwindow);
-              debuggingPanelActive = true;
-            }
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_e) {
-            processor->ROMdump();
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_h) {
-            processor->broken = !processor->broken;
-            std::cout << "Debugger break" << std::endl;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_SPACE) {
-              if (processor->broken) {
-                std::cout << "Debugger step" << std::endl;
-                processor->tick();
-              } else {
-                std::cout << "Couldn't step - still running" << std::endl;
-              }
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_UP) {
-              if (debuggerPage > 0) {
-                debuggerPage--;
-              }
-              debuggerMode = DM_NORMAL;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_DOWN) {
-              if (debuggerPage < 63) {
-                debuggerPage++;
-              }
-              debuggerMode = DM_NORMAL;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_PAGEUP) {
-              if (debuggerPage > 0+7) {
-                debuggerPage-=8;
-              }
-              debuggerMode = DM_NORMAL;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_PAGEDOWN) {
-              if (debuggerPage < 63-7) {
-                debuggerPage+=8;
-              }
-              debuggerMode = DM_NORMAL;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_j) {
-              debuggerMode = DM_JUMP_PC;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_p) {
-              debuggerMode = DM_JUMP_STACK;
-          } else if (event.key.keysym.mod & KMOD_CTRL && event.key.keysym.mod & KMOD_SHIFT && event.key.keysym.sym == SDLK_f) {
-              if (debuggerMode == DM_FOLLOW_PC) {
-                debuggerMode = DM_NORMAL;
-              } else {
-                debuggerMode = DM_FOLLOW_PC;
-              }
-          } else {
-            processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 1);
-          }
-          break;
-        case SDL_KEYUP:
-          if (event.key.repeat!=0)
+          case SDLK_q:
+            doAction("Exit");
             break;
-          processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 0);
+          case SDLK_e:
+            doAction("Dump ROM");
+            break;
+          case SDLK_h:
+            doAction("Break");
+            break;
+          case SDLK_SPACE:
+            doAction("Step");
+            break;
+          case SDLK_UP:
+            doAction("Scroll Up");
+            break;
+          case SDLK_DOWN:
+            doAction("Scroll Down");
+            break;
+          case SDLK_PAGEUP:
+            doAction("Page Up");
+            break;
+          case SDLK_PAGEDOWN:
+            doAction("Page Down");
+            break;
+          case SDLK_j:
+            doAction("Jump to PC");
+            break;
+          case SDLK_p:
+            doAction("Jump to SP");
+            break;
+          case SDLK_f:
+            doAction("Follow PC");
+            break;
+          case SDLK_m:
+            doAction("Toggle Menubar");
+            break;
+        }
+        break;
+      case SDL_KEYUP:
+        if (event.key.repeat!=0)
           break;
-        default:
-          break;
-      }
+        processor->keyStateChange(asciiFromKeycode(event.key.keysym.sym), 0);
+        break;
+      case SDL_MOUSEMOTION:
+        menuBarMouseMove(event);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if (event.button.button == SDL_BUTTON_LEFT)
+          menuBarMouseClick(event);
+        break;
+      default:
+        break;
     }
   }
 }
