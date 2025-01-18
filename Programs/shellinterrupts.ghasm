@@ -24,8 +24,8 @@ updateInterrupt:
 	ADD R1 $PrevAO
 
 	ADD R0 0xaf00
-	DBG R0
-	DBG R1
+	; DBG R0
+	; DBG R1
 	DD R0
 	STD R1
 	

@@ -310,12 +310,18 @@ ExecuteFile:
 	STZ R3
 	; R1 is adjusted for AO
 
+	PSH R1
 	ADO R1
 	CALL 0
 	ADO 0
+	POP R1
 	ST KeyboardInterrupt $0xaf00
 	ST 3 $0xafef					;; Display mode
 	CALL RefreshDisplay
+
+	ExecuteFile_error_dofree:
+	LDZ R1
+	CALL free
 
 	ExecuteFile_error_dofclose:
 	POP R0
@@ -331,9 +337,8 @@ ExecuteFile:
 	ExecuteFile_error_malloc:
 		LD R1 STR_SHELL_ERROR_MALLOC
 		CALL PrintStringAtCursor
-		POP R0
 		POP R3
-		RET
+		JMP ExecuteFile_error_dofclose
 	ExecuteFile_error_stat:
 		LD R1 STR_VFS_ERROR_STAT
 		CALL PrintErrorMessage
@@ -417,10 +422,15 @@ ScriptFile:
 	CALL runScript
 	POP
 
+
+	ScriptFile_error_dofree:
+	LDZ R1
+	CALL free
+
 	ScriptFile_error_dofclose:
 	POP R0
-	; ; R0 -> file pointer
-	; ; R0 <- error code (Nominal 0)
+	; R0 -> file pointer
+	; R0 <- error code (Nominal 0)
 	CALL vfs_fclose
 	CNZ R0
 	JMPC ScriptFile_error_fclose
@@ -445,7 +455,7 @@ ScriptFile:
 	ScriptFile_error_fread:
 		LD R1 STR_VFS_ERROR_FREAD
 		CALL PrintErrorMessage
-		JMP ScriptFile_error_dofclose
+		JMP ScriptFile_error_dofree
 	ScriptFile_error_fclose:
 		LD R1 STR_VFS_ERROR_FCLOSE
 		CALL PrintErrorMessage
@@ -2376,6 +2386,7 @@ PrintLineAtCursor:
 	RET
 
 RefreshDisplay:
+	PSH
 	LD R0 0
 	RefreshDisplay_loop:
 		STZ R1
@@ -2387,12 +2398,18 @@ RefreshDisplay:
 		ADD R0 CharMem
 		DD R0
 		LDD R0
+		CEZ R0
+		CALLC RefreshDisplay_blank
 		INT 0x5f
 		POP R0
 		INC R0
 		CNE R0 0x1000
 		JMPC RefreshDisplay_loop
+	POP
 	RET
+	RefreshDisplay_blank:
+		LD R0 ' '
+		RET
 
 ; Table Format: string0ptr0...string0ptr00
 shellExec_Table:

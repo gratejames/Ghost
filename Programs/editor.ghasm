@@ -20,21 +20,20 @@ loop:
 	JMPC loop
 
 DBGC '~'
-
+DBGC 0xa
 RET
 
 KeyboardInterrupt:
 IDIS
 PSH
 CPSH
-DBGC 'c'
 PSH R0
 AOR
 ADO 0
 ST R0 $PrevAO
 POP R0
-	DBGC $0xafd1
-	DBG $0xafd0
+	; DBGC $0xafd1
+	; DBG $0xafd0
 	LD R0 $0xafd1
 ADO $PrevAO
 	CE R0 'q'
@@ -44,7 +43,6 @@ POP
 IEN
 RET
 KI_q:
-	DBGC 'Q'
 	ST 1 $isDone
 	RET
 

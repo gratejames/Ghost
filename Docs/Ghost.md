@@ -102,6 +102,7 @@
 		+ [ ] Is this even a problem?
 		+ [ ] Performance cost on debugger for fixing?
 + [x] An actual debugger UI instead of just keyboard shortcuts? A menubar?
++ [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
 + ctr+shift+Up/down: Scroll debug window (1 pg)
