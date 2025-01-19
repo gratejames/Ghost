@@ -1,3 +1,4 @@
+#DEF int_pathFMT 0x5b
 #DEF int_updateInterrupt 0x5c
 #DEF int_string 0x5e
 #DEF int_char 0x5f
@@ -5,8 +6,8 @@
 DBGC '~'
 
 ST R3 $argumentptr
-CALL findStringLength
-
+CALL setupFile
+CALL loadFile
 CALL DrawHeaderBar
 
 LD R0 0x00
@@ -14,8 +15,6 @@ LD R1 KeyboardInterrupt
 INT int_updateInterrupt
 
 loop:
-	; CALL blinkCursor
-	; CALL delay
 	CEZ $isDone
 	JMPC loop
 
@@ -48,15 +47,26 @@ KI_q:
 
 PrevAO: .db 0
 
-findStringLength:
+loadFile:
+	RET ; TODO!
+
+setupFile:
+	ST R1 $argumentptr
+	INT int_pathFMT
+	ST R1 $pathName
+	ST R2 $fileName
+	CALL findNameLength
+	RET
+
+findNameLength:
 	DD R3
 	LDD R1
 	CNZ R1
 	INC R3
-	JMPC findStringLength
+	JMPC findNameLength
 	DEC R3
-	SUB R3 $argumentptr
-	ST R3 $argumentlen
+	SUB R3 $pathName
+	ST R3 $pathNameLength
 	RET
 
 DrawHeaderBar:
@@ -66,7 +76,7 @@ DrawHeaderBar:
 	LD R3 FontI
 	INT int_string
 
-	LD R0 $argumentptr
+	LD R0 $pathName
 	LD R1 10
 	LD R2 0
 	LD R3 FontI
@@ -74,7 +84,7 @@ DrawHeaderBar:
 
 
 	LD R1 10
-	ADD R1 $argumentlen
+	ADD R1 $pathNameLength
 	DrawHeaderBar_fill:
 		LD R0 ' '
 		LD R2 0
@@ -88,8 +98,12 @@ DrawHeaderBar:
 TitlePrefix: .ds " Editing: "
 .db 0
 argumentptr: .db 0
-argumentlen: .db 0
 isDone: .db 0
+fileName: .db 0 ; ptr
+pathName: .db 0 ; ptr
+pathNameLength: .db 0
+; pagePointer: .db 0 ; Pointer to the first character of the page
+; cursor: .db 0
 
 Font:
 #INC ./fontGen/font.hex

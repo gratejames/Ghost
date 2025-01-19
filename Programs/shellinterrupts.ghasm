@@ -32,4 +32,24 @@ updateInterrupt:
 	ADO $PrevAO
 	RET
 
+; R1 -> String pointer
+; R2 -> Trailing slash enable: 0 for file 1 for patb
+#SHARE formatPathString
+formatPathString:
+	PSH R0
+	AOR
+	ADO 0
+	ST R0 $PrevAO
+	POP R0
+
+	; Do Stuff
+	CALL MakeAbsolute
+	CALL SplitPath
+	CE R2 0xffff
+	JMPC formatPathString_ErrorNoAdd
+	ADD R2 $PrevAO
+	formatPathString_ErrorNoAdd:
+	ADO $PrevAO
+	RET
+
 PrevAO: .db 0

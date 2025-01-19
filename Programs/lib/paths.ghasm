@@ -1,0 +1,310 @@
+#SHARE trimString
+trimString:
+	SUB R0 2
+	trimString_starttrim:
+	; trim string beginning
+	DD R1
+	LDD R2
+	CNE R2 ' '
+	JMPC trimString_endtrim
+	STD 0
+	INC R1
+	DEC R0
+	JMP trimString_starttrim
+
+	trimString_endtrim:
+	ADD R1 ; R0 + R1 should be the end of the string
+	trimString_endtrim_loop:
+	;trim string end
+	DD R0
+	LDD R2
+	CNE R2 ' '
+	JMPC trimString_endtrim_done
+	STD 0
+	DEC R0
+	JMP trimString_endtrim_loop
+
+	trimString_endtrim_done:
+	RET
+
+; R2 -> character to check
+; Conditional will be true if char is forbidden, else false
+#SHARE checkForbiddenCharacter
+checkForbiddenCharacter:
+	PSH R2
+	PSH R0
+	LD R0 ForbiddenChars
+	DD R0
+	checkForbiddenCharacter_loop:
+		LDD R0
+		CEZ R0
+		JMPC checkForbiddenCharacter_notFound
+		XOR R2
+		CNZ R0
+		INCD
+		JMPC checkForbiddenCharacter_loop
+
+	; checkForbiddenCharacter_found
+	LD R0 0
+	CEZ R0
+	POP R0
+	POP R2
+	RET
+	checkForbiddenCharacter_notFound:
+	LD R0 0
+	CNZ R0
+	POP R0
+	POP R2
+	RET
+
+
+	ForbiddenChars:
+		.ds "+-/\~!@#$%^&* "
+		.db 0
+
+; R1 -> Pointer to the absolute string
+; R1 <- Pointer to path excluding name
+; R2 <- Pointer to 12 character directory name
+#SHARE SplitDirectory
+SplitDirectory:
+	LD R2 1
+	CALL SplitPath
+	RET
+
+; R1 -> Pointer to the absolute string
+; R1 <- Pointer to path excluding name
+; R2 <- Pointer to 12 character file name
+#SHARE SplitDir
+SplitDir:
+	LD R2 0
+	CALL SplitPath
+	RET
+
+#SHARE SplitPath
+SplitPath:
+	PSH R1
+
+	ST R2 $enableTrailingSlash_Split
+
+	SplitPath_FindEnd:
+		DD R1
+		INC R1
+		LDD R0
+		CNZ R0
+		JMPC SplitPath_FindEnd
+
+	DEC R1
+	CEZ $enableTrailingSlash_Split
+	JMPC dontsubone
+	DEC R1
+	dontsubone:
+
+	DD R1
+	LDD R0
+	STD 0
+
+	; R1 now has pointer to end of string
+	SplitPath_FindLastSlash:
+		DEC R1
+		DD R1
+		LDD R0
+		CNE R0 '/'
+		JMPC SplitPath_FindLastSlash
+
+	INC R1
+	PSH R1
+
+	; R1 pointer right after last slash, to folder name in place
+	; Stack has pointer to path
+	CALL fileNamePrep
+	CE R1 0xffff
+	JMPC SplitPath_forbiddenChar
+
+	; Now that we have the new folder name out of the way,
+	; Write a zero after the middle slash
+	; And use that for the path
+
+	POP R2
+	DD R2
+	LDD R0
+	STD 0
+
+
+	PSH R1
+	POP R2
+	POP R1
+	RET
+	SplitPath_forbiddenChar:
+	LD R2 0xffff
+	POP R1
+	POP R1
+	RET
+
+	enableTrailingSlash_Split: .db 0
+
+; R1 -> pointer to zero terminated path string.
+#SHARE MakeAbsoluteDir
+MakeAbsoluteDir:
+	LD R2 1
+	CALL MakeAbsolute
+	RET
+
+; R1 -> pointer to zero terminated path string.
+#SHARE MakeAbsoluteFile
+MakeAbsoluteFile:
+	LD R2 0
+	CALL MakeAbsolute
+	RET
+
+#SHARE MakeAbsolute
+MakeAbsolute:
+	PSH R0
+	ST R2 $enableTrailingSlash_abs
+	PSH R3
+	
+	DD R1
+	LDD R0
+	CE R0 '/'
+	JMPC MakeAbsolute_Almost_Done
+	; R1 has pointer to relative string
+	; Steps: Copy current into absolute, then copy relative onto absolute, then enforce no trailing slash
+	LD R2 currentDirectory
+	LD R3 absoluteDirectory
+	MakeAbsolute_CopyLoop1:
+		DD R2
+		LDD R0
+		DD R3
+		STD R0
+		INC R2
+		INC R3
+		CNZ R0
+		JMPC MakeAbsolute_CopyLoop1
+	DEC R3
+	; Now to copy the relative onto the absolute!
+	MakeAbsolute_CopyLoop2:
+		DD R1
+		LDD R0
+		DD R3
+		STD R0
+		INC R1
+		INC R3
+		CNZ R0
+		JMPC MakeAbsolute_CopyLoop2
+	; Enforce trailing slash
+	DEC R3
+
+	DEC R3
+	DD R3
+	LDD R0
+	CE R0 '/' ; Check if it has a trailing slash
+	JMPC MakeAbsolute_HasTrailingSlash
+	; Does Not have trailing slash!
+	CEZ $enableTrailingSlash_abs ; And shouldn't!
+	JMPC MakeAbsolute_Done
+	; No trailing slash, need to add one:
+	INC R3
+	DD R3
+	STD '/'
+	INC R3
+	DD R3
+	STD 0
+	JMP MakeAbsolute_Done
+
+	MakeAbsolute_HasTrailingSlash:
+	; Has trailing slash!
+	CNZ $enableTrailingSlash_abs ; And should!
+	JMPC MakeAbsolute_Done
+	; Trailing slash, need to remove it:
+	STD 0
+	JMP MakeAbsolute_Done
+
+	MakeAbsolute_Done:
+	LD R1 absoluteDirectory
+	POP R3
+	POP R0
+	RET
+
+	MakeAbsolute_Almost_Done:
+	LD R2 absoluteDirectory
+	MakeAbsolute_Almost_Done_Loop:
+		DD R1
+		LDD R0
+		DD R2
+		STD R0
+		INC R1
+		INC R2
+		CNZ R0
+		JMPC MakeAbsolute_Almost_Done_Loop
+	SUB R2 2
+	DD R2
+	LDD R0
+	CE R0 '/'
+	JMPC MakeAbsolute_HasTrailingSlash_2
+	; Does Not have trailing slash!
+	CEZ $enableTrailingSlash_abs ; And shouldn't!
+	JMPC MakeAbsolute_Done
+	INC R2
+	DD R2
+	STD '/'
+	INCD
+	STD 0
+	JMP MakeAbsolute_Done ; Now we've got a trailing slash!
+
+	MakeAbsolute_HasTrailingSlash_2:
+	; Has trailing slash!
+	CNZ $enableTrailingSlash_abs ; And should!
+	JMPC MakeAbsolute_Done
+	; Trailing slash, need to remove it:
+	STD 0
+	JMP MakeAbsolute_Done ; Now we've removed the trailing slash!
+
+	enableTrailingSlash_abs: .db 0
+
+; R1 -> ptr to 0 terminated string
+; R1 <- ptr to 12 byte string
+fileNamePrep:
+	PSH R0
+	PSH R2
+	PSH R3
+	LD R0 nameString
+	LD R3 12
+	; R0 has ptr to new buffer
+	; R1 has point to old string
+	fileNamePrep_copyloop:
+		DD R1
+		LDD R2
+		; We should check for forbidden characters
+		CALL checkForbiddenCharacter
+		JMPC fileNamePrep_forbidden
+
+		DD R0
+		STD R2 ; Copy from one buffer to the other
+		INC R0
+		INC R1
+		DEC R3
+		CEZ R3
+		JMPC fileNamePrep_outofroom
+		CNZ R2
+		JMPC fileNamePrep_copyloop
+	; Now we've hit a zero, fill in the rest with zeroes
+	fileNamePrep_clearloop:
+		DD R0
+		STD 0 ; Copy from one buffer to the other
+		INC R0
+		DEC R3
+		CNZ R3
+		JMPC fileNamePrep_clearloop
+
+	fileNamePrep_outofroom:
+	LD R1 nameString
+	POP R3
+	POP R2
+	POP R0
+	RET
+	fileNamePrep_forbidden:
+	LD R1 0xffff
+	POP R3
+	POP R2
+	POP R0
+	RET
+	nameString: .dz 12

@@ -53,7 +53,7 @@
 + [x] Memory access
 	+ [x] peek
 	+ [x] poke
-+ [ ] Combine path and directory functions
++ [x] Combine path and directory functions
 + [ ] Handle whitespace better in commands
 	+ [x] string trim routine - incrememnt pointer and write zeroes over whitespace
 	+ [ ] Do similar in flags command

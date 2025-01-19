@@ -5,6 +5,7 @@ JMP PROG_START
 #INC ./lib/ramdisk.ghasm
 #INC ./lib/stringPrint.ghasm
 #INC ./lib/charPrint.ghasm
+
 Timer:				.db 0xffff
 Cursor: 			.db 0x0000 ; (ypos, xpos)
 LastCursor:			.db 0x0000 ; ^
@@ -21,6 +22,7 @@ absoluteDirectory:
 .ds "/"
 .dz (12+1)*8 +1
 
+#INC ./lib/paths.ghasm
 #INC ./shellinterrupts.ghasm
 #INC ./shellstrings.ghasm
 Font:
@@ -35,6 +37,7 @@ startup:
 
 	; Register file-ops interrupts
 
+	; ST printString $
 	; ST free $0xaf4e
 	; ST malloc $0xaf4f
 	ST vfs_mkdir $0xaf50
@@ -48,7 +51,7 @@ startup:
 	ST vfs_fwrite $0xaf58
 	ST vfs_fread $0xaf59
 	ST vfs_fseek $0xaf5a
-	; ST printString $0xaf5b
+	ST formatPathString $0xaf5b
 	ST updateInterrupt $0xaf5c
 	ST shellCWD $0xaf5d
 
@@ -709,11 +712,11 @@ CMD_LS:
 	LD R1 currentDirectory
 	CMD_LS_ARG:
 	CALL trimString
-	CALL MakeAbsoluteDir
-	CALL SplitDirectory
+	LD R2 1
+	INT 0x5b
 	CE R2 0xffff
 	JMPC CMD_LS_badpath
-	PSH R2
+	; PSH R2
 	CALL CHECK_DISK_ACTIVE
 	LD R0 $currentDisk ; Disk
 	CALL vfs_list
@@ -759,8 +762,6 @@ CMD_LS:
 	POP R1
 	POP R0
 	CALL free
-	POP R0
-	CALL free
 	RET
 
 	PRINT_CMD_LS_ERROR:
@@ -787,15 +788,9 @@ CMD_MKDIR:
 	CE R2 0xffff
 	JMPC CMD_MKDIR_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
-
-	; PSH
-	; CALL PrintLineAtCursor
-	; POP
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
-	; Stack has pointer to file name to free it
 
 	LD R0 $currentDisk ; Disk
 	; LD R1 currentDirectory ; Ptr to path
@@ -803,9 +798,6 @@ CMD_MKDIR:
 	CALL vfs_mkdir
 	CNZ R0
 	CALLC PRINT_CMD_MKDIR_ERROR
-
-	POP R0
-	CALL free
 	RET
 
 	CMD_MKDIR_NOARG:
@@ -837,11 +829,6 @@ CMD_RMDIR:
 	CE R2 0xffff
 	JMPC CMD_RMDIR_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
-
-	; PSH
-	; CALL PrintLineAtCursor
-	; POP
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -853,9 +840,6 @@ CMD_RMDIR:
 	CALL vfs_rmdir
 	CNZ R0
 	CALLC PRINT_CMD_RMDIR_ERROR
-
-	POP R0
-	CALL free
 	RET
 
 	CMD_RMDIR_NOARG:
@@ -906,11 +890,10 @@ CMD_TOUCH:
 	; Need to convert to an 12 char padded string
 	;
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_TOUCH_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -919,15 +902,13 @@ CMD_TOUCH:
 	LD R0 $currentDisk ; Disk
 	; LD R1 currentDirectory ; Ptr to path
 	; R2 is pointer to file name
+	LD R3 1
 	CALL vfs_fopen
 	CNZ R0
 	JMPC PRINT_CMD_TOUCH_ERROR
 
 	LDZ R1
 	CALL vfs_fclose
-
-	POP R0
-	CALL free
 	RET
 
 	CMD_TOUCH_NOARG:
@@ -945,7 +926,6 @@ CMD_TOUCH:
 		; R1 has the error message table
 		CALL PrintErrorMessage
 		POP R1
-		POP R2
 		RET
 
 CMD_RM:
@@ -955,13 +935,11 @@ CMD_RM:
 	CALL trimString
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
-	;
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_RM_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -973,9 +951,6 @@ CMD_RM:
 	CALL vfs_rm
 	CNZ R0
 	JMPC PRINT_CMD_RM_ERROR
-
-	POP R0
-	CALL free
 	RET
 
 	CMD_RM_NOARG:
@@ -1004,11 +979,10 @@ CMD_CAT:
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_CAT_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -1055,8 +1029,6 @@ CMD_CAT:
 
 	CALL CursorNewline
 
-	POP R0
-	CALL free
 	RET
 
 	CMD_CAT_buffer: .dz 65
@@ -1076,7 +1048,6 @@ CMD_CAT:
 		; R1 has the error message table
 		CALL PrintErrorMessage
 		POP R1
-		POP R2
 		RET
 
 	PRINT_CMD_CAT_ERROR_fopen:
@@ -1097,11 +1068,10 @@ CMD_STAT:
 	; R1 has pointer to 0 terminated string
 	; Need to convert to an 12 char padded string
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_STAT_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -1160,9 +1130,6 @@ CMD_STAT:
 
 	POP R0
 	CALL free ; free the stat struct
-
-	POP R0
-	CALL free ; free the file name
 	RET
 
 	CMD_STAT_NOARG:
@@ -1180,7 +1147,6 @@ CMD_STAT:
 		; R1 has the error message table
 		CALL PrintErrorMessage
 		POP R1
-		POP R2
 		RET
 
 CMD_TESTFILE:
@@ -1373,7 +1339,7 @@ CMD_SH:
 	; Need to convert to an 12 char padded string
 	;
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_SH_badpath
 	CALL CHECK_DISK_ACTIVE
@@ -1427,11 +1393,10 @@ CMD_RUN:
 	CMD_RUN_spaceLoop_exit:
 	CALL trimString ; TODO: not working right
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_RUN_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -1442,9 +1407,6 @@ CMD_RUN:
 	; R2 is pointer to file name
 
 	CALL ExecuteFile
-
-	POP R0
-	CALL free
 	RET
 
 	CMD_RUN_NOARG:
@@ -1537,11 +1499,10 @@ CMD_FLAGS:
 	POP R1
 
 	CALL MakeAbsoluteFile
-	CALL SplitPath
+	CALL SplitDir
 	CE R2 0xffff
 	JMPC CMD_FLAGS_badpath
 	CALL CHECK_DISK_ACTIVE
-	PSH R2
 
 	; R1 has pointer to path
 	; R2 has pointer to file name
@@ -1556,8 +1517,6 @@ CMD_FLAGS:
 	CALL vfs_flags
 	CNZ R0
 	JMPC PRINT_CMD_FLAGS_ERROR
-	POP R0
-	CALL free
 	RET
 
 	CMD_FLAGS_NOARG:
@@ -1601,34 +1560,6 @@ CMD_FLAGS:
 		.db 0
 	CMD_FLAGS_flag: .db 0
 	CMD_FLAGS_mask: .db 0
-
-trimString:
-	SUB R0 2
-	trimString_starttrim:
-	; trim string beginning
-	DD R1
-	LDD R2
-	CNE R2 ' '
-	JMPC trimString_endtrim
-	STD 0
-	INC R1
-	DEC R0
-	JMP trimString_starttrim
-
-	trimString_endtrim:
-	ADD R1 ; R0 + R1 should be the end of the string
-	trimString_endtrim_loop:
-	;trim string end
-	DD R0
-	LDD R2
-	CNE R2 ' '
-	JMPC trimString_endtrim_done
-	STD 0
-	DEC R0
-	JMP trimString_endtrim_loop
-
-	trimString_endtrim_done:
-	RET
 
 ; R1 -> ptr to zero or space terminated number string
 ; R0 <- error code (Nominal 0)
@@ -1844,363 +1775,6 @@ ScrollScreen:
 	POP R0
 	ST R0 $Cursor
 	POP
-	RET
-
-; R1 -> Pointer to the absolute string
-; R1 <- Pointer to path excluding name
-; R2 <- Pointer to 12 character directory name
-SplitDirectory:
-	PSH R1
-	; CALL PrintLineAtCursor
-
-	; R1 is the ptr to argument made absolute
-
-	SplitDirectory_FindEnd:
-		DD R1
-		INC R1
-		LDD R0
-		CNZ R0
-		JMPC SplitDirectory_FindEnd
-
-	SUB R1 2
-	DD R1
-	LDD R0
-	STD 0
-
-	; R1 now has pointer to end of string
-	SplitDirectory_FindLastSlash:
-		DEC R1
-		DD R1
-		LDD R0
-		CNE R0 '/'
-		JMPC SplitDirectory_FindLastSlash
-
-	INC R1
-	PSH R1
-	; R1 pointer right after last slash, to folder name in place
-	; Stack has pointer to path
-	CALL fileNamePrep
-	CE R1 0xffff
-	JMPC SplitDirectory_forbiddenChar
-
-	; Now that we have the new folder name out of the way,
-	; Write a zero after the middle slash
-	; And use that for the path
-
-	POP R2
-	DD R2
-	LDD R0
-	STD 0
-
-
-	PSH R1
-	POP R2
-	POP R1
-	RET
-	SplitDirectory_forbiddenChar:
-	LD R2 0xffff
-	POP R1
-	POP R1
-	RET
-
-; R1 -> Pointer to the absolute string
-; R1 <- Pointer to path excluding name
-; R2 <- Pointer to 12 character file name
-SplitPath:
-	PSH R1
-
-	; R1 is the ptr to argument made absolute
-	; PSH
-	; CALL PrintLineAtCursor
-	; POP
-
-	SplitPath_FindEnd:
-		DD R1
-		INC R1
-		LDD R0
-		CNZ R0
-		JMPC SplitPath_FindEnd
-
-	SUB R1 1
-	DD R1
-	LDD R0
-	STD 0
-
-	; R1 now has pointer to end of string
-	SplitPath_FindLastSlash:
-		DEC R1
-		DD R1
-		LDD R0
-		CNE R0 '/'
-		JMPC SplitPath_FindLastSlash
-
-	INC R1
-	PSH R1
-
-	; PSH
-	; CALL PrintLineAtCursor
-	; POP
-	; R1 pointer right after last slash, to folder name in place
-	; Stack has pointer to path
-	CALL fileNamePrep
-	CE R1 0xffff
-	JMPC SplitPath_forbiddenChar
-
-	; Now that we have the new folder name out of the way,
-	; Write a zero after the middle slash
-	; And use that for the path
-
-	POP R2
-	DD R2
-	LDD R0
-	STD 0
-
-
-	PSH R1
-	POP R2
-	POP R1
-	RET
-	SplitPath_forbiddenChar:
-	LD R2 0xffff
-	POP R1
-	POP R1
-	RET
-
-; R1 -> pointer to zero terminated path string.
-MakeAbsoluteDir:
-	PSH R0
-	PSH R2
-	PSH R3
-	
-	DD R1
-	LDD R0
-	CE R0 '/'
-	JMPC MakeAbsoluteDir_Almost_Done
-	; R1 has pointer to relative string
-	; Steps: Copy current into absolute, then copy relative onto absolute, then enforce trailing slash
-	LD R2 currentDirectory
-	LD R3 absoluteDirectory
-	MakeAbsoluteDir_CopyLoop1:
-		DD R2
-		LDD R0
-		DD R3
-		STD R0
-		INC R2
-		INC R3
-		CNZ R0
-		JMPC MakeAbsoluteDir_CopyLoop1
-	DEC R3
-	; Now to copy the relative onto the absolute!
-	MakeAbsoluteDir_CopyLoop2:
-		DD R1
-		LDD R0
-		DD R3
-		STD R0
-		INC R1
-		INC R3
-		CNZ R0
-		JMPC MakeAbsoluteDir_CopyLoop2
-	; Enforce trailing slash
-	DEC R3
-
-	DEC R3 ; Check if the last character is already a slash
-	DD R3
-	LDD R0
-	CE R0 '/'
-	JMPC MakeAbsoluteDir_Done
-	; If it's not, replace the null with a slash and add another null
-	INC R3
-	DD R3
-	STD '/'
-	INC R3
-	DD R3
-	STD 0
-
-	MakeAbsoluteDir_Done:
-	LD R1 absoluteDirectory
-	POP R3
-	POP R2
-	POP R0
-	RET
-
-	MakeAbsoluteDir_Almost_Done:
-	LD R2 absoluteDirectory
-	MakeAbsoluteDir_Almost_Done_Loop:
-		DD R1
-		LDD R0
-		DD R2
-		STD R0
-		INC R1
-		INC R2
-		CNZ R0
-		JMPC MakeAbsoluteDir_Almost_Done_Loop
-	SUB R2 2
-	DD R2
-	LDD R0
-	CE R0 '/'
-	JMPC MakeAbsoluteDir_Done ; Trailing slash? Done!
-	INC R2
-	DD R2
-	STD '/'
-	INCD
-	STD 0
-	JMP MakeAbsoluteDir_Done ; Now we've got a trailing slash!
-
-; R1 -> pointer to zero terminated path string.
-MakeAbsoluteFile:
-	PSH R0
-	PSH R2
-	PSH R3
-	
-	DD R1
-	LDD R0
-	CE R0 '/'
-	JMPC MakeAbsoluteFile_Almost_Done
-	; R1 has pointer to relative string
-	; Steps: Copy current into absolute, then copy relative onto absolute, then enforce no trailing slash
-	LD R2 currentDirectory
-	LD R3 absoluteDirectory
-	MakeAbsoluteFile_CopyLoop1:
-		DD R2
-		LDD R0
-		DD R3
-		STD R0
-		INC R2
-		INC R3
-		CNZ R0
-		JMPC MakeAbsoluteFile_CopyLoop1
-	DEC R3
-	; Now to copy the relative onto the absolute!
-	MakeAbsoluteFile_CopyLoop2:
-		DD R1
-		LDD R0
-		DD R3
-		STD R0
-		INC R1
-		INC R3
-		CNZ R0
-		JMPC MakeAbsoluteFile_CopyLoop2
-	; Enforce trailing slash
-	DEC R3
-
-	DEC R3 ; Check if the last character is already a slash
-	DD R3
-	LDD R0
-	CNE R0 '/'
-	JMPC MakeAbsoluteFile_Done
-	; If it is, replace the slash with a null
-	DD R3
-	STD 0
-
-	MakeAbsoluteFile_Done:
-	LD R1 absoluteDirectory
-	POP R3
-	POP R2
-	POP R0
-	RET
-
-	MakeAbsoluteFile_Almost_Done:
-	LD R2 absoluteDirectory
-	MakeAbsoluteFile_Almost_Done_Loop:
-		DD R1
-		LDD R0
-		DD R2
-		STD R0
-		INC R1
-		INC R2
-		CNZ R0
-		JMPC MakeAbsoluteFile_Almost_Done_Loop
-	SUB R2 2
-	DD R2
-	LDD R0
-	CNE R0 '/'
-	JMPC MakeAbsoluteFile_Done ; Trailing slash? Done!
-	STD 0
-	JMP MakeAbsoluteFile_Done ; Now we've got a trailing slash!
-
-; R2 -> character to check
-; Conditional will be true if char is forbidden, else false
-checkForbiddenCharacter:
-	PSH R2
-	PSH R0
-	LD R0 ForbiddenChars
-	DD R0
-	checkForbiddenCharacter_loop:
-		LDD R0
-		CEZ R0
-		JMPC checkForbiddenCharacter_notFound
-		XOR R2
-		CNZ R0
-		INCD
-		JMPC checkForbiddenCharacter_loop
-
-	; checkForbiddenCharacter_found
-	LD R0 0
-	CEZ R0
-	POP R0
-	POP R2
-	RET
-	checkForbiddenCharacter_notFound:
-	LD R0 0
-	CNZ R0
-	POP R0
-	POP R2
-	RET
-
-
-	ForbiddenChars:
-		.ds "+-/\~!@#$%^&* "
-		.db 0
-; R1 -> ptr to 0 terminated string
-; R1 <- ptr to malloc'd 12 byte string
-fileNamePrep:
-	PSH R0
-	PSH R2
-	PSH R3
-	LD R0 12
-	LD R3 12
-	CALL malloc ; TODO check fail
-	PSH R0
-	; R0 has ptr to new buffer
-	; R1 has point to old string
-	fileNamePrep_copyloop:
-		DD R1
-		LDD R2
-		; We should check for forbidden characters
-		CALL checkForbiddenCharacter
-		JMPC fileNamePrep_forbidden
-
-		DD R0
-		STD R2 ; Copy from one buffer to the other
-		INC R0
-		INC R1
-		DEC R3
-		CEZ R3
-		JMPC fileNamePrep_outofroom
-		CNZ R2
-		JMPC fileNamePrep_copyloop
-	; Now we've hit a zero, fill in the rest with zeroes
-	fileNamePrep_clearloop:
-		DD R0
-		STD 0 ; Copy from one buffer to the other
-		INC R0
-		DEC R3
-		CNZ R3
-		JMPC fileNamePrep_clearloop
-
-	fileNamePrep_outofroom:
-	POP R1
-	POP R3
-	POP R2
-	POP R0
-	RET
-	fileNamePrep_forbidden:
-	POP R0
-	CALL free
-	LD R1 0xffff
-	POP R3
-	POP R2
-	POP R0
 	RET
 
 ; R0 -> Character

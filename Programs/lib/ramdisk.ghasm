@@ -862,11 +862,8 @@ ramdisk_FLAGS:
 
 	DD R0
 	LDD R0
-		DBG R0
 	AND R0 $ramdisk_FLAGS_Mask
-		DBG R0
 	ADD R0 $ramdisk_FLAGS_Flags
-		DBG R0
 	STD R0
 
 	LD R0 0
