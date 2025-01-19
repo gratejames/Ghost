@@ -22,11 +22,13 @@ absoluteDirectory:
 .ds "/"
 .dz (12+1)*8 +1
 
-#INC ./lib/paths.ghasm
-#INC ./shellinterrupts.ghasm
-#INC ./shellstrings.ghasm
 Font:
 #INC ./fontGen/font.hex
+#INC ./lib/charmem.ghasm
+#INC ./lib/shelloutput.ghasm
+#INC ./lib/shellpaths.ghasm
+#INC ./shellinterrupts.ghasm
+#INC ./shellstrings.ghasm
 PROG_START:
 
 ; TODO: Self-test of sorts?
@@ -37,9 +39,12 @@ startup:
 
 	; Register file-ops interrupts
 
-	; ST printString $
-	; ST free $0xaf4e
-	; ST malloc $0xaf4f
+	; ST free $0xaf4a
+	; ST malloc $0xaf4b
+	ST outputInterrupt $0xaf4c
+	ST formatPathString $0xaf4d
+	ST updateInterrupt $0xaf4e
+	ST shellCWD $0xaf4f
 	ST vfs_mkdir $0xaf50
 	ST vfs_list $0xaf51
 	ST vfs_rmdir $0xaf52
@@ -51,9 +56,8 @@ startup:
 	ST vfs_fwrite $0xaf58
 	ST vfs_fread $0xaf59
 	ST vfs_fseek $0xaf5a
-	ST formatPathString $0xaf5b
-	ST updateInterrupt $0xaf5c
-	ST shellCWD $0xaf5d
+
+
 
 	ST printString $0xaf5e			;; Register printString as the string printing interrupt
 	ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
@@ -116,6 +120,7 @@ blinkCursor:
 KeyboardInterrupt:
 	IDIS
 	PSH
+	CPSH
 	ST 0xffff $Timer
 	LD R1 $0xafd0					; Get key state
 	CE R1 0
@@ -145,6 +150,7 @@ KeyboardInterrupt:
 	CALL PrintAtCursor
 
 	KeyboardInterruptExit:
+	CPOP
 	POP
 	IEN
 	RET
@@ -318,6 +324,7 @@ ExecuteFile:
 	CALL 0
 	ADO 0
 	POP R1
+	
 	ST KeyboardInterrupt $0xaf00
 	ST 3 $0xafef					;; Display mode
 	CALL RefreshDisplay
@@ -713,7 +720,8 @@ CMD_LS:
 	CMD_LS_ARG:
 	CALL trimString
 	LD R2 1
-	INT 0x5b
+	CALL MakeAbsoluteDir
+	CALL SplitDirectory
 	CE R2 0xffff
 	JMPC CMD_LS_badpath
 	; PSH R2
@@ -865,20 +873,7 @@ CMD_HALT:
 	HLT
 
 CMD_CLEAR:
-	ST 0 $Cursor
-	; LD R2 CharMem
-	LD R3 0x1000
-
-	CMD_CLEAR_LOOP:
-		LD R0 ' '
-		CALL PrintAtCursor ; Clear display
-		; DD R2
-		; STD ' '
-		; INC R2 ; Clear char mem
-		DEC R3
-		CNZ R3
-		JMPC CMD_CLEAR_LOOP
-	ST 0 $Cursor
+	CALL ClearScreen
 	RET
 
 CMD_TOUCH:
@@ -1561,222 +1556,6 @@ CMD_FLAGS:
 	CMD_FLAGS_flag: .db 0
 	CMD_FLAGS_mask: .db 0
 
-; R1 -> ptr to zero or space terminated number string
-; R0 <- error code (Nominal 0)
-; R1 <- pointer to where number ended
-; R2 <- value
-parseUserNumberInput:
-	PSH R3
-	DD R1
-	LDD R2
-	CEZ R2
-	JMPC parseUserNumberInput_noinput
-	CE R2 ' '
-	JMPC parseUserNumberInput_noinput
-	; First character can either be 0 for 0x or a digit between 1 and 9
-	CE R2 '0'
-	JMPC parseUserNumberInput_hex
-
-	; Decimal
-	DBGC 'D'
-	DBGC 0xa
-	LD R0 0
-	parseUserNumberInput_decimalLoop:
-		CEZ R2
-		JMPC parseUserNumberInput_decimalDone
-		CE R2 ' '
-		JMPC parseUserNumberInput_decimalDone
-		SUB R2 '0'
-		CGT R2 9
-		JMPC parseUserNumberInput_nonnumeric
-		CALL parseUserNumberInput_SHLbase10
-		ADD R2 ; Add the new value to the old value*10
-
-		INC R1
-		DD R1
-		LDD R2
-		JMP parseUserNumberInput_decimalLoop
-
-	parseUserNumberInput_hex:
-	INC R1
-	DD R1
-	LDD R2
-	CEZ R2
-	JMPC parseUserNumberInput_hex_nevermind_zero
-	CE R2 ' '
-	JMPC parseUserNumberInput_hex_nevermind_zero
-	CNE R2 'x'
-	JMPC parseUserNumberInput_unknownbase
-
-	; hex
-	DBGC 'H'
-	DBGC 0xa
-	LD R0 0
-	parseUserNumberInput_hex_loop:
-		INC R1
-		DD R1
-		LDD R2
-		CEZ R2
-		JMPC parseUserNumberInput_hexDone
-		CE R2 ' '
-		JMPC parseUserNumberInput_hexDone
-		SUB R2 '0'
-		CGT R2 9
-		CALLC parseUserNumberInput_hex_nonnumeric
-		SHL R0 4 ; Multiply R0 by 16
-		ADD R2 ; Add the new value to the old value*10
-		JMP parseUserNumberInput_hex_loop
-
-	parseUserNumberInput_hex_nonnumeric:
-		ADD R2 '0'
-		SUB R2 'a'
-		CLT R2 6 ; a-f
-		JMPC parseUserNumberInput_hex_lowercase
-		; uppercase or bust
-		ADD R2 'a'
-		SUB R2 'A'
-		CGT R2 5 ; A-F
-		JMPC parseUserNumberInput_hex_nonhexchar
-		; uppercase
-		parseUserNumberInput_hex_lowercase:
-		; R2 now holds char value with a being zero
-		ADD R2 10
-		RET
-
-	parseUserNumberInput_hex_nevermind_zero:
-	LD R0 0
-	parseUserNumberInput_decimalDone:
-	parseUserNumberInput_hexDone:
-	STZ R2
-	LD R0 0 ; no error
-	POP R3
-	RET
-	; Multiplies R0 by 10
-	parseUserNumberInput_SHLbase10:
-		PSH R1
-		PSH R2
-		LD R2 9
-		STZ R1
-		parseUserNumberInput_SHLbase10_loop:
-			ADD R1 ; R0 = R0 + R1
-			DEC R2
-			CNZ R2
-			JMPC parseUserNumberInput_SHLbase10_loop
-		POP R2
-		POP R1
-		RET
-
-	parseUserNumberInput_noinput:
-		LD R0 0x0001
-		POP R3
-		RET
-	parseUserNumberInput_nonnumeric:
-		LD R0 0x0002
-		POP R3
-		RET
-	parseUserNumberInput_unknownbase:
-		LD R0 0x0003
-		POP R3
-		RET
-	parseUserNumberInput_hex_nonhexchar:
-		POP R0
-		LD R0 0x0004
-		POP R3
-		RET
-
-; R0 -> error number
-; R1 -> error message table
-PrintErrorMessage:
-	PSH
-	PSH R1
-	POP R3
-	PrintErrorMessage_loop:
-		; check if we have the right error
-		CEZ R0
-		JMPC PrintErrorMessage_found
-
-		; check if current message is 0 (table is exhausted)
-		DD R1
-		LDD R2
-		CEZ R2
-		JMPC PrintErrorMessage_notfound
-
-		; skip message
-		PrintErrorMessage_skip:
-			DD R1
-			LDD R2
-			INC R1
-			CNZ R2
-			JMPC PrintErrorMessage_skip
-
-
-		; decrement error number
-		DEC R0
-
-		JMP PrintErrorMessage_loop
-
-
-	PrintErrorMessage_notfound:
-	PSH R3
-	POP R1
-	PrintErrorMessage_found:
-	; R1: pointer to string
-	CALL PrintLineAtCursor
-	POP
-	RET
-
-; Uses none
-ScrollScreen:
-	PSH R1
-	LD R1 $Cursor
-	CLT R1 0x41
-	POP R1
-	JMPC CMD_CLEAR
-	PSH
-	; LD R1 CharMem
-	LD R2 CharMem
-	ADD R2 0x40
-	LD R3 0x0fc0
-	LD R0 $Cursor
-	SUB R0 0x40
-	PSH R0
-	ST 0x0000 $Cursor
-	ScrollScreen_Loop:
-		DD R2
-		LDD R0
-		CNZ R0
-		JMPC ScrollScreen_Loop_notzero ; Display zeroes as spaces
-			; Manually run PrintAtCursor, but split
-			; so that we can write a zero but show a space
-			LD R1 $Cursor
-			ADD R1 CharMem
-			DD R1
-			STD R0
-			LD R0 ' '
-			CALL SetAtCursor
-			LD R1 $Cursor
-			INC R1
-			ST R1 $Cursor
-		JMP ScrollScreen_Loop_donewithzero
-		ScrollScreen_Loop_notzero:
-		CALL PrintAtCursor
-		ScrollScreen_Loop_donewithzero:
-		INC R2
-		DEC R3
-		CNZ R3
-		JMPC ScrollScreen_Loop
-	LD R3 0x0040
-	LD R0 ' '
-	ScrollScreen_Loop2:
-		CALL PrintAtCursor
-		DEC R3
-		CNZ R3
-		JMPC ScrollScreen_Loop2
-	POP R0
-	ST R0 $Cursor
-	POP
-	RET
-
 ; R0 -> Character
 ApplyShift:
 	PSH R1
@@ -1805,185 +1584,6 @@ SetModifier:
 	ADD R2 ; Add masked to state
 	ST R0 $KB_Mods
 	RET
-
-CursorNewline:
-	PSH R1
-	LD R1 $Cursor		; Load the cursor position
-	ADD R1 0x0040		; Reset the cursor to the next line
-	AND R1 0xffc0
-	ST R1 $Cursor
-
-	CLT R1 0x1000
-	JMPC CursorNewline_enoughRoom	
-		CALL ScrollScreen ; Scroll screen if there isn't enough room
-		LD R1 $LastCursor
-		SUB R1 0x40
-		ST R1 $LastCursor
-	CursorNewline_enoughRoom:
-	POP R1
-	RET
-
-; R0 -> Character
-SetAtCursor:
-	PSH R1
-	PSH R2
-	PSH R3
-	LD R1 $Cursor
-	AND R1 0x003f		; X Pos
-	LD R2 $Cursor
-	SHR R2 6			; Y Pos
-	LD R3 Font			; Font Address
-	INT 0x5f
-	POP R3
-	POP R2
-	POP R1
-	RET
-
-; R0 -> Character
-PrintAtCursor:
-	PSH R1
-	LD R1 $Cursor		; Load the cursor position
-	ADD R1 CharMem
-	DD R1
-	STD R0
-	CALL SetAtCursor
-	LD R1 $Cursor
-	INC R1
-	ST R1 $Cursor
-	POP R1
-	RET
-
-; R0 -> value 
-PrintNumberAtCursor:
-	PSH R1
-	ST 0 $PrintNumberAtCursor_Thousands
-	ST 0 $PrintNumberAtCursor_Hundreds
-	ST 0 $PrintNumberAtCursor_Tens
-	ST 0 $PrintNumberAtCursor_Ones
-
-	PrintNumberAtCursor_ThousandsLoop:
-		CLT R0 1000
-		JMPC PrintNumberAtCursor_HundredsLoop
-		SUB R0 1000
-		LD R1 $PrintNumberAtCursor_Thousands
-		INC R1
-		ST R1 $PrintNumberAtCursor_Thousands
-		JMP PrintNumberAtCursor_ThousandsLoop
-
-	PrintNumberAtCursor_HundredsLoop:
-		CLT R0 100
-		JMPC PrintNumberAtCursor_TensLoop
-		SUB R0 100
-		LD R1 $PrintNumberAtCursor_Hundreds
-		INC R1
-		ST R1 $PrintNumberAtCursor_Hundreds
-		JMP PrintNumberAtCursor_HundredsLoop
-
-	PrintNumberAtCursor_TensLoop:
-		CLT R0 10
-		JMPC PrintNumberAtCursor_OnesLoop
-		SUB R0 10
-		LD R1 $PrintNumberAtCursor_Tens
-		INC R1
-		ST R1 $PrintNumberAtCursor_Tens
-		JMP PrintNumberAtCursor_TensLoop
-
-	PrintNumberAtCursor_OnesLoop:
-		CLT R0 1
-		JMPC PrintNumberAtCursor_DoneLoops
-		SUB R0 1
-		LD R1 $PrintNumberAtCursor_Ones
-		INC R1
-		ST R1 $PrintNumberAtCursor_Ones
-		JMP PrintNumberAtCursor_OnesLoop
-
-	PrintNumberAtCursor_DoneLoops:
-	LD R0 $PrintNumberAtCursor_Thousands
-	ADD R0 '0'
-	CALL PrintAtCursor
-	LD R0 $PrintNumberAtCursor_Hundreds
-	ADD R0 '0'
-	CALL PrintAtCursor
-	LD R0 $PrintNumberAtCursor_Tens
-	ADD R0 '0'
-	CALL PrintAtCursor
-	LD R0 $PrintNumberAtCursor_Ones
-	ADD R0 '0'
-	CALL PrintAtCursor
-	POP R1
-	RET
-
-	PrintNumberAtCursor_Thousands: .db 0
-	PrintNumberAtCursor_Hundreds: .db 0
-	PrintNumberAtCursor_Tens: .db 0
-	PrintNumberAtCursor_Ones: .db 0
-
-; R0 -> length
-; R1 -> ptr
-PrintBufAtCursor:
-	PSH R0
-	CEZ R0
-	DD R1
-	LDD R0
-	JMPC PrintBufAtCursorEnd
-		PSH R1
-		CALL PrintAtCursor
-		POP R1
-		INC R1
-		POP R0
-		DEC R0
-		JMP PrintBufAtCursor
-	PrintBufAtCursorEnd:
-		POP R0
-		RET
-
-; R1 -> ptr
-PrintStringAtCursor:
-	DD R1
-	LDD R0
-	CEZ R0
-	JMPC PrintStringAtCursorEnd
-		PSH R1
-		CE R0 0x0a
-		CALLC CursorNewline
-		CNE R0 0x0a
-		CALLC PrintAtCursor
-	POP R1
-	INC R1
-	JMP PrintStringAtCursor
-	PrintStringAtCursorEnd:
-		RET
-
-PrintLineAtCursor:
-	CALL PrintStringAtCursor
-	CALL CursorNewline
-	RET
-
-RefreshDisplay:
-	PSH
-	LD R0 0
-	RefreshDisplay_loop:
-		STZ R1
-		AND R1 0x003f		; X Pos
-		STZ R2
-		SHR R2 6			; Y Pos
-		LD R3 Font
-		PSH R0
-		ADD R0 CharMem
-		DD R0
-		LDD R0
-		CEZ R0
-		CALLC RefreshDisplay_blank
-		INT 0x5f
-		POP R0
-		INC R0
-		CNE R0 0x1000
-		JMPC RefreshDisplay_loop
-	POP
-	RET
-	RefreshDisplay_blank:
-		LD R0 ' '
-		RET
 
 ; Table Format: string0ptr0...string0ptr00
 shellExec_Table:
@@ -2069,75 +1669,6 @@ ShiftTable:
 	.ds "       "    <_>?)!@#$%^&*( : +  "
 	.ds "                           {|}  "
 	.ds "~ABCDEFGHIJKLMNOPQRSTUVWXYZ     "
-
-CharMem:
-	.ds ">"
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.ds "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz="
-	.db 0
 
 #DEF RAMDISKSIZE 0x1000
 RAMDISK:

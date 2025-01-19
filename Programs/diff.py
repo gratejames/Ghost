@@ -9,8 +9,8 @@ with open(b, "r") as f:
 def hs(s):
 	return "0x" + (("0" * 4) + str(hex(s))[2:])[-4:]
 
-a = a.replace("\n", " ").split(" ")
-b = b.replace("\n", " ").split(" ")
+a = a.replace("\n", "").split(" ")
+b = b.replace("\n", "").split(" ")
 
 for i in range(0,0xafff):
 	if a[i] != b[i]:

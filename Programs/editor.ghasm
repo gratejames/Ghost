@@ -1,5 +1,6 @@
-#DEF int_pathFMT 0x5b
-#DEF int_updateInterrupt 0x5c
+#DEF int_output 0x4c
+#DEF int_pathFMT 0x4d
+#DEF int_updateInterrupt 0x4e
 #DEF int_string 0x5e
 #DEF int_char 0x5f
 
@@ -8,6 +9,8 @@ DBGC '~'
 ST R3 $argumentptr
 CALL setupFile
 CALL loadFile
+LD R2 8
+INT int_output
 CALL DrawHeaderBar
 
 LD R0 0x00
@@ -26,16 +29,15 @@ KeyboardInterrupt:
 IDIS
 PSH
 CPSH
-PSH R0
 AOR
 ADO 0
-ST R0 $PrevAO
-POP R0
+PSH R0
 	; DBGC $0xafd1
 	; DBG $0xafd0
 	LD R0 $0xafd1
-ADO $PrevAO
-	CE R0 'q'
+POP R3
+ADO R3
+	CE R0 'q' ; TODO MODIFIERS AND KEY UP VS KEY DOWN
 	CALLC KI_q
 CPOP
 POP
@@ -48,24 +50,46 @@ KI_q:
 PrevAO: .db 0
 
 loadFile:
-	RET ; TODO!
+	LD R0 $diskNumber
+	LD R1 $pathName
+	LD R2 $fileName
+	LD R3 0
+	INT 0x53 ; fopen
+	; R0 error, R1 file pointer
+	CNZ R0
+	JMPC loadFileError
+	ST R1 $fileNumber
+	RET
+
+loadFileError:
+	; LD R1
+	DBG R0
+	DBG R1
+	HLT
 
 setupFile:
-	ST R1 $argumentptr
+	; LD R1 $argumentptr
+	; LD R2 7
+	; INT int_output
+	LD R1 $argumentptr
 	INT int_pathFMT
 	ST R1 $pathName
 	ST R2 $fileName
 	CALL findNameLength
+	INT 0x4f ; shellCWD
+	ST R1 $diskNumber
 	RET
 
 findNameLength:
-	DD R3
-	LDD R1
-	CNZ R1
-	INC R3
-	JMPC findNameLength
+	LD R3 $fileName
+	findNameLength_loop:
+		DD R3
+		LDD R1
+		CNZ R1
+		INC R3
+		JMPC findNameLength_loop
 	DEC R3
-	SUB R3 $pathName
+	SUB R3 $fileName
 	ST R3 $pathNameLength
 	RET
 
@@ -76,7 +100,7 @@ DrawHeaderBar:
 	LD R3 FontI
 	INT int_string
 
-	LD R0 $pathName
+	LD R0 $fileName
 	LD R1 10
 	LD R2 0
 	LD R3 FontI
@@ -102,6 +126,8 @@ isDone: .db 0
 fileName: .db 0 ; ptr
 pathName: .db 0 ; ptr
 pathNameLength: .db 0
+diskNumber: .db 0
+fileNumber: .db 0
 ; pagePointer: .db 0 ; Pointer to the first character of the page
 ; cursor: .db 0
 

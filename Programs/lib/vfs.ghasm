@@ -86,6 +86,8 @@ vfs_mkdir:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
+	ADD R2 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -111,6 +113,7 @@ vfs_list:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -121,6 +124,7 @@ vfs_list:
 	DD R0
 	POP R0
 	CALD
+	SUB R3 $PrevAO ; UNTESTED
 	ADO $PrevAO
 	RET
 
@@ -136,6 +140,8 @@ vfs_rmdir:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
+	ADD R2 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -162,6 +168,8 @@ vfs_fopen:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
+	ADD R2 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -187,6 +195,8 @@ vfs_rm:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
+	ADD R2 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -213,6 +223,8 @@ vfs_stat:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
+	ADD R2 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -223,6 +235,7 @@ vfs_stat:
 	DD R0
 	POP R0
 	CALD
+	SUB R3 $PrevAO ; UNTESTED
 	ADO $PrevAO
 	RET
 
@@ -239,6 +252,9 @@ vfs_flags:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
+	ADD R2 $PrevAO
+	ADD R3 $PrevAO
 	PSH R0
 	ADD R0 DiskTable
 	DD R0
@@ -286,6 +302,7 @@ vfs_fwrite:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
 	PSH R0
 	ADD R0 FileTable
 	DD R0
@@ -311,6 +328,7 @@ vfs_fread:
 		ADO 0
 		ST R0 $PrevAO
 	POP R0
+	ADD R1 $PrevAO
 	PSH R0
 	ADD R0 FileTable
 	DD R0
