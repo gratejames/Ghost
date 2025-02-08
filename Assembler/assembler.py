@@ -327,7 +327,7 @@ class assembler:
 			return []
 		if line.strip().startswith("#DATA"):
 			return ["Value"] * len(line.strip().replace("#DATA", "", 1).split())
-		words = line.strip().split(" ")
+		words = line.strip().split()
 
 		types = []
 		for word in words:
@@ -562,7 +562,7 @@ class assembler:
 			elif line.startswith("#DATA"):
 				line = line[5:]
 			else:
-				words = line.split(" ")
+				words = line.split()
 				for wordNumber, word in enumerate(words):
 					if word in ["R0", "R1", "R2", "R3"]:
 						words[wordNumber] = ""

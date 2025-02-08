@@ -1,0 +1,6 @@
+.ds "**HELLORLD**"
+.db 0xa
+.ds "Welcome, to the ghOSt editor!"
+.db 0xa
+.ds "With multiline support???"
+.db 0

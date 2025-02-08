@@ -371,19 +371,18 @@ ClearScreen:
 
 #SHARE BlankScreen
 BlankScreen:
-	; PSH
-	; LD R2 0xb000
+	PSH
+	LD R2 0xb000
 
-	; BlankScreen_loop:
-	; 	DD R2
-	; 	STD 0
-	; 	INC R2
-	; 	CNE R2 0xefff
-	; 	JMPC BlankScreen_loop
+	BlankScreen_loop:
+		DD R2
+		STD 0
+		INC R2
+		CNE R2 0xefff
+		JMPC BlankScreen_loop
 
-	; POP
+	POP
 	RET
-
 
 ; Uses none
 #SHARE ScrollScreen

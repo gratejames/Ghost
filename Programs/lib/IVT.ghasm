@@ -1,0 +1,22 @@
+#SHARE *
+
+#DEF Ifree 				0x4a
+#DEF Imalloc 			0x4b
+#DEF Ioutput 			0x4c
+#DEF IformatPath	 	0x4d
+#DEF IupdateInterrupt 	0x4e
+#DEF IshellCWD 			0x4f
+#DEF Imkdir 			0x50
+#DEF Ilist 				0x51
+#DEF Irmdir 			0x52
+#DEF Ifopen 			0x53
+#DEF Irm 				0x54
+#DEF Istat 				0x55
+#DEF Iflags 			0x56
+#DEF Ifclose 			0x57
+#DEF Ifwrite 			0x58
+#DEF Ifread 			0x59
+#DEF Ifseek 			0x5a
+
+#DEF IprintString 		0x5e
+#DEF IprintChar 		0x5f

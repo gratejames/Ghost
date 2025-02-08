@@ -1,4 +1,5 @@
 JMP PROG_START
+#INC ./lib/IVT.ghasm
 #INC ./lib/kernel.ghasm
 #INC ./lib/vfs.ghasm
 #INC ./lib/vfsstrings.ghasm
@@ -39,28 +40,27 @@ startup:
 
 	; Register file-ops interrupts
 
-	; ST free $0xaf4a
-	; ST malloc $0xaf4b
-	ST outputInterrupt $0xaf4c
-	ST formatPathString $0xaf4d
-	ST updateInterrupt $0xaf4e
-	ST shellCWD $0xaf4f
-	ST vfs_mkdir $0xaf50
-	ST vfs_list $0xaf51
-	ST vfs_rmdir $0xaf52
-	ST vfs_fopen $0xaf53
-	ST vfs_rm $0xaf54
-	ST vfs_stat $0xaf55
-	ST vfs_flags $0xaf56
-	ST vfs_fclose $0xaf57
-	ST vfs_fwrite $0xaf58
-	ST vfs_fread $0xaf59
-	ST vfs_fseek $0xaf5a
+	ST free_interrupt		$0xaf00+Ifree
+	ST malloc_interrupt		$0xaf00+Imalloc
+	ST outputInterrupt 		$0xaf00+Ioutput
+	ST formatPathString 	$0xaf00+IformatPath
+	ST updateInterrupt		$0xaf00+IupdateInterrupt
+	ST shellCWD				$0xaf00+IshellCWD
+	ST vfs_mkdir			$0xaf00+Imkdir
+	ST vfs_list				$0xaf00+Ilist
+	ST vfs_rmdir			$0xaf00+Irmdir
+	ST vfs_fopen			$0xaf00+Ifopen
+	ST vfs_rm				$0xaf00+Irm
+	ST vfs_stat				$0xaf00+Istat
+	ST vfs_flags			$0xaf00+Iflags
+	ST vfs_fclose			$0xaf00+Ifclose
+	ST vfs_fwrite			$0xaf00+Ifwrite
+	ST vfs_fread			$0xaf00+Ifread
+	ST vfs_fseek			$0xaf00+Ifseek
 
 
-
-	ST printString $0xaf5e			;; Register printString as the string printing interrupt
-	ST printChar $0xaf5f			;; Register printChar as the character printing interrupt
+	ST printString 			$0xaf00+IprintString			;; Register printString as the string printing interrupt
+	ST printChar 			$0xaf00+IprintChar			;; Register printChar as the character printing interrupt
 
 	LD R1 STR_SHELL_STARTUP
 	CALL PrintLineAtCursor

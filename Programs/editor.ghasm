@@ -1,31 +1,82 @@
-#DEF int_output 0x4c
-#DEF int_pathFMT 0x4d
-#DEF int_updateInterrupt 0x4e
-#DEF int_string 0x5e
-#DEF int_char 0x5f
+#INC ./lib/IVT.ghasm
 
 DBGC '~'
 
 ST R3 $argumentptr
+CALL cls
 CALL setupFile
 CALL loadFile
+CALL readFile
 LD R2 8
-INT int_output
+INT Ioutput
+LD R2 0xa
+INT Ioutput ; Get font
+ST R3 $Font
 CALL DrawHeaderBar
+CALL DrawDocument
 
 LD R0 0x00
 LD R1 KeyboardInterrupt
-INT int_updateInterrupt
+INT IupdateInterrupt
+
 
 loop:
+	CALL blinkCursor
+	CALL delay
 	CEZ $isDone
 	JMPC loop
+
+CALL freeFile
+CALL closeFile
 
 DBGC '~'
 DBGC 0xa
 RET
 
+delay:
+	LD R0 0
+	delayLoop:
+		INC R0
+		CNE R0 0x180
+		JMPC delayLoop
+	RET
+
+blinkCursor:
+	LD R0 $currentTick
+	INC R0
+	ST R0 $currentTick
+	CE R0 0
+	JMPC showCursor
+	CE R0 0x8000
+	JMPC hideCursor
+	RET
+
+	hideCursor:
+		CALL scanToCursor
+		DD R0
+		LDD R0
+		CALL replaceZeroNewlineBlank
+		LD R3 $Font
+		LD R1 $cursorColumn
+		LD R2 $cursorLine
+		INC R2
+		INT IprintChar
+		RET
+
+	showCursor:
+		CALL scanToCursor
+		DD R0
+		LDD R0
+		CALL replaceZeroNewlineBlank
+		LD R3 FontI
+		LD R1 $cursorColumn
+		LD R2 $cursorLine
+		INC R2
+		INT IprintChar
+		RET
+
 KeyboardInterrupt:
+ST 0xffff $currentTick
 IDIS
 PSH
 CPSH
@@ -35,10 +86,27 @@ PSH R0
 	; DBGC $0xafd1
 	; DBG $0xafd0
 	LD R0 $0xafd1
+	LD R1 $0xafd0
 POP R3
 ADO R3
+	CEZ R1
+	JMPC KI_Release
 	CE R0 'q' ; TODO MODIFIERS AND KEY UP VS KEY DOWN
 	CALLC KI_q
+	CE R0 0x4a
+	CALLC KI_HOME
+	CE R0 0x4d
+	CALLC KI_END
+	CE R0 0x4f
+	CALLC KI_RIGHT
+	CE R0 0x50
+	CALLC KI_LEFT
+	CE R0 0x51
+	CALLC KI_DOWN
+	CE R0 0x52
+	CALLC KI_UP
+	; DBG R0
+	KI_Release:
 CPOP
 POP
 IEN
@@ -47,36 +115,321 @@ KI_q:
 	ST 1 $isDone
 	RET
 
+KI_UP:
+	PSH R0
+	CALL updateCursor
+	LD R0 $cursorLine
+	CEZ R0
+	JMPC KI_UP_End
+	DEC R0
+	ST R0 $cursorLine
+	CALL snapToEnd
+	KI_UP_End:
+	POP R0
+	RET
+
+KI_DOWN:
+	PSH R0
+	CALL updateCursor
+	LD R0 $cursorLine
+	INC R0
+	ST R0 $cursorLine
+	CALL snapToEnd
+	POP R0
+	RET
+
+KI_RIGHT:
+	PSH R0
+	CALL updateCursor
+	LD R0 $cursorColumn
+		PSH R0
+		CALL scanToCursor
+		DD R0
+		POP R0
+		LDD R1
+		CE R1 0xa
+		JMPC KI_RIGHT_Wrap
+		CEZ R1
+		JMPC KI_RIGHT_End
+
+	INC R0
+	ST R0 $cursorColumn
+	KI_RIGHT_End:
+	POP R0
+	RET
+	KI_RIGHT_Wrap:
+		LD R0 $cursorLine
+		INC R0
+		ST R0 $cursorLine
+		ST 0 $cursorColumn
+		POP R0
+		RET
+
+KI_LEFT:
+	PSH R0
+	CALL updateCursor
+	LD R0 $cursorColumn
+	CEZ R0
+	JMPC KI_LEFT_Wrap
+	DEC R0
+	ST R0 $cursorColumn
+	POP R0
+	RET
+	KI_LEFT_Wrap:
+		LD R0 $cursorLine
+		CEZ R0
+		JMPC KI_LEFT_End
+		DEC R0
+		ST R0 $cursorLine
+		CALL cursorToEnd
+		KI_LEFT_End:
+		POP R0
+		RET
+
+KI_END:
+	PSH R0
+	CALL updateCursor
+	CALL cursorToEnd
+	POP R0
+	RET
+
+KI_HOME:
+	PSH R0
+	CALL updateCursor
+	ST 0 $cursorColumn
+	POP R0
+	RET
+
+
 PrevAO: .db 0
+
+replaceZeroNewlineBlank:
+	CEZ R0
+	JMPC replaceZeroNewlineBlank_replace
+	CE R0 0xa
+	JMPC replaceZeroNewlineBlank_replace
+	RET
+	replaceZeroNewlineBlank_replace:
+	LD R0 ' '
+	RET
+
+updateCursor:
+	CALL scanToCursor
+	DD R0
+	LDD R0
+	CALL replaceZeroNewlineBlank
+	LD R3 $Font
+	LD R1 $cursorColumn
+	LD R2 $cursorLine
+	INC R2
+	INT IprintChar
+	RET
+
+; R0 <- ptr to char
+scanToCursor:
+	LD R2 $cursorLine
+	ADD R2 $lineNumber
+	LDZ R2
+	CALL scanToLine
+
+	LD R1 $cursorColumn
+	ADD R1
+
+	RET
+
+snapToEnd:
+	LD R0 $cursorColumn
+		PSH R0
+		CALL cursorToEnd
+		POP R0
+	CLT R0 $cursorColumn
+	JMPC snapToEnd_Restore
+	RET
+	snapToEnd_Restore:
+	ST R0 $cursorColumn
+	RET
+
+cursorToEnd:
+	LD R0 $cursorLine
+	CALL scanToLine
+	LD R1 0
+	cursorToEndLoop:
+	DD R0
+	LDD R2
+	CE R2 0xa
+	JMPC cursorToEndDone
+	CEZ R2
+	JMPC cursorToEndDone
+	INC R0
+	INC R1
+	JMP cursorToEndLoop
+
+	cursorToEndDone:
+		ST R1 $cursorColumn
+		RET
+
+
+
+; R0 -> line number
+; R0 <- ptr to 1st char in line (0xffff if file ends)
+scanToLine:
+	PSH R1
+	PSH R3
+	LD R3 $workingBuffer
+	scanToLineLoop:
+		CEZ R0
+		JMPC scanToLineSatisfied
+		DD R3
+		LDD R1
+		CEZ R1
+		JMPC scanToLineErr
+		CE R1 0xa
+		JMPC scanToLineNewline
+		INC R3
+		JMP scanToLineLoop
+
+	scanToLineNewline:
+		DEC R0
+		INC R3
+		JMP scanToLineLoop
+
+	scanToLineSatisfied:
+		LDZ R3
+		POP R3
+		POP R1
+		RET
+
+	scanToLineErr:
+		LDZ R3
+		POP R3
+		POP R1
+		RET
+
+
+DrawDocument:
+	; Read in the line number for the top of the page
+	; scan that many newlines down
+	LD R3 $Font
+
+	LD R0 $lineNumber
+	CALL scanToLine
+
+	LD R1 0
+	LD R2 1
+
+	DrawDocumentLoop:
+	PSH R0
+	DD R0
+	LDD R0
+	CEZ R0
+	JMPC DocumentEnd
+	CE R0 0xa
+	JMPC DocumentNewline
+	INT IprintChar
+	DocumentNewlineRet:
+	INC R1
+	POP R0
+	INC R0
+	JMP DrawDocumentLoop
+
+	DocumentNewline:
+		LD R1 0xffff
+		INC R2
+		JMP DocumentNewlineRet
+
+	DocumentEnd:
+	POP R0
+	RET
 
 loadFile:
 	LD R0 $diskNumber
 	LD R1 $pathName
 	LD R2 $fileName
 	LD R3 0
-	INT 0x53 ; fopen
+
+	INT Ifopen
 	; R0 error, R1 file pointer
 	CNZ R0
 	JMPC loadFileError
 	ST R1 $fileNumber
+
+	LD R0 $diskNumber
+	LD R1 $pathName
+	LD R2 $fileName
+	INT Istat
+	; R0 error, R3 malloc'd details
+	CNZ R0
+	JMPC statFileError
+	LDZ R3
+	ADD R3 2
+	DD R3
+	LDD R1
+	ST R1 $fileSize
+	INT Ifree
+
 	RET
 
+statFileError:
+	DBGC 'S'
+	DBG R0
+	DBG R1
+	HLT
 loadFileError:
-	; LD R1
+	DBGC 'L'
 	DBG R0
 	DBG R1
 	HLT
 
+readFile:
+	LD R0 $fileSize
+	ADD R0 200
+	ST R0 $mallocSize
+	INT Imalloc
+	CEZ R0
+	JMPC readFileError_malloc
+	ST R0 $workingBuffer
+
+	LD R0 $fileNumber
+	LD R1 $workingBuffer
+	LD R2 $fileSize
+	INT Ifread
+	CNZ R0
+	JMPC readFileError_fread ; Error
+	CNE R1 $fileSize
+	JMPC readFileError_fread ; Read mismatch
+	RET
+
+readFileError_fread:
+	DBGC 'R'
+	DBG R0
+	DBG R1
+	HLT
+readFileError_malloc:
+	DBGC 'M'
+	DBG R0
+	DBG R1
+	HLT
+
+freeFile:
+	LD R0 $workingBuffer
+	INT Ifree
+	RET
+
+closeFile:
+	LD R0 $fileNumber
+	INT Ifclose
+	RET
+
 setupFile:
 	; LD R1 $argumentptr
 	; LD R2 7
-	; INT int_output
+	; INT Ioutput
 	LD R1 $argumentptr
-	INT int_pathFMT
+	INT IformatPath
 	ST R1 $pathName
 	ST R2 $fileName
 	CALL findNameLength
-	INT 0x4f ; shellCWD
+	INT IshellCWD
 	ST R1 $diskNumber
 	RET
 
@@ -98,13 +451,13 @@ DrawHeaderBar:
 	LD R1 0
 	LD R2 0
 	LD R3 FontI
-	INT int_string
+	INT IprintString
 
 	LD R0 $fileName
 	LD R1 10
 	LD R2 0
 	LD R3 FontI
-	INT int_string
+	INT IprintString
 
 
 	LD R1 10
@@ -113,12 +466,18 @@ DrawHeaderBar:
 		LD R0 ' '
 		LD R2 0
 		LD R3 FontI
-		INT int_char
+		INT IprintChar
 		INC R1
 		CLT R1 0x40
 		JMPC DrawHeaderBar_fill
 	RET
 
+cls:
+	LD R2 8
+	INT Ioutput
+	RET
+
+currentTick: .db 0
 TitlePrefix: .ds " Editing: "
 .db 0
 argumentptr: .db 0
@@ -128,10 +487,15 @@ pathName: .db 0 ; ptr
 pathNameLength: .db 0
 diskNumber: .db 0
 fileNumber: .db 0
-; pagePointer: .db 0 ; Pointer to the first character of the page
-; cursor: .db 0
+fileSize: .db 0
+mallocSize: .db 0
+workingBuffer: .db 0
+lineNumber: .db 0
+; Cursor: .db 0
+cursorLine: .db 0
+cursorColumn: .db 0
 
-Font:
-#INC ./fontGen/font.hex
+Font: .db 0
+
 FontI:
 #INC ./fontGen/fontI.hex

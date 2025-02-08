@@ -98,9 +98,11 @@
 		+ [x] Jump to stack page
 		+ [x] Jump to PC
 			+ [x] Follow the PC?
-	+ [ ] Debugger encounters condition where PC is mid-instruction
-		+ [ ] Is this even a problem?
-		+ [ ] Performance cost on debugger for fixing?
+	+ [ ] ~~Debugger encounters condition where PC is mid-instruction~~
+		+ [ ] ~~Is this even a problem?~~
+		+ [ ] ~~!Performance cost on debugger for fixing?~~
+	+ [ ] Instructions per second
+	+ [ ] Frames per second
 + [x] An actual debugger UI instead of just keyboard shortcuts? A menubar?
 + [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
 # Simulator Keybinds
