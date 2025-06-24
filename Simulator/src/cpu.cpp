@@ -12,14 +12,14 @@
 #define VideoMemory 0xb000
 #define VideoPallette 0xaff0
 #define VideoSettings 0xafef
-#define StackMemory 0xf000
+// #define StackMemory 0xf000
 
 #define InterruptTableStart 0xaf00
 #define IODataStart 0xafd0
 
 // The below variables are updated by a script when the instruction set is changed. Don't change those two lines please.
 // The script is at Ghost/Docs/Instruction Set.py
-const std::string InstructionDebugging[0x100] {"NOP", "MVAA", "DDV", "DDA", "DDR0", "DDR1", "DDR2", "DDR3", "LDV0", "LDV1", "LDV2", "LDV3", "LDA0", "LDA1", "LDA2", "LDA3", "LDD0", "LDD1", "LDD2", "LDD3", "STR0", "STR1", "STR2", "STR3", "STAR0", "STAR1", "STAR2", "STAR3", "STV", "STDV", "MVDD", "INT", "STDR0", "STDR1", "STDR2", "STDR3", "SHLV0", "SHLV1", "SHLV2", "SHLV3", "SHLA0", "SHLA1", "SHLA2", "SHLA3", "SHLR0", "SHLR1", "SHLR2", "SHLR3", "SHRV0", "SHRV1", "SHRV2", "SHRV3", "SHRA0", "SHRA1", "SHRA2", "SHRA3", "SHRR0", "SHRR1", "SHRR2", "SHRR3", "ADDV0", "ADDV1", "ADDV2", "ADDV3", "ADDA0", "ADDA1", "ADDA2", "ADDA3", "ADDR0", "ADDR1", "ADDR2", "ADDR3", "SUBV0", "SUBV1", "SUBV2", "SUBV3", "SUBA0", "SUBA1", "SUBA2", "SUBA3", "SUBR0", "SUBR1", "SUBR2", "SUBR3", "SBRV0", "SBRV1", "SBRV2", "SBRV3", "SBRA0", "SBRA1", "SBRA2", "SBRA3", "SBRR0", "SBRR1", "SBRR2", "SBRR3", "NOT0", "NOT1", "NOT2", "NOT3", "NEG0", "NEG1", "NEG2", "NEG3", "INC0", "INC1", "INC2", "INC3", "DEC0", "DEC1", "DEC2", "DEC3", "SHLO0", "SHLO1", "SHLO2", "SHLO3", "SHRO0", "SHRO1", "SHRO2", "SHRO3", "ANDV0", "ANDV1", "ANDV2", "ANDV3", "ANDA0", "ANDA1", "ANDA2", "ANDA3", "ANDR0", "ANDR1", "ANDR2", "ANDR3", "ORV0", "ORV1", "ORV2", "ORV3", "ORA0", "ORA1", "ORA2", "ORA3", "ORR0", "ORR1", "ORR2", "ORR3", "XORV0", "XORV1", "XORV2", "XORV3", "XORA0", "XORA1", "XORA2", "XORA3", "XORR0", "XORR1", "XORR2", "XORR3", "LDZ0", "LDZ1", "LDZ2", "LDZ3", "STZ0", "STZ1", "STZ2", "STZ3", "PSHR0", "PSHR1", "PSHR2", "PSHR3", "POPR0", "POPR1", "POPR2", "POPR3", "PSHA", "POPA", "CEZA", "CNZA", "CEZR0", "CEZR1", "CEZR2", "CEZR3", "CNZR0", "CNZR1", "CNZR2", "CNZR3", "CEV0", "CEV1", "CEV2", "CEV3", "CEA0", "CEA1", "CEA2", "CEA3", "CNV0", "CNV1", "CNV2", "CNV3", "CNA0", "CNA1", "CNA2", "CNA3", "CLTV0", "CLTV1", "CLTV2", "CLTV3", "CLTA0", "CLTA1", "CLTA2", "CLTA3", "CGTV0", "CGTV1", "CGTV2", "CGTV3", "CGTA0", "CGTA1", "CGTA2", "CGTA3", "JMPA", "JMPD", "CALA", "CALD", "RET", "JPCA", "JPCD", "CLCA", "CLCD", "RETC", "BRK", "HLT", "DBGR0", "DBGR1", "DBGR2", "DBGR3", "DBGV", "DBGA", "DBCA", "DBCV", "DBCR0", "DBCR1", "DBCR2", "DBCR3", "ADOR0", "ADOR1", "ADOR2", "ADOR3", "ADOV", "ADOA", "INCD", "DECD", "IDIS", "IEN", "AOR", "CPSH", "CPOP", "NONE", "NONE", "NONE"};
+const std::string InstructionDebugging[0x100] {"NOP", "MVAA", "DDV", "DDA", "DDR0", "DDR1", "DDR2", "DDR3", "LDV0", "LDV1", "LDV2", "LDV3", "LDA0", "LDA1", "LDA2", "LDA3", "LDD0", "LDD1", "LDD2", "LDD3", "STR0", "STR1", "STR2", "STR3", "STAR0", "STAR1", "STAR2", "STAR3", "STV", "STDV", "MVDD", "INT", "STDR0", "STDR1", "STDR2", "STDR3", "SHLV0", "SHLV1", "SHLV2", "SHLV3", "SHLA0", "SHLA1", "SHLA2", "SHLA3", "SHLR0", "SHLR1", "SHLR2", "SHLR3", "SHRV0", "SHRV1", "SHRV2", "SHRV3", "SHRA0", "SHRA1", "SHRA2", "SHRA3", "SHRR0", "SHRR1", "SHRR2", "SHRR3", "ADDV0", "ADDV1", "ADDV2", "ADDV3", "ADDA0", "ADDA1", "ADDA2", "ADDA3", "ADDR0", "ADDR1", "ADDR2", "ADDR3", "SUBV0", "SUBV1", "SUBV2", "SUBV3", "SUBA0", "SUBA1", "SUBA2", "SUBA3", "SUBR0", "SUBR1", "SUBR2", "SUBR3", "SBRV0", "SBRV1", "SBRV2", "SBRV3", "SBRA0", "SBRA1", "SBRA2", "SBRA3", "SBRR0", "SBRR1", "SBRR2", "SBRR3", "NOT0", "NOT1", "NOT2", "NOT3", "PSHA", "NONE", "POPA", "NONE", "INC0", "INC1", "INC2", "INC3", "DEC0", "DEC1", "DEC2", "DEC3", "SHLO0", "SHLO1", "SHLO2", "SHLO3", "SHRO0", "SHRO1", "SHRO2", "SHRO3", "ANDV0", "ANDV1", "ANDV2", "ANDV3", "ANDA0", "ANDA1", "ANDA2", "ANDA3", "ANDR0", "ANDR1", "ANDR2", "ANDR3", "ORV0", "ORV1", "ORV2", "ORV3", "ORA0", "ORA1", "ORA2", "ORA3", "ORR0", "ORR1", "ORR2", "ORR3", "XORV0", "XORV1", "XORV2", "XORV3", "XORA0", "XORA1", "XORA2", "XORA3", "XORR0", "XORR1", "XORR2", "XORR3", "LDZ0", "LDZ1", "LDZ2", "LDZ3", "STZ0", "STZ1", "STZ2", "STZ3", "PSHR0", "PSHR1", "PSHR2", "PSHR3", "POPR0", "POPR1", "POPR2", "POPR3", "LDSP", "STSP", "CEZA", "CNZA", "CEZR0", "CEZR1", "CEZR2", "CEZR3", "CNZR0", "CNZR1", "CNZR2", "CNZR3", "CEV0", "CEV1", "CEV2", "CEV3", "CEA0", "CEA1", "CEA2", "CEA3", "CNV0", "CNV1", "CNV2", "CNV3", "CNA0", "CNA1", "CNA2", "CNA3", "CLTV0", "CLTV1", "CLTV2", "CLTV3", "CLTA0", "CLTA1", "CLTA2", "CLTA3", "CGTV0", "CGTV1", "CGTV2", "CGTV3", "CGTA0", "CGTA1", "CGTA2", "CGTA3", "JMPA", "JMPD", "CALA", "CALD", "RET", "JPCA", "JPCD", "CLCA", "CLCD", "RETC", "BRK", "HLT", "DBGR0", "DBGR1", "DBGR2", "DBGR3", "DBGV", "DBGA", "DBCA", "DBCV", "DBCR0", "DBCR1", "DBCR2", "DBCR3", "ADOR0", "ADOR1", "ADOR2", "ADOR3", "ADOV", "ADOA", "INCD", "DECD", "IDIS", "IEN", "AOR", "CPSH", "CPOP", "NONE", "NONE", "NONE"};
 const int InstructionDebuggingNumArgs[0x100] {0, 2, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 cpu::cpu(std::string romFile) {
@@ -50,6 +50,7 @@ void cpu::reset() {
 	std::cout << "CPU RESET" << std::endl;
 	t=0;
 	MEMORY[VideoSettings] = 0;
+	SP = 0xffff;
 	bootloader();
 }
 
@@ -91,14 +92,14 @@ void cpu::debug() {
 	output << " | " << std::setw(4) << std::setfill('0') << R1;
 	output << " | " << std::setw(4) << std::setfill('0') << R2;
 	output << " | " << std::setw(4) << std::setfill('0') << R3;
-	output << " | Stack[" << MEMORY[StackMemory] << "]: ";
-	if (MEMORY[StackMemory] > 0xfff) {
-		output << " !!!!";
-	} else {
-		for (int i = 1; i <= MEMORY[StackMemory]; i++) {
-			output << " " << std::setw(4) << std::setfill('0') << MEMORY[StackMemory+i];
-		}
-	}
+	output << " | Stack[" << SP << "]: ";
+	// if (SP > 0xfff) {
+	// 	output << " !!!!";
+	// } else {
+	// 	for (int i = 1; i <= SP; i++) {
+	// 		output << " " << std::setw(4) << std::setfill('0') << MEMORY[StackMemory+i];
+	// 	}
+	// }
 	std::string outputString = output.str();
 	if (previousDebug != outputString) {
 		std::cout << outputString << std::endl;
@@ -116,8 +117,8 @@ void cpu::readRegisterState(unsigned short Registers[]) {
 	Registers[4] = R3;
 	Registers[5] = DD;
 	Registers[6] = offsetRegister;
-	Registers[7] = MEMORY[StackMemory];
-	Registers[8] = MEMORY[StackMemory + MEMORY[StackMemory]];
+	Registers[7] = SP;
+	Registers[8] = MEMORY[SP];
 }
 
 void cpu::readCurrentInstruction(Instruction &inst) {
@@ -215,20 +216,10 @@ void cpu::setValueAtAddress(unsigned short value, unsigned short address) {
 	MEMORY[address + offsetRegister] = value;
 }
 void cpu::pushToStack(unsigned short value) {
-	unsigned short addr = ++MEMORY[StackMemory];
-	MEMORY[StackMemory + addr] = value;
-	if (MEMORY[StackMemory] == 0x1000) {
-		std::cout << "ERR: Stack Overflow. Pushed to stack and pointer reached 0x1000" << std::endl;
-		halted = true;
-	}
+	MEMORY[SP--] = value;
 }
 unsigned short cpu::popFromStack() {
-	unsigned short addr = MEMORY[StackMemory]--;
-	if (MEMORY[StackMemory] == 0xffff) {
-		std::cout << "ERR: Stack Underflow. Popped from stack and pointer under flowed to 0xffff" << std::endl;
-		halted = true;
-	}
-	return MEMORY[StackMemory + addr];
+	return MEMORY[++SP];
 }
 
 void cpu::callInterrupt(unsigned short interrupt) {
@@ -614,18 +605,20 @@ void cpu::executeFunction(unsigned short instruction) {
 	case 0x63: // NOT3
 		R3 = ~R3;
 		break;
-	case 0x64: // NEG0
-		R0 = -R0;
+	case 0x64: // PSHA
+		pushToStack(R0);
+		pushToStack(R1);
+		pushToStack(R2);
+		pushToStack(R3);
 		break;
-	case 0x65: // NEG1
-		R1 = -R1;
+	// case 0x65:
+	case 0x66: // POPA
+		R3 = popFromStack();
+		R2 = popFromStack();
+		R1 = popFromStack();
+		R0 = popFromStack();
 		break;
-	case 0x66: // NEG2
-		R2 = -R2;
-		break;
-	case 0x67: // NEG3
-		R3 = -R3;
-		break;
+	// case 0x67:
 	case 0x68: // INC0
 		R0++;
 		break;
@@ -830,17 +823,11 @@ void cpu::executeFunction(unsigned short instruction) {
 	case 0xab: // POPR3
 		R3 = popFromStack();
 		break;
-	case 0xac: // PSHA
-		pushToStack(R0);
-		pushToStack(R1);
-		pushToStack(R2);
-		pushToStack(R3);
+	case 0xac: // LDSP
+		R0 = SP;
 		break;
-	case 0xad: // POPA
-		R3 = popFromStack();
-		R2 = popFromStack();
-		R1 = popFromStack();
-		R0 = popFromStack();
+	case 0xad: // STSP
+		SP = R0;
 		break;
 	case 0xae: // CEZA
 		jump = getAtAddress(getArgument()) == 0;

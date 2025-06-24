@@ -1,0 +1,10 @@
+CALL main
+DBG R0
+HLT
+main:
+LD R0 5
+PSH R0
+LD R0 3
+POP R1
+XOR R1
+RET

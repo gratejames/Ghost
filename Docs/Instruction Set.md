@@ -35,7 +35,10 @@
 | 0b010110RR   | 0x58 | Subtract register from address, store to register | Address - Register → Register       | SBRA | SBR   | Register, Address |        |
 | 0b010111RR   | 0x5c | Subtract R0 from register, store to R0            | R0 = Register - R0                  | SBRR | SBR   | Register          |        |
 | 0b011000RR   | 0x60 | NOT Register                                      | NOT                                 | NOT  |       | Register          |        |
-| 0b011001RR   | 0x64 | Negate Register (Twos Compliment)                 | Negate                              | NEG  |       | Register          |        |
+| 0b01100100   | 0x64 | Push all registers to stack                       | Push All                            | PSHA | PSH   | None              |        |
+| 0b01100101   | 0x65 |                                                   |                                     |      |       |                   |        |
+| 0b01100110   | 0x66 | Pop all registers from stack                      | Pop All                             | POPA | POP   | None              |        |
+| 0b01100111   | 0x67 |                                                   |                                     |      |       |                   |        |
 | 0b011010RR   | 0x68 | Increase Register                                 | Increase                            | INC  |       | Register          | PASS   |
 | 0b011011RR   | 0x6c | Decrease Register                                 | Decrease                            | DEC  |       | Register          |        |
 | 0b011100RR   | 0x70 | Shift Register Left 1                             | Register << 1                       | SHLO |       | Register          |        |
@@ -55,9 +58,8 @@
 | Stack        |      |                                                   |                                     |      |       |                   |        |
 | 0b101001RR   | 0xa4 | Push Register to stack                            | Push Register                       | PSHR | PSH   | Register          |        |
 | 0b101010RR   | 0xa8 | Pop register to stack                             | Pop Register                        | POPR | POP   | Register          |        |
-| 0b10101100   | 0xac | Push all registers to stack                       | Push All                            | PSHA | PSH   | None              | PASS   |
-| 0b10101101   | 0xad | Pop all registers from stack                      | Pop All                             | POPA | POP   | None              | PASS   |
-|              |      |                                                   |                                     |      |       |                   |        |
+| 0b10101100   | 0xac | Stack pointer to R0                               | R0 = SP                             | LDSP |       | None              |        |
+| 0b10101101   | 0xad | R0 to stack pointer                               | SP = R0                             | STSP |       | None              |        |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Conditionals |      |                                                   |                                     |      |       |                   |        |
 | 0b10101110   | 0xae |                                                   | Cond Address=0                      | CEZA | CEZ   | Address           |        |
@@ -84,7 +86,7 @@
 | 0b11011111   | 0xdf |                                                   | Routine Conditional Address         | CLCA | CALLC | Value             | PASS   |
 | 0b11100000   | 0xe0 |                                                   | Routine Conditional AddressRegister | CLCD | CALLC | None              |        |
 | 0b11100001   | 0xe1 |                                                   | Return Conditional                  | RETC |       | None              |        |
-| 0b11100010   | 0xe2 |                                                   | Break                               | BRK  |       | None              | NYI    |
+| 0b11100010   | 0xe2 |                                                   | Break                               | BRK  |       | None              | PASS   |
 | 0b11100011   | 0xe3 |                                                   | Halt                                | HLT  |       | None              | PASS   |
 |              |      |                                                   |                                     |      |       |                   |        |
 | Extended     |      |                                                   |                                     |      |       |                   |        |
@@ -102,5 +104,5 @@
 | 0b11111000   | 0xf8 | Disable Interrupts                                |                                     | IDIS |       | None              |        |
 | 0b11111001   | 0xf9 | Enable Interrupts                                 |                                     | IEN  |       | None              |        |
 | 0b11111010   | 0xfa | Copy the AO into R0                               |                                     | AOR  |       | None              |        |
-| 0b11111010   | 0xfb | Push the conditional to the stack                 |                                     | CPSH |       | None              |        |
-| 0b11111010   | 0xfc | Pop the conditional from the stack                |                                     | CPOP |       | None              |        |
+| 0b11111011   | 0xfb | Push the conditional to the stack                 |                                     | CPSH |       | None              |        |
+| 0b11111100   | 0xfc | Pop the conditional from the stack                |                                     | CPOP |       | None              |        |

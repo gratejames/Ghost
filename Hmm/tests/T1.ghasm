@@ -1,0 +1,114 @@
+JMP jmp_dd_test
+HLT
+
+jmp_dd_test:
+DBG 0
+DD cez_test
+JMP
+DBG 0xf000
+HLT
+
+cez_test:
+DBG 1
+LD R0 0
+CEZ R0
+JMPC cez_test2
+DBG 0xf001
+HLT
+
+cez_test2:
+DBG 2
+CEZ $one_val
+JMPC cez_test2_fail
+cnz_test:
+DBG 3
+CNZ $one_val
+JMPC cnz_test2
+DBG 0xf003
+HLT
+
+cnz_test2:
+DBG 4
+LD R0 0
+CNZ R0
+JMPC cnz_test2_fail
+ce_test:
+DBG 5
+LD R0 4
+CE R0 4
+JMPC ce_test2
+DBG 0xf005
+HLT
+
+ce_test2:
+DBG 6
+LD R0 4
+CE R0 $five_val
+JMPC ce_test2_fail
+cne_test:
+DBG 7
+LD R0 4
+CNE R0 $five_val
+JMPC cne_test2
+DBG 0xf007
+HLT
+
+cne_test2:
+DBG 8
+LD R0 4
+CNE R0 4
+JMPC cne_test2_fail
+clt_test:
+DBG 9
+LD R0 3
+CLT R0 5
+JMPC clt_test_2
+DBG 0xf009
+HLT
+
+clt_test_2:
+DBG 0xa
+LD R0 7
+CLT R0 $five_val
+JMPC clt_test2_fail
+cgt_test:
+DBG 0xb
+LD R0 7
+CGT R0 5
+JMPC cgt_test_2
+DBG 0xf00b
+HLT
+
+cgt_test_2:
+DBG 0xc
+LD R0 3
+CGT R0 $five_val
+JMPC cgt_test2_fail
+DBG 0xd
+HLT
+; Success: Prints 0,1,2,3,4,5,6,7,8,9,a,b,c,d
+
+
+cgt_test2_fail:
+DBG 0xf00c
+HLT
+clt_test2_fail:
+DBG 0xf00a
+HLT
+cne_test2_fail:
+DBG 0xf008
+HLT
+ce_test2_fail:
+DBG 0xf006
+HLT
+cnz_test2_fail:
+DBG 0xf004
+HLT
+cez_test2_fail:
+DBG 0xf002
+HLT
+
+five_val:
+.db 5
+one_val:
+.db 1

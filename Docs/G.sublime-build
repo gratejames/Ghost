@@ -1,0 +1,17 @@
+{
+    "cmd": ["/home/flicker/Desktop/Ghost/Lang/main.py", "$file"],
+    "selector": "source.g",
+    "file_patterns": ["*.g"],
+
+	"variants":
+	[
+		{
+			"name": "Compile and Assemble",
+			"shell_cmd": "/home/flicker/Desktop/Ghost/Lang/main.py \"$file\" && /home/flicker/Desktop/Ghost/Assembler/assembler.py \"$file_path/$file_base_name.ghasm\"",
+		},
+		{
+			"name": "Compile and Assemble and Run",
+			"shell_cmd": "/home/flicker/Desktop/Ghost/Lang/main.py \"$file\" && /home/flicker/Desktop/Ghost/Assembler/assembler.py \"$file_path/$file_base_name.ghasm\" && /home/flicker/Desktop/Ghost/Simulator/build/Simulator -f \"$file_path/$file_base_name.hex\" -s 4",
+		}
+	]
+}

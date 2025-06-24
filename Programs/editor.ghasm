@@ -76,132 +76,252 @@ blinkCursor:
 		RET
 
 KeyboardInterrupt:
-ST 0xffff $currentTick
-IDIS
-PSH
-CPSH
-AOR
-ADO 0
-PSH R0
-	; DBGC $0xafd1
-	; DBG $0xafd0
-	LD R0 $0xafd1
-	LD R1 $0xafd0
-POP R3
-ADO R3
-	CEZ R1
-	JMPC KI_Release
-	CE R0 'q' ; TODO MODIFIERS AND KEY UP VS KEY DOWN
-	CALLC KI_q
-	CE R0 0x4a
-	CALLC KI_HOME
-	CE R0 0x4d
-	CALLC KI_END
-	CE R0 0x4f
-	CALLC KI_RIGHT
-	CE R0 0x50
-	CALLC KI_LEFT
-	CE R0 0x51
-	CALLC KI_DOWN
-	CE R0 0x52
-	CALLC KI_UP
-	; DBG R0
-	KI_Release:
-CPOP
-POP
-IEN
-RET
-KI_q:
-	ST 1 $isDone
-	RET
-
-KI_UP:
+	ST 0xffff $currentTick
+	IDIS
+	PSH
+	CPSH
+	AOR
+	ADO 0
 	PSH R0
-	CALL updateCursor
-	LD R0 $cursorLine
-	CEZ R0
-	JMPC KI_UP_End
-	DEC R0
-	ST R0 $cursorLine
-	CALL snapToEnd
-	KI_UP_End:
-	POP R0
-	RET
-
-KI_DOWN:
-	PSH R0
-	CALL updateCursor
-	LD R0 $cursorLine
-	INC R0
-	ST R0 $cursorLine
-	CALL snapToEnd
-	POP R0
-	RET
-
-KI_RIGHT:
-	PSH R0
-	CALL updateCursor
-	LD R0 $cursorColumn
-		PSH R0
-		CALL scanToCursor
-		DD R0
-		POP R0
-		LDD R1
-		CE R1 0xa
-		JMPC KI_RIGHT_Wrap
+		; DBGC $0xafd1
+		; DBG $0xafd0
+		LD R0 $0xafd1
+		LD R1 $0xafd0
+	POP R3
+	ADO R3
 		CEZ R1
-		JMPC KI_RIGHT_End
+		JMPC KI_Release
+		CE R0 'q' ; TODO MODIFIERS AND KEY UP VS KEY DOWN
+		JMPC KI_q
 
-	INC R0
-	ST R0 $cursorColumn
-	KI_RIGHT_End:
-	POP R0
+		CE R0 0x08
+		JMPC KI_BACKSPACE
+
+		CE R0 0x4a
+		JMPC KI_HOME
+		CE R0 0x4d
+		JMPC KI_END
+		CE R0 0x4f
+		JMPC KI_RIGHT
+		CE R0 0x50
+		JMPC KI_LEFT
+		CE R0 0x51
+		JMPC KI_DOWN
+		CE R0 0x52
+		JMPC KI_UP
+
+		CE R0 0x00e0 ; L_Control
+		JMPC KI_Control_Down
+		CE R0 0x00e1 ; L_Shift
+		JMPC KI_Shift_Down
+		CE R0 0x00e2 ; L_Alt
+		JMPC KI_Alt_Down
+		CE R0 0x00e3 ; L_Win
+		JMPC KI_Win_Down
+		; DBG R0
+		KI_Normal:
+		JMP KI_Done
+
+		KI_Release:
+			CE R0 0x00e0 ; L_Control
+			JMPC KI_Control_Up
+			CE R0 0x00e1 ; L_Shift
+			JMPC KI_Shift_Up
+			CE R0 0x00e2 ; L_Alt
+			JMPC KI_Alt_Up
+			CE R0 0x00e3 ; L_Win
+			JMPC KI_Win_Up
+		JMP KI_Done
+
+		KI_Done:
+	CPOP
+	POP
+	IEN
 	RET
-	KI_RIGHT_Wrap:
+
+	KI_q:
+		LD R0 $KB_Mods
+		AND R0 0b0010
+		CEZ R0
+		JMPC KI_Normal	
+		ST 1 $isDone
+		JMP KI_Done
+
+	KI_Win_Up:
+		LD R0 0
+		LD R1 3
+		CALL SetModifier
+		JMP KI_Done
+	KI_Win_Down:
+		LD R0 1
+		LD R1 3
+		CALL SetModifier
+		JMP KI_Done
+	KI_Alt_Up:
+		LD R0 0
+		LD R1 2
+		CALL SetModifier
+		JMP KI_Done
+	KI_Alt_Down:
+		LD R0 1
+		LD R1 2
+		CALL SetModifier
+		JMP KI_Done
+	KI_Shift_Up:
+		LD R0 0
+		LD R1 0
+		CALL SetModifier
+		JMP KI_Done
+	KI_Shift_Down:
+		LD R0 1
+		LD R1 0
+		CALL SetModifier
+		JMP KI_Done
+	KI_Control_Up:
+		LD R0 0
+		LD R1 1
+		CALL SetModifier
+		JMP KI_Done
+	KI_Control_Down:
+		LD R0 1
+		LD R1 1
+		CALL SetModifier
+		JMP KI_Done
+
+	KI_UP:
+		PSH R0
+		CALL updateCursor
+		LD R0 $cursorLine
+		CEZ R0
+		JMPC KI_UP_End
+		DEC R0
+		ST R0 $cursorLine
+		CALL snapToEnd
+		KI_UP_End:
+		POP R0
+		JMP KI_Done
+	KI_DOWN:
+		PSH R0
+		CALL updateCursor
 		LD R0 $cursorLine
 		INC R0
 		ST R0 $cursorLine
+		CALL snapLastLine
+		CALL snapToEnd
+		POP R0
+		JMP KI_Done
+	KI_RIGHT:
+		PSH R0
+		CALL updateCursor
+		LD R0 $cursorColumn
+			PSH R0
+			CALL scanToCursor
+			DD R0
+			POP R0
+			LDD R1
+			CE R1 0xa
+			JMPC KI_RIGHT_Wrap
+			CEZ R1
+			JMPC KI_RIGHT_End
+
+		INC R0
+		ST R0 $cursorColumn
+		KI_RIGHT_End:
+		POP R0
+		JMP KI_Done
+		KI_RIGHT_Wrap:
+			LD R0 $cursorLine
+			INC R0
+			ST R0 $cursorLine
+			ST 0 $cursorColumn
+			POP R0
+			JMP KI_Done
+	KI_LEFT:
+		PSH R0
+		CALL updateCursor
+		LD R0 $cursorColumn
+		CEZ R0
+		JMPC KI_LEFT_Wrap
+		DEC R0
+		ST R0 $cursorColumn
+		POP R0
+		JMP KI_Done
+		KI_LEFT_Wrap:
+			LD R0 $cursorLine
+			CEZ R0
+			JMPC KI_LEFT_End
+			DEC R0
+			ST R0 $cursorLine
+			CALL cursorToEnd
+			KI_LEFT_End:
+			POP R0
+			JMP KI_Done
+	KI_END:
+		PSH R0
+		CALL updateCursor
+		CALL cursorToEnd
+		POP R0
+		JMP KI_Done
+	KI_HOME:
+		PSH R0
+		CALL updateCursor
 		ST 0 $cursorColumn
 		POP R0
-		RET
+		JMP KI_Done
 
-KI_LEFT:
-	PSH R0
-	CALL updateCursor
-	LD R0 $cursorColumn
-	CEZ R0
-	JMPC KI_LEFT_Wrap
-	DEC R0
-	ST R0 $cursorColumn
-	POP R0
-	RET
-	KI_LEFT_Wrap:
-		LD R0 $cursorLine
-		CEZ R0
-		JMPC KI_LEFT_End
-		DEC R0
-		ST R0 $cursorLine
-		CALL cursorToEnd
-		KI_LEFT_End:
-		POP R0
-		RET
+	KI_BACKSPACE:
+		CALL scanToCursor
 
-KI_END:
-	PSH R0
-	CALL updateCursor
-	CALL cursorToEnd
-	POP R0
-	RET
+		; 3 cases:
+		; + Mid line, remove char and shift all others down, redraw just current line
+		; + Beginning of line, remove newline (shift) and redraw file (Overwrite the last line since the file shrunk)
+		; + Beginning of file, do nothing
 
-KI_HOME:
-	PSH R0
-	CALL updateCursor
-	ST 0 $cursorColumn
-	POP R0
-	RET
+		CEZ $cursorColumn
+		JMPC BACKSPACE_beginningOfLine
+
+		DEC R0 ; TODO: CHECK IF OKAY
+		; R0 has the pointer to the cursor
+		CALL decrementFile
+		CALL updateCursorLine
+		BACKSPACE_beginningOfLine:
+		JMP KI_Done
+
 
 
 PrevAO: .db 0
+
+; R0 -> pointer to start decrement
+decrementFile:
+	STZ R2
+	INC R2
+
+	decrementFile_loop:
+	DD R2
+	LDD R1
+	DD R0
+	STD R1
+	CNZ R1
+	INC R2
+	INC R0
+	JMPC decrementFile_loop
+
+	RET
+
+; R0 -> State
+; R1 -> Modifier Position
+SetModifier:
+	PSH R0
+	LD R0 1
+	SHL R1
+	NOT R0
+	AND R0 $KB_Mods ; Mask out the bit for the specific modifier
+	STZ R2
+	POP R0
+	SHL R1
+	ADD R2 ; Add masked to state
+	ST R0 $KB_Mods
+	RET
 
 replaceZeroNewlineBlank:
 	CEZ R0
@@ -224,6 +344,49 @@ updateCursor:
 	INC R2
 	INT IprintChar
 	RET
+
+updateCursorLine:
+	LD R0 $cursorLine
+	CALL scanToLine
+	LD R1 $cursorColumn
+	LD R2 $cursorLine
+	LD R3 $Font
+	INC R2
+
+	updateCursorLine_loop:
+	DD R0
+	PSH R0
+	LDD R0
+	INT IprintChar
+	CNE R0 0xa
+	POP R0
+	JMP updateCursorLine_loop
+
+
+	RET
+
+; If the cursor is past the last line snap it to the last valid character
+snapLastLine:
+	LD R0 $cursorLine
+	DEC R0
+	CALL scanToLine
+	; R0 has first char in line before current
+	snapLastLine_loop:
+	DD R0
+	INC R0
+	LDD R1
+	CEZ R1 ; If we hit a zero, then the cursor is too far
+	JMPC snapLastLine_snap
+	CNE R1 0xa ; If we didn't hit a newline we keep looping
+	JMPC snapLastLine_loop
+	RET
+
+	snapLastLine_snap:
+		LD R0 $cursorLine
+		DEC R0
+		ST R0 $cursorLine
+		CALL cursorToEnd
+		RET
 
 ; R0 <- ptr to char
 scanToCursor:
@@ -477,23 +640,23 @@ cls:
 	INT Ioutput
 	RET
 
-currentTick: .db 0
-TitlePrefix: .ds " Editing: "
-.db 0
-argumentptr: .db 0
-isDone: .db 0
-fileName: .db 0 ; ptr
-pathName: .db 0 ; ptr
-pathNameLength: .db 0
-diskNumber: .db 0
-fileNumber: .db 0
-fileSize: .db 0
-mallocSize: .db 0
-workingBuffer: .db 0
-lineNumber: .db 0
-; Cursor: .db 0
-cursorLine: .db 0
-cursorColumn: .db 0
+currentTick: 		.db 0
+TitlePrefix: 		.ds " Editing: "
+					.db 0
+argumentptr: 		.db 0
+isDone: 			.db 0
+fileName: 			.db 0 ; ptr
+pathName: 			.db 0 ; ptr
+pathNameLength: 	.db 0
+diskNumber: 		.db 0
+fileNumber: 		.db 0
+fileSize: 			.db 0
+mallocSize: 		.db 0
+workingBuffer: 		.db 0
+lineNumber: 		.db 0
+cursorLine: 		.db 0
+cursorColumn: 		.db 0
+KB_Mods:			.db 0 ; 0000 0000 0000 win+alt+ctrl+shift
 
 Font: .db 0
 

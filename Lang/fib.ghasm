@@ -1,0 +1,161 @@
+CALL main
+DBG R0
+HLT
+ebp: .db 0xffff
+i: .db 10
+fib:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+;declare and assign identifier
+LD R0 72
+PSH R0
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+PSH R0
+LD R0 0
+POP R1
+ST R1 $eq_val_5734c83a
+CE R0 $eq_val_5734c83a
+JMPC eq_match_5734c83a
+LD R0 0
+JMP eq_done_5734c83a
+eq_val_5734c83a:
+.db 0
+eq_match_5734c83a:
+LD R0 1
+eq_done_5734c83a:
+CNZ R0
+JMPC or_true_309b5489
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+PSH R0
+LD R0 1
+POP R1
+ST R1 $eq_val_de0795a6
+CE R0 $eq_val_de0795a6
+JMPC eq_match_de0795a6
+LD R0 0
+JMP eq_done_de0795a6
+eq_val_de0795a6:
+.db 0
+eq_match_de0795a6:
+LD R0 1
+eq_done_de0795a6:
+CNZ R0
+JMPC or_true_309b5489
+LD R0 0
+JMP or_done_309b5489
+or_true_309b5489:
+LD R0 1
+or_done_309b5489:
+CEZ R0
+JMPC if_else_false_6ee0a8eb
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+;begin epilog
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+JMP if_else_done_6ee0a8eb
+if_else_false_6ee0a8eb:
+;function call
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+PSH R0
+LD R0 1
+POP R1
+SBR R1
+PSH R0
+CALL fib
+STZ R1
+LDSP
+ADD R0 1
+STSP
+LDZ R1
+PSH R0
+;function call
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+PSH R0
+LD R0 2
+POP R1
+SBR R1
+PSH R0
+CALL fib
+STZ R1
+LDSP
+ADD R0 1
+STSP
+LDZ R1
+POP R1
+ADD R1
+;begin epilog
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+if_else_done_6ee0a8eb:
+POP R0
+;begin auto-epilog
+LD R0 0
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+main:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+;declare and assign identifier
+LD R0 $i
+PSH R0
+;function call
+;recall identifier
+LD R0 $ebp
+DD R0
+LDD R0
+PSH R0
+CALL fib
+STZ R1
+LDSP
+ADD R0 1
+STSP
+LDZ R1
+;begin epilog
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET

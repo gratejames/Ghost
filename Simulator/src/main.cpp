@@ -439,7 +439,7 @@ void createDebugText() {
   if (debuggerMode == DM_NORMAL) {
     ;
   } else if (debuggerMode == DM_JUMP_STACK) {
-    debuggerPage = getDebugPageOf(0xf000);
+    debuggerPage = getDebugPageOf(Registers[7]);
     debuggerMode = DM_NORMAL;
   } else if (debuggerMode == DM_JUMP_PC) {
     debuggerPage = getDebugPageOf(Registers[0]);
@@ -490,17 +490,18 @@ void createDebugText() {
     font.draw(dbgrenderer, 10, 10 + row*26, NFont::Scale(2.0f), input_text.str().c_str());
     // If on PC page
     if (debuggerPage == getDebugPageOf(Registers[0])) {
-      if (row == (Registers[0]%1024)/16) {
+      int addr = Registers[0];
+      if (row == (addr%1024)/16) {
         std::stringstream highlight;
         highlight << std::hex << std::setw(4) << std::setfill('0');
-        highlight << processor->MEMORY[Registers[0]];
-        int PCcol = Registers[0]%16;
+        highlight << processor->MEMORY[addr];
+        int PCcol = addr%16;
         PCfont.draw(dbgrenderer, 10 + (11+PCcol*5)*14, 10 + row*26, NFont::Scale(2.0f), highlight.str().c_str());
       }
     }
     // If on SP page
-    if (debuggerPage == getDebugPageOf(0xf000 + Registers[7])) {
-      int addr = 0xf000 + Registers[7];
+    if (debuggerPage == getDebugPageOf(Registers[7])) {
+      int addr = Registers[7];
       if (row == (addr%1024)/16) {
         std::stringstream highlight;
         highlight << std::hex << std::setw(4) << std::setfill('0');

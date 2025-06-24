@@ -36,6 +36,7 @@ private:
 	unsigned short R1 = 0;
 	unsigned short R2 = 0;
 	unsigned short R3 = 0;
+	unsigned short SP = 0;
 	unsigned short value = 0;			// Used in instruction logic
 	unsigned short instruction = 0;		// ^
 	unsigned short offsetRegister = 0;

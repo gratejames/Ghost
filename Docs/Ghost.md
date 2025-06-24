@@ -103,6 +103,7 @@
 		+ [ ] ~~!Performance cost on debugger for fixing?~~
 	+ [ ] Instructions per second
 	+ [ ] Frames per second
+	+ [ ] Hardware breakpoints
 + [x] An actual debugger UI instead of just keyboard shortcuts? A menubar?
 + [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
 # Simulator Keybinds
@@ -165,6 +166,5 @@ Display settings (only lower 2 bits used):
     + 10 Pallet: Better res, pallet color   256x256,  4 bit pallet
     + 11 Sharp: Best res, no color          512x512,  1 bit pallet
 ## Stack
-0x000 is the stack pointer that points to the end of the stack. A value of 0 means empty, a value of 1 points to
-0x001, the first element that grows to a maximum of 0xfff
+Stack grows down from 0xffff
 Stack values can be addresses from a `CALL` or values from a `PSH` instruction

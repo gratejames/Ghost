@@ -1,0 +1,42 @@
+; Memory and Register Manipulation
+
+STV 0x3333 $val_1
+LDV R0 0x1111
+LDA R3 $val_1
+STR R0 $val_1
+DDV val_3
+STDR R3
+DDA $ptr_pend_4
+STDV 0x4444
+MVAA $pending_4 $val_4
+LD R2 $ptr_pend_2
+DDR R2
+LDD R2
+DBG $val_1
+DBG R2
+LD R1 $val_3
+DBG R1
+LD R1 $val_4
+DBG R1
+HLT
+
+; Success: Output 0x1111,0x2222,0x3333,0x4444
+
+pending_2:
+.db 0x2222
+pending_4:
+.db 0x0000
+
+ptr_pend_2:
+.db pending_2
+ptr_pend_4:
+.db pending_4
+
+val_1:
+.db 0x0000
+val_2:
+.db 0x0000
+val_3:
+.db 0x0000
+val_4:
+.db 0x0000

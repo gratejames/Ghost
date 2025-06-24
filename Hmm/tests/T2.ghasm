@@ -1,0 +1,118 @@
+ST 0 $0xf000
+DBG 0
+DBG $val
+DBGC ' '
+LD R0 val
+STAR R0 'S'
+DBGC $val
+DBGC 'D'
+LD R0 'B'
+DBGC R0
+
+DD val
+INCD
+STD 'I'
+DECD
+STD 'D'
+
+DBGC ' '
+DBGC $val+1
+DBGC $val
+
+; Test stack
+LD R0 0xad
+LD R1 0
+PSH R0
+LDSP
+; DBG R0
+; DBG $0xf000
+; DBG $0xf001
+; LD R0 $0xf000
+; CNE R0 1
+; JMPC stack_push_fail
+; LD R0 $0xf001
+; CNE R0 0xad
+; JMPC stack_push_fail
+POP R1
+DBG R1
+CNE R1 0xad
+JMPC stack_pop_fail
+; LD R0 $0xf000
+; CNE R0 0
+; JMPC stack_pop_fail
+DBGC ' '
+DBGC 'S'
+
+; Test stack all
+LD R0 5
+LD R1 6
+LD R2 7
+LD R3 8
+PSH
+LD R0 0
+LD R1 0
+LD R2 0
+LD R3 0
+POP
+CNE R0 5
+JMPC stack_all_fail
+CNE R1 6
+JMPC stack_all_fail
+CNE R2 7
+JMPC stack_all_fail
+CNE R3 8
+JMPC stack_all_fail
+DBGC ' '
+DBGC 'S'
+DBGC 'A'
+
+; Test the conditional stack operations
+LD R0 5
+CE R0 5
+CPSH
+CEZ R0 ; Overwrite conditional
+POP R0
+DBG R0
+LD R0 0xffff
+PSH R0
+CPOP
+JMPC should_jump
+DBGC ' '
+DBGC 'F'
+DBGC 'C'
+DBGC 'S'
+HLT
+
+should_jump:
+DBGC ' '
+DBGC 'C'
+DBGC 'S'
+; ...
+HLT
+
+; Success output: 0x0000 0x0000 SDB ID S SA 0x0001 CS
+
+stack_pop_fail:
+DBGC ' '
+DBGC 'F'
+DBGC 'S'
+DBGC 'O'
+HLT
+
+stack_push_fail: ;; ERR
+DBGC ' '
+DBGC 'F'
+DBGC 'S'
+DBGC 'U'
+HLT
+
+stack_all_fail:
+DBGC ' '
+DBGC 'F'
+DBGC 'S'
+DBGC 'A'
+HLT
+
+val:
+.db 0
+.db 0

@@ -123,9 +123,13 @@ Instructions = {
         "Binary": "0b011000RR",
         "Arguments": "Register"
     },
-    "NEG": {
-        "Binary": "0b011001RR",
-        "Arguments": "Register"
+    "PSHA": {
+        "Binary": "0b01100100",
+        "Arguments": "None"
+    },
+    "POPA": {
+        "Binary": "0b01100110",
+        "Arguments": "None"
     },
     "INC": {
         "Binary": "0b011010RR",
@@ -195,11 +199,11 @@ Instructions = {
         "Binary": "0b101010RR",
         "Arguments": "Register"
     },
-    "PSHA": {
+    "LDSP": {
         "Binary": "0b10101100",
         "Arguments": "None"
     },
-    "POPA": {
+    "STSP": {
         "Binary": "0b10101101",
         "Arguments": "None"
     },
@@ -413,6 +417,14 @@ Shorthand = {
         "Register Address": "SBRA",
         "Register": "SBRR"
     },
+    "PSH": {
+        "None": "PSHA",
+        "Register": "PSHR"
+    },
+    "POP": {
+        "None": "POPA",
+        "Register": "POPR"
+    },
     "AND": {
         "Register Value": "ANDV",
         "Register Address": "ANDA",
@@ -427,14 +439,6 @@ Shorthand = {
         "Register Value": "XORV",
         "Register Address": "XORA",
         "Register": "XORR"
-    },
-    "PSH": {
-        "Register": "PSHR",
-        "None": "PSHA"
-    },
-    "POP": {
-        "Register": "POPR",
-        "None": "POPA"
     },
     "CEZ": {
         "Address": "CEZA",

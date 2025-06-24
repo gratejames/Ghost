@@ -1,0 +1,92 @@
+CALL main
+DBG R0
+HLT
+ebp: .db 0xffff
+OUT:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+
+DD R0
+ded130ef_loop:
+LDD R1
+CEZ R1
+JMPC ded130ef_done
+DBGC R1
+INCD
+JMP ded130ef_loop
+ded130ef_done:
+
+;begin auto-epilog
+LD R0 0
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+OUTLN:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+;function call
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+PSH R0
+CALL OUT
+STZ R1
+LDSP
+ADD R0 1
+STSP
+LDZ R1
+DBGC 10
+
+;begin auto-epilog
+LD R0 0
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+main:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+;function call
+LD R0 68624759
+PSH R0
+CALL OUTLN
+STZ R1
+LDSP
+ADD R0 1
+STSP
+LDZ R1
+;begin auto-epilog
+LD R0 0
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+
+68624759: .ds "~~~"
+.db 0

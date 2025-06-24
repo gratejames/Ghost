@@ -109,9 +109,10 @@ with open("Instruction Set.md", "r+" if EDITMODE else "r") as dest:
 			continue
 		items = [x.strip() for x in line.split("|")[1:-1]]
 		if "0b" in items[0] and "0x" in items[1] and all(x == "" for x in items[2:4]):
+			print("Skipping", items[0])
 			continue
 
-		formatNumbers()
+		# formatNumbers()
 		checkCommands()
 		registerShortcuts()
 
@@ -364,6 +365,10 @@ for i in range(0, 0x100):
 		content = pushStack("R0") + pushStack("R1") + pushStack("R2") + pushStack("R3")
 	elif mne == "POPA":
 		content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
+	elif mne == "LDSP":
+		content = f"\t\tR0 = SP;\n"
+	elif mne == "STSP":
+		content = f"\t\tSP = R0;\n"
 	elif mne == "CEZA":
 		content = cond(getAtArgument(), "==", "0")
 	elif mne == "CNZA":
