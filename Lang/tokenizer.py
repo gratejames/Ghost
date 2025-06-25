@@ -280,25 +280,25 @@ def context(c: list[pre_token]) -> list[token]:
     return tokens
 
 
-def includes(fileContents: str, filePath: Path) -> list[Line]:
+def includes(fileContents: str, rootFilePath: Path) -> list[Line]:
     lines: list[Line] = []
     for i, contents in enumerate(fileContents.split("\n")):
         if contents.startswith("#include "):
             fileName = contents.replace("#include ", "", 1).strip()
-            if filePath.suffix not in ["g"]:
-                lines.append(Line(contents, i, filePath))
-                continue
-
             if fileName[0] == '"' and fileName[-1] == '"':
-                incPath = filePath.parent.absolute() / fileName[1:-1]
+                incPath = rootFilePath.parent.absolute() / fileName[1:-1]
+                if incPath.suffix not in [".g"]:
+                    print("Delaying inclusion for assembler:", incPath.name)
+                    lines.append(Line(contents, i, rootFilePath))
+                    continue
                 with open(incPath, "r") as f:
                     incFileContents = f.read()
                 lines = lines + includes(incFileContents, incPath)
             else:
-                print("Filename not quoted:", Line(contents, i, filePath))
+                print("Filename not quoted:", Line(contents, i, rootFilePath))
                 exit()
         else:
-            lines.append(Line(contents, i, filePath))
+            lines.append(Line(contents, i, rootFilePath))
     # print("\n".join([str(x) for x in lines]))
     return lines
 
@@ -314,4 +314,4 @@ if __name__ == "__main__":
 
     tokens: list[token] = tokenize(fileContents, file)
 
-    print(tokens)
+    print(tokens[108])

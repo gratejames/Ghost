@@ -1,3 +1,4 @@
 /bin/edit: editor.ghasm +x
+/bin/gt: ../Lang/test.g +x
 /str.txt: str.ghasm
 /s: script.ghasm

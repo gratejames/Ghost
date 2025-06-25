@@ -1,4 +1,5 @@
 // #include "../Programs/lib/IVT.ghasm"
+#include "fib.g"
 
 void OUT(char* stringy) {
     stringy;
@@ -14,11 +15,19 @@ JMP %loop
 %done:
     }
 }
+
 void OUTLN(char* stringy) {
     OUT(stringy);
     asm { DBGC 0xa }
 }
 
 int main() {
+    asm {
+        DBGC 'S'
+    }
     OUTLN("~~~");
+    fib(10);
+    asm {
+        DBGC '!'
+    }
 }

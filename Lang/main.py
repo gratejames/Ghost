@@ -8,33 +8,43 @@ import sys
 from pathlib import Path
 
 
-if __name__ != "__main__":
-    exit()
+def compile(fileName: Path, fs=False) -> str:
+    with open(fileName, "r") as f:
+        fileContents: str = f.read()
+
+    tokens: list[token] = tokenize(fileContents, fileName)
+    # print(tokens)
+
+    AST: list[Node] = ast_head(tokens)
+    if AST == []:
+        print("SAD (No AST output...)")
+        exit(1)
+    # print(AST)
+    assembly = str(construct(AST, fs))
+    # print(assembly)
+    return assembly
 
 
-args = sys.argv[1:]
-if len(args) == 0:
-    file = Path("test.g")
-    # print("Must give a file to build")
-else:
-    file = Path(args[0])
+def main():
+    args = sys.argv[1:]
+    fs = False
+    if len(args) == 0:
+        file = Path("test.g")
+    else:
+        if len(args) > 0:
+            file = Path(args[0])
+            if not file.exists():
+                print("Failed to load file", args[0])
+                exit(1)
+        if len(args) > 1 and args[1] == "-fs":
+            fs = True
 
-with open(file, "r") as f:
-    fileContents: str = f.read()
+    assembly = compile(file, fs=fs)
+    outfile = str(file.resolve()).rsplit(".", 1)[0] + ".ghasm"
+    with open(outfile, "w+") as f:
+        f.write(assembly)
+    print(f"Writing to {outfile.split('/')[-1]}")
 
 
-tokens: list[token] = tokenize(fileContents, file)
-
-# print(tokens)
-
-AST: list[Node] = ast_head(tokens)
-if AST == []:
-    print("SAD (No AST output...)")
-    exit()
-# print(AST)
-assembly = str(construct(AST))
-# print(assembly)
-outfile = ".".join(str(file.resolve()).split(".")[:-1]) + ".ghasm"
-with open(outfile, "w+") as f:
-    f.write(assembly)
-print(f"Writing to {outfile.split('/')[-1]}")
+if __name__ == "__main__":
+    main()

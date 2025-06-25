@@ -85,7 +85,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
     asm = ""
     if type(lit_int := state) is ast_nodes.LiteralInteger:
         asm += f"LD R0 {lit_int.value}\n"
-    if type(lit_str := state) is ast_nodes.LiteralString:
+    elif type(lit_str := state) is ast_nodes.LiteralString:
         uid = str(uuid.uuid4())[:8]
         asm += f"LD R0 {uid}\n"
         globalASM += f'{uid}: .ds "{lit_str.value}"\n.db 0\n'
@@ -644,7 +644,7 @@ def csrt_function(functionStruct: ast_nodes.Function, var_map: immutables.Map):
     return asm
 
 
-def construct(AST: list[ast_nodes.Node]) -> str | int:
+def construct(AST: list[ast_nodes.Node], fs=False) -> str | int:
     asm = ""
     var_map = immutables.Map(continue_target=0, break_target=0)
     for mainNode in AST:
@@ -736,12 +736,13 @@ def construct(AST: list[ast_nodes.Node]) -> str | int:
 if __name__ == "__main__":
     from tokenizer import tokenize, token
     from my_ast import ast_head
+    from pathlib import Path
 
     file = "test.g"
     with open(file, "r") as f:
         fileContents: str = f.read()
 
-    tokens: list[token] = tokenize(fileContents)
+    tokens: list[token] = tokenize(fileContents, Path(file))
 
     # print(tokens)
     AST: list[ast_nodes.Node] = ast_head(tokens)
