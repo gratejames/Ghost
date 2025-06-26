@@ -4,7 +4,7 @@
 + [x] To and from R0 for better math
 + [ ] Text modes?
 + [x] ~~Simulate external video card?~~
-	+ [ ] Immitate N64 - interrupt on each scanline? Nah, would have to sync the render and logic threads
+	+ [x] ~~Immitate N64 - interrupt on each scanline? Nah, would have to sync the render and logic threads~~
 + [x] Interrupts should probably queue...
 	+ [x] Nope! Also, get rid of Interupt data - read it in from IO bit of memory!
 + [ ] vfs
@@ -18,7 +18,7 @@
 		+ [x] Fix recursion bug
 	+ [x] ls
 	+ [x] subfolder/path handling
-	+ [ ] '..'
+	+ [ ] '..' virtual directories in fs or in shell? If no symlinks, what are the effective differences?
 	+ [ ] Actual file manipulation - file handlers
 		+ [x] fopen
 			+ [ ] Need more recoverability
@@ -103,9 +103,12 @@
 		+ [ ] ~~!Performance cost on debugger for fixing?~~
 	+ [ ] Instructions per second
 	+ [ ] Frames per second
-	+ [ ] Hardware breakpoints
+	+ [ ] Hardware breakpoints on read/write
+	+ [ ] Manipulation of registers
 + [x] An actual debugger UI instead of just keyboard shortcuts? A menubar?
 + [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
++ [ ] Make assembler smarter about single quotes
++ [ ] Syntax highlighting for ghasm in g?
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
 + ctr+shift+Up/down: Scroll debug window (1 pg)

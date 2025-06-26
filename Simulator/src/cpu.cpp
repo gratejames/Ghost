@@ -824,10 +824,10 @@ void cpu::executeFunction(unsigned short instruction) {
 		R3 = popFromStack();
 		break;
 	case 0xac: // LDSP
-		R0 = SP;
+		R0 = SP-offsetRegister;
 		break;
 	case 0xad: // STSP
-		SP = R0;
+		SP = R0+offsetRegister;
 		break;
 	case 0xae: // CEZA
 		jump = getAtAddress(getArgument()) == 0;

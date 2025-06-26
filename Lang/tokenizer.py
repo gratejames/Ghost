@@ -116,6 +116,7 @@ def split(fileLines: list[Line]) -> list[pre_token]:
 
     tokens: list[pre_token] = [pre_token("", 1)]
     stringMode: bool = False
+    quoteMode: bool = False
 
     for i, charPair in enumerate(contents):
         char = charPair.contents
@@ -123,6 +124,14 @@ def split(fileLines: list[Line]) -> list[pre_token]:
             if char == '"':
                 stringMode = False
                 tokens[-1].contents += '"'
+                tokens[-1].line = charPair.line
+                tokens.append(pre_token("", 0))
+            else:
+                tokens[-1].contents += char
+        elif quoteMode:
+            if char == "'":
+                quoteMode = False
+                tokens[-1].contents += "'"
                 tokens[-1].line = charPair.line
                 tokens.append(pre_token("", 0))
             else:
@@ -135,7 +144,12 @@ def split(fileLines: list[Line]) -> list[pre_token]:
                 tokens.pop(-1)
             tokens.append(pre_token('"', charPair.line))
             stringMode = True
-        elif char in "()`~!@#$%^&*()-+=[]\\{}|;:,./?><'":
+        elif char == "'":
+            if tokens[-1].contents == "":
+                tokens.pop(-1)
+            tokens.append(pre_token("'", charPair.line))
+            quoteMode = True
+        elif char in "()`~!@#$%^&*()-+=[]\\{}|;:,./?><":
             if (
                 char == "="
                 and len(tokens) > 1
@@ -204,7 +218,7 @@ def context(c: list[pre_token]) -> list[token]:
                 )
             )
         elif (
-            len(item.contents) > 3
+            len(item.contents) > 1
             and item.contents[0] == '"'
             and item.contents[-1] == '"'
         ):
@@ -314,4 +328,4 @@ if __name__ == "__main__":
 
     tokens: list[token] = tokenize(fileContents, file)
 
-    print(tokens[108])
+    print(tokens)

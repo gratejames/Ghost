@@ -324,6 +324,7 @@ ExecuteFile:
 	CALL 0
 	ADO 0
 	POP R1
+	CALL outputExitCode
 	
 	ST KeyboardInterrupt $0xaf00
 	ST 3 $0xafef					;; Display mode
@@ -527,6 +528,15 @@ handleUserInput:
 	ADD R1 CharMem
 
 	CALL shellExec
+	RET
+
+; R0 is the return code from the program
+outputExitCode:
+	DBG R0
+	CEZ R0
+	RETC ; COMMENT OUT TO ALSO DISPLAY 0
+	CALL PrintNumberAtCursor
+	CALL CursorNewline
 	RET
 
 ; R0 is the length

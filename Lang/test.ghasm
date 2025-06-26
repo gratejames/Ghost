@@ -1,6 +1,7 @@
+LDSP
+ST R0 $ebp
 CALL main
-DBG R0
-HLT
+RET
 ebp: .db 0xffff
 fib:
 LD R0 $ebp
@@ -19,18 +20,18 @@ LDD R0
 PSH R0
 LD R0 0
 POP R1
-ST R1 $eq_val_461b70b5
-CE R0 $eq_val_461b70b5
-JMPC eq_match_461b70b5
+ST R1 $eq_val_uf5271428
+CE R0 $eq_val_uf5271428
+JMPC eq_match_uf5271428
 LD R0 0
-JMP eq_done_461b70b5
-eq_val_461b70b5:
+JMP eq_done_uf5271428
+eq_val_uf5271428:
 .db 0
-eq_match_461b70b5:
+eq_match_uf5271428:
 LD R0 1
-eq_done_461b70b5:
+eq_done_uf5271428:
 CNZ R0
-JMPC or_true_78902f10
+JMPC or_true_ub646a970
 ;recall identifier
 LD R0 $ebp
 ADD R0 3
@@ -39,25 +40,25 @@ LDD R0
 PSH R0
 LD R0 1
 POP R1
-ST R1 $eq_val_c3c68987
-CE R0 $eq_val_c3c68987
-JMPC eq_match_c3c68987
+ST R1 $eq_val_u8fbd1f49
+CE R0 $eq_val_u8fbd1f49
+JMPC eq_match_u8fbd1f49
 LD R0 0
-JMP eq_done_c3c68987
-eq_val_c3c68987:
+JMP eq_done_u8fbd1f49
+eq_val_u8fbd1f49:
 .db 0
-eq_match_c3c68987:
+eq_match_u8fbd1f49:
 LD R0 1
-eq_done_c3c68987:
+eq_done_u8fbd1f49:
 CNZ R0
-JMPC or_true_78902f10
+JMPC or_true_ub646a970
 LD R0 0
-JMP or_done_78902f10
-or_true_78902f10:
+JMP or_done_ub646a970
+or_true_ub646a970:
 LD R0 1
-or_done_78902f10:
+or_done_ub646a970:
 CEZ R0
-JMPC if_else_false_bb5e21d3
+JMPC if_else_false_u23a79849
 ;recall identifier
 LD R0 $ebp
 ADD R0 3
@@ -71,8 +72,8 @@ POP R0
 ST R0 $ebp
 LDZ R1
 RET
-JMP if_else_done_bb5e21d3
-if_else_false_bb5e21d3:
+JMP if_else_done_u23a79849
+if_else_false_u23a79849:
 ;function call
 ;recall identifier
 LD R0 $ebp
@@ -118,7 +119,7 @@ POP R0
 ST R0 $ebp
 LDZ R1
 RET
-if_else_done_bb5e21d3:
+if_else_done_u23a79849:
 POP R0
 ;begin auto-epilog
 LD R0 0
@@ -142,14 +143,14 @@ DD R0
 LDD R0
 
 DD R0
-09942f27_loop:
+9273b5b6_loop:
 LDD R1
 CEZ R1
-JMPC 09942f27_done
+JMPC 9273b5b6_done
 DBGC R1
 INCD
-JMP 09942f27_loop
-09942f27_done:
+JMP 9273b5b6_loop
+9273b5b6_done:
 
 ;begin auto-epilog
 LD R0 0
@@ -196,18 +197,16 @@ PSH R0
 LDSP
 ST R0 $ebp
 ;prologue concluded
-
-DBGC ' S '
-
 ;function call
-LD R0 a9565b5e
+LD R0 uc513d9bd
 PSH R0
-CALL OUTLN
+CALL OUT
 STZ R1
 LDSP
 ADD R0 1
 STSP
 LDZ R1
+;declare and assign identifier
 ;function call
 LD R0 10
 PSH R0
@@ -217,11 +216,24 @@ LDSP
 ADD R0 1
 STSP
 LDZ R1
+PSH R0
 
-DBGC ' ! '
+DBGC '!'
 
-;begin auto-epilog
-LD R0 0
+;function call
+LD R0 u7da4453d
+PSH R0
+CALL OUTLN
+STZ R1
+LDSP
+ADD R0 1
+STSP
+LDZ R1
+;recall identifier
+LD R0 $ebp
+DD R0
+LDD R0
+;begin epilog
 STZ R1
 LD R0 $ebp
 STSP
@@ -230,5 +242,7 @@ ST R0 $ebp
 LDZ R1
 RET
 
-a9565b5e: .ds "~~~"
+uc513d9bd: .ds "~~~"
+.db 0
+u7da4453d: .ds ""
 .db 0

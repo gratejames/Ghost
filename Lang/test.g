@@ -22,12 +22,11 @@ void OUTLN(char* stringy) {
 }
 
 int main() {
-    asm {
-        DBGC 'S'
-    }
-    OUTLN("~~~");
-    fib(10);
+    OUT("~~~");
+    int f = fib(10);
     asm {
         DBGC '!'
     }
+    OUTLN("");
+    return f;
 }

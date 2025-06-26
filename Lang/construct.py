@@ -8,6 +8,10 @@ import ast_nodes
 globalASM = ""
 
 
+def getUID():
+    return f"u{str(uuid.uuid4())[:8]}"
+
+
 class MappedVar:
     _type = ""
     _value = None
@@ -86,7 +90,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
     if type(lit_int := state) is ast_nodes.LiteralInteger:
         asm += f"LD R0 {lit_int.value}\n"
     elif type(lit_str := state) is ast_nodes.LiteralString:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         asm += f"LD R0 {uid}\n"
         globalASM += f'{uid}: .ds "{lit_str.value}"\n.db 0\n'
     elif type(op := state) is ast_nodes.unOperation:
@@ -98,7 +102,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "NOT R0\n"
             asm += "INC R0\n"
         elif op.op == "!":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "CEZ R0\n"
             asm += f"JMPC not_eq0_{uid}\n"
@@ -142,7 +146,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "POP R1\n"
             asm += "OR R1\n"
         elif op.op == "*":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             skip = False
             if type(op.expr_b) is ast_nodes.LiteralInteger:
                 n = op.expr_b.value
@@ -171,7 +175,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
                 asm += f"JMP mult_loop_{uid}\n"
                 asm += f"mult_done_{uid}:\n"
         elif op.op == "==":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
@@ -187,7 +191,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "LD R0 1\n"
             asm += f"eq_done_{uid}:\n"
         elif op.op == "==":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
@@ -203,7 +207,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "LD R0 1\n"
             asm += f"eq_done_{uid}:\n"
         elif op.op == "<":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
@@ -219,7 +223,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "LD R0 1\n"
             asm += f"eq_done_{uid}:\n"
         elif op.op == "<=":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
@@ -235,7 +239,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "LD R0 0\n"
             asm += f"eq_done_{uid}:\n"
         elif op.op == ">":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
@@ -251,7 +255,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "LD R0 1\n"
             asm += f"eq_done_{uid}:\n"
         elif op.op == ">=":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
@@ -281,7 +285,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "POP R0\n"
             asm += "SHR R1\n"
         elif op.op == "&&":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "CEZ R0\n"
             asm += f"JMPC and_false_{uid}\n"
@@ -294,7 +298,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "LD R0 0\n"
             asm += f"and_done_{uid}:\n"
         elif op.op == "||":
-            uid = str(uuid.uuid4())[:8]
+            uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "CNZ R0\n"
             asm += f"JMPC or_true_{uid}\n"
@@ -337,7 +341,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += "STD R0\n"
             asm += "LDZ R1\n"
     elif type(cond := state) is ast_nodes.Conditional:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         asm += csrt_expression(cond.conditional, var_map)
         asm += "CEZ R0\n"
         asm += f"JMPC if_else_false_{uid}\n"
@@ -479,14 +483,14 @@ def csrt_statement(
             print(f"Unknown type: {decl} {decl._type} {ast_nodes.basetypes._int}")
             exit()
     elif type(_if := state) is ast_nodes.If:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         asm += csrt_expression(_if.condition, var_map)
         asm += "CEZ R0\n"
         asm += f"JMPC if_skip_{uid}\n"
         asm += csrt_statement(_if.statement, var_map, stack_index, current_scope)[0]
         asm += f"if_skip_{uid}:\n"
     elif type(_if_else := state) is ast_nodes.IfElse:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         asm += csrt_expression(_if_else.condition, var_map)
         asm += "CEZ R0\n"
         asm += f"JMPC if_else_false_{uid}\n"
@@ -500,7 +504,7 @@ def csrt_statement(
         )[0]
         asm += f"if_else_done_{uid}:\n"
     elif type(_while := state) is ast_nodes.While:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         var_map = var_map.set("continue_target", f"while_start_{uid}")
         var_map = var_map.set("break_target", f"while_done_{uid}")
         asm += f"while_start_{uid}:\n"
@@ -511,7 +515,7 @@ def csrt_statement(
         asm += f"JMP while_start_{uid}\n"
         asm += f"while_done_{uid}:\n"
     elif type(do_while := state) is ast_nodes.DoWhile:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         var_map = var_map.set("continue_target", f"do_while_start_{uid}")
         var_map = var_map.set("break_target", f"do_while_break_target_{uid}")
         asm += f"do_while_start_{uid}:\n"
@@ -523,7 +527,7 @@ def csrt_statement(
         asm += f"JMPC do_while_start_{uid}\n"
         asm += f"JMPC do_while_break_target_{uid}\n"
     elif type(do_while := state) is ast_nodes.ForLoop:
-        uid = str(uuid.uuid4())[:8]
+        uid = getUID()
         new_asm, var_map, stack_index, current_scope = csrt_statement(
             do_while.initial, var_map, stack_index, current_scope
         )
@@ -729,7 +733,13 @@ def construct(AST: list[ast_nodes.Node], fs=False) -> str | int:
     #     if isinstance(v, MappedVar):
     #         print(k, v)
 
-    asm = "CALL main\nDBG R0\nHLT\nebp: .db 0xffff\n" + asm + "\n" + globalASM
+    end = "RET" if fs else "DBG R0\nHLT"
+    asm = (
+        f"LDSP\nST R0 $ebp\nCALL main\n{end}\nebp: .db 0xffff\n"
+        + asm
+        + "\n"
+        + globalASM
+    )
     return asm
 
 
