@@ -87,7 +87,7 @@ def passctx(var_map):
 def csrt_expression(state: ast_nodes.Expression, var_map):
     global globalASM
     asm = ""
-    if type(lit_int := state) is ast_nodes.LiteralInteger:
+    if isinstance(lit_int := state, ast_nodes.LiteralInteger):
         asm += f"LD R0 {lit_int.value}\n"
     elif type(lit_str := state) is ast_nodes.LiteralString:
         uid = getUID()
@@ -111,6 +111,16 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += f"not_eq0_{uid}:\n"
             asm += "LD R0 1\n"
             asm += f"not_done_{uid}:\n"
+        elif op.op == "&":
+            if type(op.expr_a) is not ast_nodes.Identifier:
+                print("& may only be used on an identifier", op.expr_a)
+                exit()
+            asm += csrt_recall_id_pointer(op.expr_a.name, var_map)
+        elif op.op == "*":
+            asm += ";dereference\n"
+            asm += csrt_expression(op.expr_a, var_map)
+            asm += "DD R0\n"
+            asm += "LDD R0\n"
         else:
             print(f"Unknown un-operator: {op.op}")
             exit()
@@ -315,7 +325,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             exit()
     elif type(assign := state) is ast_nodes.Assignment:
         asm += csrt_expression(assign.expr, var_map)
-        asm += csrt_assign_identifier(assign.id.name, var_map)
+        asm += csrt_assign_identifier(assign.id, var_map)
     elif type(ident := state) is ast_nodes.Identifier:
         asm += csrt_recall_identifier(ident.name, var_map)
     elif type(comma := state) is ast_nodes.Comma:
@@ -362,7 +372,7 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
         var.was_read = True
         for arg in func.args[::-1]:
             asm += ";function call\n"
-            if type(arg) is ast_nodes.LiteralInteger:
+            if isinstance(arg, ast_nodes.LiteralInteger):
                 asm += f"LD R0 {arg.value}\n"
                 asm += "PSH R0\n"
             else:
@@ -374,6 +384,30 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
         asm += f"ADD R0 {len(func.args)}\n"
         asm += "STSP\n"
         asm += "LDZ R1\n"
+    elif type(subscript := state) is ast_nodes.arraySubscript:
+        # if type(expr.id) is not ast_nodes.Identifier:
+        #     print("& may only be used on an identifier", op.expr_a)
+        #     exit()
+        # asm += csrt_recall_id_pointer(expr.id.name, var_map)
+        # asm += f"ADD R0 {expr.idx}"
+        # asm += csrt_expression(
+        #     ast_nodes.biOperation(
+        #         "+", ast_nodes.unOperation("*", subscript.id), subscript.idx
+        #     ),
+        #     var_map,
+        # )
+
+        asm += ";dereference\n"
+        asm += csrt_expression(subscript.id, var_map)
+        asm += "PSH R0\n"
+        asm += csrt_expression(subscript.idx, var_map)
+        asm += "POP R1\n"
+        asm += "SBR R1\n"
+        asm += "DD R0\n"
+        asm += "LDD R0\n"
+        # uid = getUID()
+        # asm += f"LD R0 {uid}\n"
+        # globalASM += f'{uid}: .ds "{lit_str.value}"\n.db 0\n'
     elif type(sub_asm := state) is ast_nodes.LiteralASM:
         asm += "\n".join(sub_asm.value)
     else:
@@ -382,7 +416,61 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
     return asm
 
 
-def csrt_assign_identifier(var_id: str, var_map):
+def csrt_assign_identifier(
+    id: ast_nodes.Identifier | ast_nodes.arraySubscript, var_map
+):
+    if type(id) is ast_nodes.arraySubscript:
+        var_id = id.id.name
+
+        asm = ""
+        if var_id not in var_map:
+            print(f"Unknown identifier: {var_id}")
+            exit()
+        var = var_map[var_id]
+        if type(var) is MappedVarLocal:
+            stack_index = var.stack_index
+            asm += ";assign identifier\n"
+            asm += "LD R1 $ebp\n"
+            asm += f"SUB R1 {-stack_index}\n"
+            asm += "PSH R1\n"
+            asm += csrt_expression(id.idx, var_map)
+            asm += "POP R1\n"
+            asm += "SBR R1\n"
+            asm += "DD R0\n"
+            asm += "STD R0\n"
+        # elif type(var) is MappedVarGlobal: # TODO
+        else:
+            print("Unknown variable type", var_id)
+            exit()
+
+        var.was_set = True
+        return asm
+    else:
+        var_id = id.name
+
+        asm = ""
+        if var_id not in var_map:
+            print(f"Unknown identifier: {var_id}")
+            exit()
+        var = var_map[var_id]
+        if type(var) is MappedVarLocal:
+            stack_index = var.stack_index
+            asm += ";assign identifier\n"
+            asm += "LD R1 $ebp\n"
+            asm += f"SUB R1 {-stack_index}\n"
+            asm += "DD R1\n"
+            asm += "STD R0\n"
+        elif type(var) is MappedVarGlobal:
+            asm += f"ST R0 ${var_id}"
+        else:
+            print("Unknown variable type", var_id)
+            exit()
+
+        var.was_set = True
+        return asm
+
+
+def csrt_recall_id_pointer(var_id: str, var_map):
     asm = ""
     if var_id not in var_map:
         print(f"Unknown identifier: {var_id}")
@@ -390,18 +478,23 @@ def csrt_assign_identifier(var_id: str, var_map):
     var = var_map[var_id]
     if type(var) is MappedVarLocal:
         stack_index = var.stack_index
-        asm += ";assign identifier\n"
-        asm += "LD R1 $ebp\n"
-        asm += f"SUB R1 {-stack_index}\n"
-        asm += "DD R1\n"
-        asm += "STD R0\n"
+        asm += ";recall identifier pointer\n"
+        asm += "LD R0 $ebp\n"
+        asm += (
+            f"SUB R0 {-stack_index}\n"
+            if stack_index < 0
+            else f"ADD R0 {stack_index}\n"
+            if stack_index > 0
+            else ""
+        )
     elif type(var) is MappedVarGlobal:
-        asm += f"ST R0 ${var_id}"
+        asm += f"LD R0 {var_id}\n"
     else:
         print("Unknown variable type", var_id)
         exit()
 
-    var.was_set = True
+    var.was_read = True
+
     return asm
 
 
@@ -453,10 +546,35 @@ def csrt_statement(
             asm += "LDZ R1\n"
         asm += "RET\n"
     elif type(decl := state) is ast_nodes.DeclarationAssignment:
-        if decl._type.type == ast_nodes.basetypes._int:
-            if decl.id.name in current_scope:
-                print(f"Already declared: {decl.id.name}")
-                exit()
+        if decl.id.name in current_scope:
+            print(f"Already declared: {decl.id.name}")
+            exit()
+        if isinstance(decl._type, ast_nodes.Array):
+            items = []
+            if decl._type.length is None:
+                if isinstance(decl.expr, ast_nodes.LiteralString):
+                    decl._type.length = len(decl.expr.value) + 1
+                    items += [f"'{x}'" for x in decl.expr.value] + [0]
+                else:
+                    print("Can only guess length of strings.")
+                    exit()
+            asm += ";declare array\n"
+            asm += "LDSP\n"
+            for i in range(decl._type.length):
+                # print(i, len(items), items)
+                val = 0 if i > len(items) else items[i]
+                asm += f"LD R1 {val}\n"
+                asm += "PSH R1\n"
+            asm += "PSH R0\n"  # Add pointer to array in stack
+            stack_index -= decl._type.length
+            var = MappedVarLocal(decl._type, stack_index)
+            var.was_set = True
+            var_map = var_map.set(decl.id.name, var)
+            stack_index -= 1
+        elif (
+            isinstance(decl._type, ast_nodes.Pointer)
+            or decl._type.type == ast_nodes.basetypes._int
+        ):
             current_scope += (decl.id.name,)
             asm += ";declare and assign identifier\n"
             asm += csrt_expression(decl.expr, var_map)
@@ -469,10 +587,22 @@ def csrt_statement(
             print(f"Unknown type: {decl._type}")
             exit()
     elif type(decl := state) is ast_nodes.Declaration:
-        if decl._type.type == ast_nodes.basetypes._int:
-            if decl.id.name in current_scope:
-                print(f"Already declared: {decl.id.name}")
+        if decl.id.name in current_scope:
+            print(f"Already declared: {decl.id.name}")
+            exit()
+        if isinstance(decl._type, ast_nodes.Array):
+            if decl._type.length is None:
+                print("Can't guess at array length in definition.")
                 exit()
+            asm += ";declare array\n"
+            asm += "LD R0 0\n"
+            for i in range(decl._type.length):
+                asm += "PSH R0\n"
+            var_map = var_map.set(decl.id.name, MappedVarLocal(decl._type, stack_index))
+        elif (
+            isinstance(decl._type, ast_nodes.Pointer)
+            or decl._type.type == ast_nodes.basetypes._int
+        ):
             current_scope += (decl.id.name,)
             asm += ";declare identifier\n"
             asm += "LD R0 0\n"
@@ -505,8 +635,8 @@ def csrt_statement(
         asm += f"if_else_done_{uid}:\n"
     elif type(_while := state) is ast_nodes.While:
         uid = getUID()
-        var_map = var_map.set("continue_target", f"while_start_{uid}")
-        var_map = var_map.set("break_target", f"while_done_{uid}")
+        var_map = var_map.set("__continue_target", f"while_start_{uid}")
+        var_map = var_map.set("__break_target", f"while_done_{uid}")
         asm += f"while_start_{uid}:\n"
         asm += csrt_expression(_while.conditional, var_map)
         asm += "CEZ R0\n"
@@ -516,8 +646,8 @@ def csrt_statement(
         asm += f"while_done_{uid}:\n"
     elif type(do_while := state) is ast_nodes.DoWhile:
         uid = getUID()
-        var_map = var_map.set("continue_target", f"do_while_start_{uid}")
-        var_map = var_map.set("break_target", f"do_while_break_target_{uid}")
+        var_map = var_map.set("__continue_target", f"do_while_start_{uid}")
+        var_map = var_map.set("__break_target", f"do_while___break_target_{uid}")
         asm += f"do_while_start_{uid}:\n"
         asm += csrt_statement(do_while.statement, var_map, stack_index, current_scope)[
             0
@@ -525,14 +655,14 @@ def csrt_statement(
         asm += csrt_expression(do_while.conditional, var_map)
         asm += "CNZ R0\n"
         asm += f"JMPC do_while_start_{uid}\n"
-        asm += f"JMPC do_while_break_target_{uid}\n"
+        asm += f"JMPC do_while___break_target_{uid}\n"
     elif type(do_while := state) is ast_nodes.ForLoop:
         uid = getUID()
         new_asm, var_map, stack_index, current_scope = csrt_statement(
             do_while.initial, var_map, stack_index, current_scope
         )
-        var_map = var_map.set("continue_target", f"for_continue_target_{uid}")
-        var_map = var_map.set("break_target", f"for_loop_done_{uid}")
+        var_map = var_map.set("__continue_target", f"for___continue_target_{uid}")
+        var_map = var_map.set("__break_target", f"for_loop_done_{uid}")
         asm = ""
         asm += new_asm
         asm += f"for_loop_condition_{uid}:\n"
@@ -543,7 +673,7 @@ def csrt_statement(
         asm += csrt_statement(do_while.statement, var_map, stack_index, current_scope)[
             0
         ]
-        asm += f"for_continue_target_{uid}:\n"
+        asm += f"for___continue_target_{uid}:\n"
         asm += csrt_statement(do_while.post, var_map, stack_index, current_scope)[0]
         asm += f"JMP for_loop_condition_{uid}\n"
 
@@ -551,15 +681,15 @@ def csrt_statement(
     elif type(block := state) is ast_nodes.Block:
         asm += cstr_block(block.statements, var_map, stack_index)
     elif type(state) is ast_nodes.Continue:
-        if var_map["continue_target"] == 0:
+        if var_map["__continue_target"] == 0:
             print("Syntax error: Continue may only be used in a loop.")
             exit()
-        asm += f"JMP {var_map['continue_target']}\n"
+        asm += f"JMP {var_map['__continue_target']}\n"
     elif type(state) is ast_nodes.Break:
-        if var_map["break_target"] == 0:
+        if var_map["__break_target"] == 0:
             print("Syntax error: Break may only be used in a loop.")
             exit()
-        asm += f"JMP {var_map['break_target']}\n"
+        asm += f"JMP {var_map['__break_target']}\n"
     elif type(state) is ast_nodes._none:
         pass
     else:
@@ -603,10 +733,14 @@ def csrt_function(functionStruct: ast_nodes.Function, var_map: immutables.Map):
     var_map = var_map.set(functionStruct.id.name, f)
     stack_index = 3  # Return address and ebp are above
     for arg in functionStruct.args:
-        a_type = arg._type.type
-        # a_pointer = arg[1]
+        a_type = arg._type
         a_id = arg.id.name
-        if a_type == ast_nodes.basetypes._int:
+        if isinstance(a_type, ast_nodes.Pointer):
+            var = MappedVarLocal(arg._type, stack_index)
+            var.was_set = True
+            var_map = var_map.set(a_id, var)
+            stack_index += 1
+        elif a_type.type == ast_nodes.basetypes._int:  # TODO HANDLE ARRAY
             # if a_id in current_scope:
             #     print(f"Already declared: {a_id}")
             #     exit()
@@ -614,11 +748,6 @@ def csrt_function(functionStruct: ast_nodes.Function, var_map: immutables.Map):
             # asm += ";load argument identifier\n"
             # asm += "LD R0 0\n"
             # asm += "PSH R0\n"
-            var = MappedVarLocal(arg._type, stack_index)
-            var.was_set = True
-            var_map = var_map.set(a_id, var)
-            stack_index += 1
-        elif arg._type.ptr:
             var = MappedVarLocal(arg._type, stack_index)
             var.was_set = True
             var_map = var_map.set(a_id, var)
@@ -650,7 +779,7 @@ def csrt_function(functionStruct: ast_nodes.Function, var_map: immutables.Map):
 
 def construct(AST: list[ast_nodes.Node], fs=False) -> str | int:
     asm = ""
-    var_map = immutables.Map(continue_target=0, break_target=0)
+    var_map = immutables.Map(__continue_target=0, __break_target=0)
     for mainNode in AST:
         if type(mainNode) is ast_nodes.Include:
             # print("Including ", mainNode.file)
@@ -714,20 +843,20 @@ def construct(AST: list[ast_nodes.Node], fs=False) -> str | int:
     if "main" not in var_map:
         print("No main function")
         exit()
-    mvar = var_map["main"]
-    if type(mvar) is not MappedVarFunc:
-        print("main must be a function", mvar)
+    main_var = var_map["main"]
+    if type(main_var) is not MappedVarFunc:
+        print("main must be a function", main_var)
         exit()
-    if mvar._type.type != ast_nodes.basetypes._int:
-        print("main must return integer", mvar, mvar._type is int)
+    if main_var._type.type != ast_nodes.basetypes._int:
+        print("main must return integer", main_var, main_var._type is int)
         exit()
-    if len(mvar.arguments) != 0 and (
-        len(mvar.arguments) != 1
-        or mvar.arguments[0]._type.type != ast_nodes.basetypes._int
+    if len(main_var.arguments) != 0 and (
+        len(main_var.arguments) != 1
+        or main_var.arguments[0]._type.type != ast_nodes.basetypes._int
     ):
-        print("main must take one int as arg", mvar)
+        print("main must take one int as arg", main_var)
         exit()
-    mvar.was_read = True
+    main_var.was_read = True
 
     # for k, v in var_map.items():
     #     if isinstance(v, MappedVar):

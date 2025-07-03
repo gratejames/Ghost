@@ -228,6 +228,14 @@ def context(c: list[pre_token]) -> list[token]:
                 )
             )
         elif (
+            len(item.contents) == 3
+            and item.contents[0] == "'"
+            and item.contents[2] == "'"
+        ):
+            tokens.append(
+                token("literal char", item.contents[1], tokenI, item.line, item.file)
+            )
+        elif (
             len(item.contents) > 2
             and item.contents[0] == "0"
             and item.contents[1] in "bx"

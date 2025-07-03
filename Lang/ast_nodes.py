@@ -1,9 +1,5 @@
 from enum import Enum
 
-# from os import stat
-
-# from typing import Final
-
 
 class Node:
     def __init__(self):
@@ -15,20 +11,25 @@ class basetypes(Enum):
     _void = 1
     _int = 2
     _char = 3
+    _bool = 4
+    _pointer = 5
+    _array = 6
 
 
 class Type:
-    type: basetypes = basetypes._other
-    ptr: bool = False
+    type: basetypes
 
-    def __init__(self, _type: str, ptr: bool = False):
+    def __init__(self, _type: str):
         if _type == "void":
             self.type = basetypes._void
         elif _type == "int":
             self.type = basetypes._int
         elif _type == "char":
             self.type = basetypes._char
-        self.ptr = ptr
+        elif _type == "bool":
+            self.type = basetypes._bool
+        else:
+            self.type = basetypes._other
 
     def __repr__(self):
         name = "other"
@@ -36,13 +37,43 @@ class Type:
             name = "int"
         elif self.type == basetypes._char:
             name = "char"
+        elif self.type == basetypes._bool:
+            name = "bool"
         elif self.type == basetypes._void:
             name = "void"
 
-        if self.ptr:
-            name += "*"
+        return str(name)
 
-        return name
+    def __eq__(self, other):
+        if isinstance(other, Type):
+            return self.__repr__() == other.__repr__()
+        return NotImplemented
+
+
+class TypeWrapper(Type):
+    type: basetypes
+    subType: Type
+
+
+class Pointer(TypeWrapper):
+    def __init__(self, _type: Type):
+        self.type = basetypes._pointer
+        self.subType = _type
+
+    def __repr__(self):
+        return f"{self.subType}*"
+
+
+class Array(Pointer):
+    length: int | None
+
+    def __init__(self, _type: Type):
+        self.type = basetypes._array
+        self.subType = _type
+        self.length = None
+
+    def __repr__(self):
+        return f"{self.subType}[{self.length}]"
 
 
 class Statement(Node):
@@ -50,6 +81,7 @@ class Statement(Node):
 
 
 class Expression(Statement):
+    _type: Type = Type("")
     pass
 
 
@@ -101,6 +133,7 @@ class Comma(Expression):
     def __init__(self, expr_a: Expression, expr_b: Expression):
         self.expr_a = expr_a
         self.expr_b = expr_b
+        self._type = expr_b._type
 
     def __repr__(self):
         return f"(comma {self.expr_a} {self.expr_b})"
@@ -116,14 +149,17 @@ class Conditional(Expression):
         self.conditional = conditional
         self.expression = expression
         self.elseExpression = elseExpression
+        if expression._type == elseExpression._type:
+            self._type = expression._type
 
     def __repr__(self):
-        return f"(conditional:{self.conditional} ? {self.expression} : {self.elseExpression})"
+        return f"(conditional:{self._type} {self.conditional} ? {self.expression} : {self.elseExpression})"
 
 
 class Identifier(Expression):
     def __init__(self, name: str):
         self.name = name
+        self._type = Type("identifier")
 
     def __repr__(self):
         return f"id:{self.name}"
@@ -132,6 +168,7 @@ class Identifier(Expression):
 class LiteralInteger(Expression):
     def __init__(self, value: int):
         self.value = value
+        self._type = Type("int")
 
     def __repr__(self):
         return f"int lit:{self.value}"
@@ -140,9 +177,28 @@ class LiteralInteger(Expression):
 class LiteralString(Expression):
     def __init__(self, value: str):
         self.value = value
+        self._type = Pointer(Type("char"))
 
     def __repr__(self):
         return f"str lit:{self.value}"
+
+
+class LiteralChar(LiteralInteger):
+    def __init__(self, value: str | int):
+        self.value = ord(value) if type(value) is str else value
+        self._type = Type("char")
+
+    def __repr__(self):
+        return f"char lit:'{self.value}'"
+
+
+class LiteralBool(LiteralInteger):
+    def __init__(self, value: bool):
+        self.value = value != 0
+        self._type = Type("bool")
+
+    def __repr__(self):
+        return f"bool lit:'{self.value}'"
 
 
 class LiteralASM(Expression):
@@ -158,21 +214,23 @@ class Increment(Expression):
         self.id = id
         self.prefix = prefix
         self.direction = direction
+        self._type = id._type
 
     def __repr__(self):
         op = "++" if self.direction else "--"
         prefix = op if self.prefix else ""
         suffix = op if not self.prefix else ""
-        return f"(increment:{prefix}{self.id}{suffix})"
+        return f"(increment:{self._type} {prefix}{self.id}{suffix})"
 
 
 class Assignment(Expression):
     def __init__(self, id: Identifier, expr: Expression):
         self.id = id
         self.expr = expr
+        self._type = expr._type
 
     def __repr__(self):
-        return f"(assignment:{self.id} = {self.expr})"
+        return f"(assignment:{self._type} {self.id} = {self.expr})"
 
 
 class FunctionCall(Expression):
@@ -188,6 +246,11 @@ class unOperation(Expression):
     def __init__(self, op: str, expr_a: Expression):
         self.op = op
         self.expr_a = expr_a
+        self._type = expr_a._type
+        if op == "&":
+            self._type = Pointer(self._type)
+        elif op == "*" and isinstance(self._type, TypeWrapper):
+            self._type = self._type.subType
 
     def __repr__(self):
         return f"({self.op}{self.expr_a})"
@@ -198,9 +261,22 @@ class biOperation(Expression):
         self.op = op
         self.expr_a = expr_a
         self.expr_b = expr_b
+        if op in ["==", ">=", ">", "<=", "<"]:
+            self._type = Type("bool")
+        elif expr_a._type == expr_b._type:
+            self._type = expr_a._type
 
     def __repr__(self):
-        return f"({self.expr_a} {self.op} {self.expr_b})"
+        return f"({self.expr_a} {self.op}:{self._type} {self.expr_b})"
+
+
+class arraySubscript(Identifier):
+    def __init__(self, id: Identifier, idx: Expression):
+        self.id = id
+        self.idx = idx
+
+    def __repr__(self):
+        return f"({self.id}[{self.idx}])"
 
 
 class function_arguments(Node):
@@ -342,6 +418,10 @@ class DeclarationAssignment(Statement):
         expr: Expression,
     ):
         self._type = _type
+        if _type != expr._type:
+            print(
+                f"Warning: Assigned expression of type '{expr._type}' to variable of type '{_type}'"
+            )
         self.id = id
         self.expr = expr
 

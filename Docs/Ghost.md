@@ -109,6 +109,23 @@
 + [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
 + [ ] Make assembler smarter about single quotes
 + [ ] Syntax highlighting for ghasm in g?
++ [ ] More g
+	+ [x] types - get ChatGPT to generate a bunch of test cases?
+		+ [x] lists
+			+ [x] Heap? No, stack
+	+ [ ] Syntax
+		+ [x] &
+		+ [x] \*
+		+ [x] \[\]
+			+ [x] array type should nest
+				+ [x] so should pointers actually
+			+ [x] array should extend pointer
+			+ [ ] Should array subscript extend identifier? Should identifiers be pointers???
+	+ [ ] Malloc/free
++ [x] Rename stuff in constructor to dunders
++ [ ] backslash escaping
++ [ ] Function prototypes don't need variable names
+
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
 + ctr+shift+Up/down: Scroll debug window (1 pg)

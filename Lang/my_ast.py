@@ -1,9 +1,8 @@
-from os import DirEntry
-from typing import Literal
 from tokenizer import token
 import ast_nodes
 from pathlib import Path
 import uuid
+import copy
 
 
 def ast_type(tokens: list[token]) -> ast_nodes.Type | None:
@@ -12,12 +11,14 @@ def ast_type(tokens: list[token]) -> ast_nodes.Type | None:
         print("Expected a type", _type)
         return None
 
+    t = ast_nodes.Type(_type.contents)
+
     nextTok = ast_peek(tokens)
     if nextTok.type == "operator" and nextTok.contents == "*":
         tokens.pop(0)
-        return ast_nodes.Type(_type.contents, True)
+        return ast_nodes.Pointer(t)
 
-    return ast_nodes.Type(_type.contents)
+    return t
 
 
 def ast_identifier(_id: token) -> ast_nodes.Identifier | None:
@@ -53,7 +54,7 @@ def ast_operation(
     operand_b: ast_nodes.Expression | None = None,
 ) -> ast_nodes.Expression:
     if operand_b is None:
-        if type(operand_a) is ast_nodes.LiteralInteger:
+        if isinstance(operand_a, ast_nodes.LiteralInteger):
             match operation_type:
                 case "-":
                     return ast_nodes.LiteralInteger(-operand_a.value)
@@ -65,7 +66,7 @@ def ast_operation(
                     return ast_nodes.LiteralInteger(int(operand_a.value == 0))
         return ast_nodes.unOperation(operation_type, operand_a)
     else:
-        if type(operand_a) is ast_nodes.LiteralInteger and operation_type in [
+        if isinstance(operand_a, ast_nodes.LiteralInteger) and operation_type in [
             "*",
             "+",
         ]:
@@ -73,13 +74,13 @@ def ast_operation(
             operand_a = operand_b
             operand_b = temp
 
-        if type(operand_b) is ast_nodes.LiteralInteger and operation_type == "*":
+        if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type == "*":
             if operand_b.value == 0:
                 return ast_nodes.LiteralInteger(0)
             if operand_b.value == 1:
                 return operand_a
 
-        if type(operand_b) is ast_nodes.LiteralInteger and operation_type in [
+        if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type in [
             "+",
             "-",
             "|",
@@ -88,25 +89,28 @@ def ast_operation(
             if operand_b.value == 0:
                 return operand_a
 
-        if type(operand_b) is ast_nodes.LiteralInteger and operation_type == "&":
+        if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type == "&":
             if operand_b.value == 0xFFFF:
                 return operand_a
 
         if operation_type == "&&" and (
-            (type(operand_a) is ast_nodes.LiteralInteger and operand_a.value == 0)
-            or (type(operand_b) is ast_nodes.LiteralInteger and operand_b.value == 0)
+            (isinstance(operand_a, ast_nodes.LiteralInteger) and operand_a.value == 0)
+            or (
+                isinstance(operand_b, ast_nodes.LiteralInteger) and operand_b.value == 0
+            )
         ):
             return ast_nodes.LiteralInteger(0)
 
         if operation_type == "||" and (
-            (type(operand_a) is ast_nodes.LiteralInteger and operand_a.value != 0)
-            or (type(operand_b) is ast_nodes.LiteralInteger and operand_b.value != 0)
+            (isinstance(operand_a, ast_nodes.LiteralInteger) and operand_a.value != 0)
+            or (
+                isinstance(operand_b, ast_nodes.LiteralInteger) and operand_b.value != 0
+            )
         ):
             return ast_nodes.LiteralInteger(1)
 
-        if (
-            type(operand_a) is ast_nodes.LiteralInteger
-            and type(operand_b) is ast_nodes.LiteralInteger
+        if isinstance(operand_a, ast_nodes.LiteralInteger) and isinstance(
+            operand_b, ast_nodes.LiteralInteger
         ):
             match operation_type:
                 case "*":
@@ -204,12 +208,12 @@ def ast_factor(tokens: list[token]) -> ast_nodes.Expression | None:
             print("Factor must be closed by a parenthesis", c_paren)
             return None
         return exp
-    elif nextTok.type == "operator" and nextTok.contents in ["-", "~", "!"]:
+    elif nextTok.type == "operator" and nextTok.contents in ["-", "~", "!", "&", "*"]:
         operation = nextTok
         factor = ast_factor(tokens)
-        if factor is None or type(operation) is not str:
+        if factor is None:
             return None
-        return ast_operation(operation.contents, factor)
+        return ast_operation(str(operation.contents), factor)
     elif nextTok.type == "operator" and nextTok.contents in ["++", "--"]:
         operation = nextTok
         identifier = ast_identifier(tok := tokens.pop(0))
@@ -235,14 +239,30 @@ def ast_factor(tokens: list[token]) -> ast_nodes.Expression | None:
             if var_id is None:
                 return None
             return ast_nodes.FunctionCall(var_id, arguments)
+        if peekToken.type == "open bracket":
+            tokens.pop(0)
+            identifier = ast_identifier(nextTok)
+            if identifier is None:
+                return None
+            access_index = ast_expression(tokens)
+            if access_index is None:
+                return None
+            if (c_bracket := tokens.pop(0)).type != "close bracket":
+                print(
+                    "Syntax error: Expected closing bracket for array subscript.",
+                    f"Line {c_bracket.line}",
+                )
+            return ast_nodes.arraySubscript(identifier, access_index)
 
         return ast_identifier(nextTok)
     elif nextTok.type == "literal integer" and type(nextTok.contents) is int:
         return ast_nodes.LiteralInteger(nextTok.contents)
     elif nextTok.type == "literal string" and type(nextTok.contents) is str:
         return ast_nodes.LiteralString(nextTok.contents)
+    elif nextTok.type == "literal char" and type(nextTok.contents) is str:
+        return ast_nodes.LiteralChar(nextTok.contents)
     elif nextTok.type == "keyword" and nextTok.contents in ["true", "false"]:
-        return ast_nodes.LiteralInteger(1 if nextTok.contents == "true" else 0)
+        return ast_nodes.LiteralBool(nextTok.contents == "true")
     else:
         if nextTok.type == "semicolon":
             print("Syntax error: Expected a value.", f"Line {nextTok.line}")
@@ -423,12 +443,37 @@ def ast_conditional_expression(tokens: list[token]) -> ast_nodes.Expression | No
 
 
 def ast_assignment_expression(tokens: list[token]) -> ast_nodes.Expression | None:
-    if len(tokens) >= 1 and ast_peek(tokens, 1).type == "assignment":
+    is_assignment = len(tokens) >= 1 and ast_peek(tokens, 1).type == "assignment"
+    tokens_copy = copy.deepcopy(tokens)
+    tokens_copy.pop(0)
+    subscript = tokens_copy.pop(0).type == "open bracket"
+    if subscript:
+        _ = ast_expression(tokens_copy)
+        _ = tokens_copy.pop(0)  # close bracket
+        is_assignment = (
+            assigner := tokens_copy.pop(0)
+        ).type == "assignment" or is_assignment
+        # print(b, c, d)
+    # if len(tokens) >= 1 and ast_peek(tokens, 1).type in ["assignment", "open bracket"]:
+    if is_assignment:
         v_name = ast_identifier(tok := tokens.pop(0))
         if v_name is None:
             print("Assignment left must be identifier", f"Line: {tok.line}")
             return None
-        assigner = tokens.pop(0)  # Already verified
+        if subscript:
+            _ = tokens.pop(0)
+            sub_idx = ast_expression(tokens)
+            close_bracket = tokens.pop(0).type == "close bracket"
+
+            if not close_bracket:
+                print("Syntax error: expected closing bracket after array subscript")
+                return None
+            if sub_idx is None:
+                return None
+            v_name = ast_nodes.arraySubscript(v_name, sub_idx)
+
+        assigner = tokens.pop(0)
+
         v_expression = ast_assignment_expression(tokens)
         if v_expression is None:
             return None
@@ -479,6 +524,7 @@ def ast_expression(tokens: list[token]) -> ast_nodes.Expression | None:
 
 
 def ast_declaration(tokens: list[token]) -> ast_nodes.Statement | None:
+    tok = ast_peek(tokens)
     d_type = ast_type(tokens)
     if d_type is None:
         print("Syntax error: Declaration must have a type.", f"Line {tok.line}")
@@ -487,24 +533,40 @@ def ast_declaration(tokens: list[token]) -> ast_nodes.Statement | None:
     if d_name is None:
         print("Declaration type must be followed by identifier", tok)
         return None
-    equals = tokens.pop(0)
-    if equals.type != "assignment" and equals.contents != "=":
-        semicolon = equals
-        if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Declaration must be followed by semicolon or assignment.",
-                f"Line {semicolon.line}",
-            )
+    nextTok = tokens.pop(0)
+
+    if nextTok.type == "open bracket":
+        d_type = ast_nodes.Array(d_type)
+        nextTok = tokens.pop(0)
+        if nextTok.type != "close bracket":
+            if nextTok.type != "literal integer":
+                print("Array length must be literal Integer")
+                return None
+            print("Array length", nextTok)
+            d_type.length = int(nextTok.contents)
+            nextTok = tokens.pop(0)
+
+        if nextTok.type != "close bracket":
+            print("Syntax error: expected closing bracket after array length", nextTok)
             return None
-        return ast_nodes.Declaration(d_type, d_name)
-    d_value = ast_expression(tokens)
-    if d_value is None:
+        nextTok = tokens.pop(0)
+
+    if nextTok.type == "assignment" and nextTok.contents == "=":
+        d_value = ast_expression(tokens)
+        if d_value is None:
+            return None
+        semicolon = tokens.pop(0)
+        if semicolon.type != "semicolon":
+            print("Declaration must end with a semicolon", semicolon)
+            return None
+        return ast_nodes.DeclarationAssignment(d_type, d_name, d_value)
+    if nextTok.type != "semicolon":
+        print(
+            "Syntax error: Declaration must be followed by semicolon or assignment.",
+            f"Line {nextTok.line}",
+        )
         return None
-    semicolon = tokens.pop(0)
-    if semicolon.type != "semicolon":
-        print("Declaration must end with a semicolon", semicolon)
-        return None
-    return ast_nodes.DeclarationAssignment(d_type, d_name, d_value)
+    return ast_nodes.Declaration(d_type, d_name)
 
 
 def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
