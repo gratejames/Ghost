@@ -17,14 +17,14 @@ DD R0
 LDD R0
 
 DD R0
-abf4324f_loop:
+6a83bd1f_loop:
 LDD R1
 CEZ R1
-JMPC abf4324f_done
+JMPC 6a83bd1f_done
 DBGC R1
 INCD
-JMP abf4324f_loop
-abf4324f_done:
+JMP 6a83bd1f_loop
+6a83bd1f_done:
 
 ;begin auto-epilog
 LD R0 0
@@ -65,89 +65,42 @@ POP R0
 ST R0 $ebp
 LDZ R1
 RET
+SCREEN_OUT:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+;recall identifier
+LD R0 $ebp
+ADD R0 3
+DD R0
+LDD R0
+
+LD R1 10
+LD R2 10
+LD R3 $ Font
+INT 94
+
+
+Font:
+# INC . / fontGen / font . hex
+
+;begin auto-epilog
+LD R0 0
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
 main:
 LD R0 $ebp
 PSH R0
 LDSP
 ST R0 $ebp
 ;prologue concluded
-BRK
-
-;declare array
-LD R0 0
-PSH R0
-PSH R0
-PSH R0
-LD R0 1
-;assign identifier
-LD R1 $ebp
-SUB R1 0
-PSH R1
-LD R0 0
-POP R1
-SBR R1
-DD R0
-STD R0
-LD R0 20
-;assign identifier
-LD R1 $ebp
-SUB R1 0
-PSH R1
-LD R0 1
-POP R1
-SBR R1
-DD R0
-STD R0
-;dereference
-;recall identifier
-LD R0 $ebp
-DD R0
-LDD R0
-PSH R0
-LD R0 0
-POP R1
-SBR R1
-DD R0
-LDD R0
-PSH R0
-;dereference
-;recall identifier
-LD R0 $ebp
-DD R0
-LDD R0
-PSH R0
-LD R0 1
-POP R1
-SBR R1
-DD R0
-LDD R0
-POP R1
-ADD R1
-PSH R0
-LD R0 21
-POP R1
-ST R1 $eq_val_uedc19603
-CE R0 $eq_val_uedc19603
-JMPC eq_match_uedc19603
-LD R0 0
-JMP eq_done_uedc19603
-eq_val_uedc19603:
-.db 0
-eq_match_uedc19603:
-LD R0 1
-eq_done_uedc19603:
-CEZ R0
-JMPC if_skip_u31137d98
-;function call
-LD R0 u3212cdfc
-PSH R0
-CALL OUTLN
-STZ R1
-LDSP
-ADD R0 1
-STSP
-LDZ R1
-if_skip_u31137d98:
 LD R0 0
 ;begin epilog
 STZ R1
@@ -158,5 +111,3 @@ ST R0 $ebp
 LDZ R1
 RET
 
-u3212cdfc: .ds "Array indexing OK"
-.db 0

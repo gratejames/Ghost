@@ -17,3 +17,18 @@ void OUTLN(char* stringy) {
     OUT(stringy);
     asm { DBGC 0xa }
 }
+
+
+void SCREEN_OUT(char* stringy) {
+    stringy;
+    asm {
+        LD R1 10
+        LD R2 10
+        LD R3 $Font
+        INT 0x5e
+    }
+    asm {
+        Font:
+        #INC ./fontGen/font.hex
+    }
+}

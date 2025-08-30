@@ -8,9 +8,9 @@
 printChar:
 PSH
 PSH R0
-AOR
-ADO 0
-ST R0 $PrevAO
+	AOR
+	ADO 0
+	ST R0 $PrevAO
 POP R0
 ADD R3 $PrevAO
 

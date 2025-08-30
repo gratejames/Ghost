@@ -144,7 +144,7 @@ def ast_arguments(tokens: list[token]) -> list[ast_nodes.function_arguments] | N
         nextTok = ast_peek(tokens)
         if nextTok.type == "close paren":
             tokens.pop(0)
-            return arguments
+            break
 
         a_type = ast_type(tokens)
         if a_type is None:
@@ -159,10 +159,13 @@ def ast_arguments(tokens: list[token]) -> list[ast_nodes.function_arguments] | N
         # if a_name.type == "operator" and a_name.contents == "*":
         #     pointer = True
         #     a_name = tokens.pop(0)
-        a_name = ast_identifier(tok := tokens.pop(0))
-        if a_name is None:
-            print("Arguments type must be followed by identifier", tok)
-            return None
+        if a_type.type is ast_nodes.basetypes._void:
+            a_name = ast_nodes.Identifier("Void")
+        else:
+            a_name = ast_identifier(tok := tokens.pop(0))
+            if a_name is None:
+                print("Arguments type must be followed by identifier", tok)
+                return None
         arguments.append(ast_nodes.function_arguments(a_type, a_name))
 
         peekTok = ast_peek(tokens)
@@ -174,6 +177,14 @@ def ast_arguments(tokens: list[token]) -> list[ast_nodes.function_arguments] | N
         else:
             print("Unknown argument token", peekTok)
             return None
+
+    if any(arg._type.type is ast_nodes.basetypes._void for arg in arguments):
+        if len(arguments) != 1:
+            print("If 'void' is the argument, it must stand alone.")
+            return None
+        arguments = []
+
+    return arguments
 
 
 def ast_call_arguments(
@@ -867,9 +878,21 @@ def ast_toplevel(tokens: list[token]) -> ast_nodes.Node | None:
             return None
         return ast_nodes.DeclarationAssignment(_type, _name, _expr)
 
+    # first_type = ast_peek(tokens, 1)
+    # if first_type.type == "type" and first_type.contents == "void":
+    #     f_arguments = []
+    #     oparen = tokens.pop()
+    #     cparent = tokens.pop()
+    # else:
     f_arguments = ast_arguments(tokens)
+
     if f_arguments is None:
         return None
+
+    # print(list(arg._type.type is ast_nodes.basetypes._void for arg in f_arguments))
+    # if any(arg._type.type is ast_nodes.basetypes._void for arg in f_arguments):
+    #     print("VOID")
+
     token = tokens.pop(0)
     if token.type == "semicolon":
         return ast_nodes.FunctionPrototype(_type, _name, f_arguments)

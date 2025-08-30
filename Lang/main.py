@@ -19,7 +19,7 @@ def compile(fileName: Path, fs=False) -> str:
     if AST == []:
         print("SAD (No AST output...)")
         exit(1)
-    # print(AST)
+    print(AST)
     assembly = str(construct(AST, fs))
     # print(assembly)
     return assembly

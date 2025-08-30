@@ -430,6 +430,7 @@ def csrt_assign_identifier(
         if type(var) is MappedVarLocal:
             stack_index = var.stack_index
             asm += ";assign identifier\n"
+            asm += "PSH R0\n"
             asm += "LD R1 $ebp\n"
             asm += f"SUB R1 {-stack_index}\n"
             asm += "PSH R1\n"
@@ -437,6 +438,7 @@ def csrt_assign_identifier(
             asm += "POP R1\n"
             asm += "SBR R1\n"
             asm += "DD R0\n"
+            asm += "POP R0\n"
             asm += "STD R0\n"
         # elif type(var) is MappedVarGlobal: # TODO
         else:
@@ -585,20 +587,24 @@ def csrt_statement(
             stack_index -= 1
         else:
             print(f"Unknown type: {decl._type}")
-            exit()
+            exit(1)
     elif type(decl := state) is ast_nodes.Declaration:
         if decl.id.name in current_scope:
             print(f"Already declared: {decl.id.name}")
-            exit()
+            exit(1)
         if isinstance(decl._type, ast_nodes.Array):
             if decl._type.length is None:
                 print("Can't guess at array length in definition.")
                 exit()
             asm += ";declare array\n"
-            asm += "LD R0 0\n"
+            asm += "LDSP\n"
+            asm += "LD R1 0\n"
             for i in range(decl._type.length):
-                asm += "PSH R0\n"
+                asm += "PSH R1\n"
+            asm += "PSH R0\n"  # Add pointer to array in stack
+            stack_index -= decl._type.length
             var_map = var_map.set(decl.id.name, MappedVarLocal(decl._type, stack_index))
+            stack_index -= 1
         elif (
             isinstance(decl._type, ast_nodes.Pointer)
             or decl._type.type == ast_nodes.basetypes._int
