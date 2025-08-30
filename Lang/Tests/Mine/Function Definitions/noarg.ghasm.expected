@@ -1,0 +1,22 @@
+LDSP
+ST R0 $ebp
+CALL main
+DBG R0
+HLT
+ebp: .db 0xffff
+main:
+LD R0 $ebp
+PSH R0
+LDSP
+ST R0 $ebp
+;prologue concluded
+LD R0 100
+;begin epilog
+STZ R1
+LD R0 $ebp
+STSP
+POP R0
+ST R0 $ebp
+LDZ R1
+RET
+
