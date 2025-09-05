@@ -36,6 +36,10 @@ def doTest(path: Path):
     assemblerErrorTest = list(path.parent.glob(testName + ".assemblererror.expected"))
     assemblerPassTest = list(path.parent.glob(testName + ".assemblerpass.expected"))
 
+    pre_run_out_files = list(path.parent.glob(testName + ".ghasm"))
+    if len(pre_run_out_files) != 0:
+        pre_run_out_files[0].unlink()
+
     if len(assemblerOutputTest) != 0:
         test._type = "Assembly Validation"
         with open(assemblerOutputTest[0], "r") as f:
@@ -114,12 +118,23 @@ def findTests(list_files):
             doTest(path)
 
 
-desired_tests = ["Mine", "Book/chapter_1/"]
+desired_tests = [
+    # "Mine",
+    # "Book/chapter_1/",
+    # "Book/chapter_2/",
+    # "Book/chapter_3/",
+    # "Book/chapter_4/",
+    # "Book/chapter_5/",  # HAS FAILS: Incrementing parenthesized expressions, and `int a = a = 5;` (80/82)
+    # "Book/chapter_6/",  # HAS FAILS: Goto not implemented (Also why is declaration_as_statement invalid?) (56/68)
+    # "Book/chapter_7/",  # HAS FAILS: Still no goto (23/27)
+    # "Book/chapter_8/",  # HAS FAILS: many, switch not implemented, but also still don't know why decl_as_loop_body is invalid (66/97)
+    "Book/chapter_9/",  # HAS FAILS 39/78
+]
 
 findTests(Path(".").iterdir())
 # print(results)
 
-if False:
+if False:  # Color Switch
     failColor = "\033[91m"
     passColor = "\033[92m"
     clearColor = "\033[00m"
@@ -128,9 +143,13 @@ else:
     passColor = ""
     clearColor = ""
 
+allTestCount = 0
+allPassCount = 0
+
 for category, tests in results.items():
     testsOutput = ""
     passes = 0
+    testNumber = 0
     for t in tests:
         padding = " " * (longestTestName - len(t.name))
         passText = (
@@ -139,6 +158,15 @@ for category, tests in results.items():
         testsOutput += f"    {t.name}{padding}    {passText} ({t._type})" + "\n"
         if t._pass == "Pass":
             passes += 1
+        if t._pass != "None":
+            testNumber += 1
     padding = " " * (longestCategoryName - len(category))
     print(f"{category}:{padding}  ({passes}/{len(tests)})")
     print(testsOutput)
+    # allTestCount += testNumber
+    allTestCount += len(tests)
+    allPassCount += passes
+
+print(
+    f"Total: {allPassCount} of {allTestCount} tests passed, {(allPassCount/allTestCount*100):.2f}%"
+)

@@ -1,6 +1,10 @@
 #include "out.g"
 
+int a;
+
 int main() {
+    int a = 3;
+    int a = 4;
     // asm { BRK }
     // int arr[3];
     // arr;

@@ -43,12 +43,15 @@ operators = [
     "--",
     ":",
     "?",
+    "%",
 ]
 assignment = [
     "=",
     "+=",
     "-=",
     "*=",
+    "/=",
+    "%=",
     "<<=",
     ">>=",
     "&=",
@@ -67,54 +70,108 @@ class Line:
         return f"{self.line}.{self.file.name}: {self.contents}"
 
 
-class pre_token:
-    def __init__(self, contents: str = "", line: int = 0, file: Path = Path()):
+class PreToken:
+    def __init__(
+        self, contents: str = "", line: int = 0, pos: int = 0, file: Path = Path()
+    ):
         self.contents = contents
         self.line = line
         self.file = file
+        self.pos = pos
 
     def __repr__(self):
-        return f"('{self.contents}':{self.line})"
+        return f"('{self.contents}':{self.line}:{self.file})"
 
     contents: str = ""
     line: int = 0
     file: Path
 
 
-class token:
+def prettyPath(path: Path) -> Path:
+    local = Path(".").absolute()
+    path = path.absolute()
+    if path.is_relative_to(local):
+        return path.relative_to(local)
+    else:
+        return path.absolute()
+
+
+class Token:
     def __init__(
-        self, type: str, contents: str | int, tokenNumber: int, line: int, file: Path
+        self,
+        type: str,
+        # contents: str | int,
+        contents: str,
+        tokenNumber: int,
+        line: int,
+        pos: int,
+        file: Path,
+        value: int | None = None,
     ):
         self.type = type
         self.contents = contents
         self.tokenNumber = tokenNumber
         self.line = line
+        self.pos = pos
         self.file = file
+        self.value = value
 
     def __repr__(self):
-        return f"({self.type} '{self.contents}', {self.line}:{self.tokenNumber})"
+        return f"({self.type} '{self.contents}', {self.line}:{self.tokenNumber}:{self.file})"
+
+    def blame(self):
+        print("\n".join(self.blame_string()))
+
+    def blame_string(self):
+        token = self
+        # print("Error:", token)
+        with open(token.file, "r") as f:
+            fileContents = f.read()
+        tok_length = len(token.contents)
+        return [
+            f"in file: {prettyPath(token.file)}",
+            fileContents.split("\n")[token.line - 1],
+            " " * (token.pos - tok_length + 1) + "^" + "~" * (tok_length - 1),
+        ]
 
     type: str = ""
-    contents: str | int = ""
+    contents: str = ""
     tokenNumber: int = 0
     line: int = 0
     file: Path
+    value: int | None
 
 
-def split(fileLines: list[Line]) -> list[pre_token]:
-    contents: list[pre_token] = []
-    # line_number: int = 1
+def split(fileLines: list[Line]) -> list[PreToken]:
+    contents: list[PreToken] = []
+    block_comment = False
     for line in fileLines:
-        for char in line.contents:
+        for charI, char in enumerate(line.contents):
+            if block_comment:
+                if char == "/" and prev_char == "*":
+                    block_comment = False
+                    continue
+                else:
+                    prev_char = char
+                    continue
+            if char == "*" and len(contents) > 0 and contents[-1].contents == "/":
+                contents = contents[:-1]
+                block_comment = True
+                prev_char = ""
+                continue
             if char == "/" and len(contents) > 0 and contents[-1].contents == "/":
                 contents = contents[:-1]
                 break
+            if char == " " and len(contents) == 0:
+                continue
             if not (char == " " and contents[-1].contents == " ") and not char == "\n":
-                contents.append(pre_token(char, line.line, line.file))
-        contents.append(pre_token(" ", line.line, line.file))
+                contents.append(PreToken(char, line.line + 1, charI, line.file))
+        contents.append(PreToken(" ", line.line + 1, contents[-1].pos, line.file))
     # print(contents)
 
-    tokens: list[pre_token] = [pre_token("", 1)]
+    # print("PRE TOKENS", contents)
+
+    tokens: list[PreToken] = [PreToken("", 1)]
     stringMode: bool = False
     quoteMode: bool = False
 
@@ -125,7 +182,9 @@ def split(fileLines: list[Line]) -> list[pre_token]:
                 stringMode = False
                 tokens[-1].contents += '"'
                 tokens[-1].line = charPair.line
-                tokens.append(pre_token("", 0))
+                tokens[-1].pos = charPair.pos
+                tokens[-1].file = charPair.file
+                tokens.append(PreToken("", 0))
             else:
                 tokens[-1].contents += char
         elif quoteMode:
@@ -133,28 +192,45 @@ def split(fileLines: list[Line]) -> list[pre_token]:
                 quoteMode = False
                 tokens[-1].contents += "'"
                 tokens[-1].line = charPair.line
-                tokens.append(pre_token("", 0))
+                tokens[-1].pos = charPair.pos
+                tokens[-1].file = charPair.file
+                tokens.append(PreToken("", 0))
             else:
                 tokens[-1].contents += char
         elif char.strip() == "":
             if tokens[-1].contents != "":
-                tokens.append(pre_token("", 0))
+                tokens.append(PreToken("", 0))
         elif char == '"':
             if tokens[-1].contents == "":
                 tokens.pop(-1)
-            tokens.append(pre_token('"', charPair.line))
+            tokens.append(PreToken('"', charPair.line, charPair.pos, charPair.file))
             stringMode = True
         elif char == "'":
             if tokens[-1].contents == "":
                 tokens.pop(-1)
-            tokens.append(pre_token("'", charPair.line))
+            tokens.append(PreToken("'", charPair.line, charPair.pos, charPair.file))
             quoteMode = True
         elif char in "()`~!@#$%^&*()-+=[]\\{}|;:,./?><":
             if (
                 char == "="
                 and len(tokens) > 1
                 and tokens[-1].contents
-                in ["=", "<", ">", "!", "+", "-", "&", "^", "|", "<<", ">>", "*"]
+                in [
+                    "=",
+                    "<",
+                    ">",
+                    "!",
+                    "+",
+                    "-",
+                    "&",
+                    "^",
+                    "|",
+                    "<<",
+                    ">>",
+                    "*",
+                    "/",
+                    "%",
+                ]
             ):
                 tokens[-1].contents += char
                 continue
@@ -180,8 +256,12 @@ def split(fileLines: list[Line]) -> list[pre_token]:
             if tokens[-1].contents == "":
                 tokens[-1].contents += char
                 tokens[-1].line = charPair.line
+                tokens[-1].pos = charPair.pos
+                tokens[-1].file = charPair.file
             else:
-                tokens.append(pre_token(char, charPair.line))
+                tokens.append(
+                    PreToken(char, charPair.line, charPair.pos, charPair.file)
+                )
         else:
             if (
                 tokens[-1].contents == ""
@@ -189,32 +269,48 @@ def split(fileLines: list[Line]) -> list[pre_token]:
             ):
                 tokens[-1].contents += char
                 tokens[-1].line = charPair.line
+                tokens[-1].pos = charPair.pos
+                tokens[-1].file = charPair.file
             else:
-                tokens.append(pre_token(char, charPair.line))
+                tokens.append(
+                    PreToken(char, charPair.line, charPair.pos, charPair.file)
+                )
 
     if tokens[-1].contents == "":
         tokens = tokens[:-1]
     return tokens
 
 
-def context(c: list[pre_token]) -> list[token]:
+def context(c: list[PreToken]) -> list[Token]:
     tokens = []
     for tokenI, item in enumerate(c):
         # item, line_number = item.contents, item.line
         if item.contents in types:
-            tokens.append(token("type", item.contents, tokenI, item.line, item.file))
+            tokens.append(
+                Token("type", item.contents, tokenI, item.line, item.pos, item.file)
+            )
         elif item.contents in keywords:
-            tokens.append(token("keyword", item.contents, tokenI, item.line, item.file))
+            tokens.append(
+                Token("keyword", item.contents, tokenI, item.line, item.pos, item.file)
+            )
         elif item.contents in operators:
             tokens.append(
-                token("operator", item.contents, tokenI, item.line, item.file)
+                Token("operator", item.contents, tokenI, item.line, item.pos, item.file)
             )
         elif item.contents in symbols:
-            tokens.append(token("symbol", item.contents, tokenI, item.line, item.file))
+            tokens.append(
+                Token("symbol", item.contents, tokenI, item.line, item.pos, item.file)
+            )
         elif item.contents.isdigit():
             tokens.append(
-                token(
-                    "literal integer", int(item.contents), tokenI, item.line, item.file
+                Token(
+                    "literal integer",
+                    item.contents,
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
+                    int(item.contents),
                 )
             )
         elif (
@@ -223,8 +319,13 @@ def context(c: list[pre_token]) -> list[token]:
             and item.contents[-1] == '"'
         ):
             tokens.append(
-                token(
-                    "literal string", item.contents[1:-1], tokenI, item.line, item.file
+                Token(
+                    "literal string",
+                    item.contents[1:-1],
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
                 )
             )
         elif (
@@ -233,7 +334,14 @@ def context(c: list[pre_token]) -> list[token]:
             and item.contents[2] == "'"
         ):
             tokens.append(
-                token("literal char", item.contents[1], tokenI, item.line, item.file)
+                Token(
+                    "literal char",
+                    item.contents[1],
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
+                )
             )
         elif (
             len(item.contents) > 2
@@ -241,55 +349,99 @@ def context(c: list[pre_token]) -> list[token]:
             and item.contents[1] in "bx"
         ):
             tokens.append(
-                token(
+                Token(
                     "literal integer",
-                    int(item.contents, 0),
+                    item.contents,
                     tokenI,
                     item.line,
+                    item.pos,
                     item.file,
+                    int(item.contents, 0),
                 )
             )
         elif item.contents == "(":
             tokens.append(
-                token("open paren", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "open paren", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
         elif item.contents == ")":
             tokens.append(
-                token("close paren", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "close paren", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
         elif item.contents == "[":
             tokens.append(
-                token("open bracket", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "open bracket",
+                    item.contents,
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
+                )
             )
         elif item.contents == "]":
             tokens.append(
-                token("close bracket", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "close bracket",
+                    item.contents,
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
+                )
             )
         elif item.contents == "{":
             tokens.append(
-                token("open brace", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "open brace", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
         elif item.contents == "}":
             tokens.append(
-                token("close brace", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "close brace", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
         elif item.contents == "'":
             tokens.append(
-                token("single quote", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "single quote",
+                    item.contents,
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
+                )
             )
         elif item == '"':
             tokens.append(
-                token("double quote", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "double quote",
+                    item.contents,
+                    tokenI,
+                    item.line,
+                    item.pos,
+                    item.file,
+                )
             )
         elif item.contents == ",":
-            tokens.append(token("comma", item.contents, tokenI, item.line, item.file))
+            tokens.append(
+                Token("comma", item.contents, tokenI, item.line, item.pos, item.file)
+            )
         elif item.contents == ";":
             tokens.append(
-                token("semicolon", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "semicolon", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
         elif item.contents in assignment:
             tokens.append(
-                token("assignment", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "assignment", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
         # elif item.contents == "asm":
         #     tokens.append(
@@ -297,7 +449,9 @@ def context(c: list[pre_token]) -> list[token]:
         #     )
         else:
             tokens.append(
-                token("identifier", item.contents, tokenI, item.line, item.file)
+                Token(
+                    "identifier", item.contents, tokenI, item.line, item.pos, item.file
+                )
             )
     return tokens
 
@@ -325,7 +479,7 @@ def includes(fileContents: str, rootFilePath: Path) -> list[Line]:
     return lines
 
 
-def tokenize(fileContents: str, filePath: Path) -> list[token]:
+def tokenize(fileContents: str, filePath: Path) -> list[Token]:
     return context(split(includes(fileContents, filePath)))
 
 
@@ -334,6 +488,7 @@ if __name__ == "__main__":
     with open(file, "r") as f:
         fileContents: str = f.read()
 
-    tokens: list[token] = tokenize(fileContents, file)
+    tokens: list[Token] = tokenize(fileContents, file)
 
-    print(tokens)
+    for t in tokens:
+        t.blame()

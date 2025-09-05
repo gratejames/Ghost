@@ -1,15 +1,15 @@
-from tokenizer import token
+from tokenizer import Token
 import ast_nodes
+import ast_errors
 from pathlib import Path
 import uuid
 import copy
 
 
-def ast_type(tokens: list[token]) -> ast_nodes.Type | None:
+def ast_type(tokens: list[Token]) -> ast_nodes.Type:
     _type = tokens.pop(0)
     if _type.type != "type" or type(_type.contents) is not str:
-        print("Expected a type", _type)
-        return None
+        raise ast_errors.Expected(_type, "type")
 
     t = ast_nodes.Type(_type.contents)
 
@@ -21,21 +21,19 @@ def ast_type(tokens: list[token]) -> ast_nodes.Type | None:
     return t
 
 
-def ast_identifier(_id: token) -> ast_nodes.Identifier | None:
+def ast_identifier(_id: Token) -> ast_nodes.Identifier:
     if (
         _id.type != "identifier"
         or type(_id.contents) is not str
         or len(_id.contents) == 0
     ):
-        print("Expected an identifier", _id)
-        return None
+        raise ast_errors.Expected(_id, "identifier")
     if not _id.contents[0].isalpha():
-        print("Identifier must start with a letter", _id)
-        return None
+        raise ast_errors.SyntaxError(_id, "Identifier must start with a letter")
     return ast_nodes.Identifier(_id.contents)
 
 
-def ast_peek(tokens: list[token], i: int = 0) -> token:
+def ast_peek(tokens: list[Token], i: int = 0) -> Token:
     if len(tokens) > i:
         return tokens[i]
     print("Unexpected EOF")
@@ -133,39 +131,27 @@ def ast_operation(
         return ast_nodes.biOperation(operation_type, operand_a, operand_b)
 
 
-def ast_arguments(tokens: list[token]) -> list[ast_nodes.function_arguments] | None:
+def ast_arguments(tokens: list[Token]) -> list[ast_nodes.function_arguments]:
     arguments: list[ast_nodes.function_arguments] = []
     o_paren = tokens.pop(0)
     if o_paren.type != "open paren":
-        print("Arguments must start with a paren", o_paren)
-        return None
+        # "Arguments must start with a paren"
+        raise ast_errors.Expected(o_paren, "open parenthesis")
     while True:
-        # pointer = False
         nextTok = ast_peek(tokens)
         if nextTok.type == "close paren":
             tokens.pop(0)
             break
 
         a_type = ast_type(tokens)
-        if a_type is None:
-            return None
-        # if a_type.type != "type":
-        #     if a_type.type == "open brace":
-        #         print("Syntax error: missing close paren?", f"Line {a_type.line}")
-        #         return None
-        #     print("Arguments must start with a type", a_type)
-        #     return None
-        # a_name = tokens.pop(0)
-        # if a_name.type == "operator" and a_name.contents == "*":
-        #     pointer = True
-        #     a_name = tokens.pop(0)
         if a_type.type is ast_nodes.basetypes._void:
             a_name = ast_nodes.Identifier("Void")
         else:
             a_name = ast_identifier(tok := tokens.pop(0))
-            if a_name is None:
-                print("Arguments type must be followed by identifier", tok)
-                return None
+            # TODO Could try catch to provide a more contextualized error
+            # if a_name is None: # UNREACHABLE WITHOUT TRY CATCH
+            #     raise ast_errors.Expected(tok, "closing parenthesis")
+            # Arguments type must be followed by identifier
         arguments.append(ast_nodes.function_arguments(a_type, a_name))
 
         peekTok = ast_peek(tokens)
@@ -175,21 +161,27 @@ def ast_arguments(tokens: list[token]) -> list[ast_nodes.function_arguments] | N
         elif peekTok.type == "close paren":
             continue
         else:
-            print("Unknown argument token", peekTok)
-            return None
+            raise ast_errors.SyntaxError(peekTok, "Unknown argument token")
 
     if any(arg._type.type is ast_nodes.basetypes._void for arg in arguments):
         if len(arguments) != 1:
-            print("If 'void' is the argument, it must stand alone.")
-            return None
-        arguments = []
+            raise ast_errors.SyntaxError(
+                None, "If 'void' is the argument, it must stand alone."
+            )
+            # print("If 'void' is the argument, it must stand alone.")
+            # # TODO needs blame. Methinks the only way to do this would be to have each expression (and maybe statement) keep track of it's tokens. Blegh
+            # # [
+            # #     arg.blame()
+            # #     for arg in arguments
+            # #     if arg._type.type is ast_nodes.basetypes._void
+            # # ]
 
     return arguments
 
 
 def ast_call_arguments(
-    tokens: list[token],
-) -> list[ast_nodes.Expression] | None:
+    tokens: list[Token],
+) -> list[ast_nodes.Expression]:
     arguments: list[ast_nodes.Expression] = []
     while True:
         peekTok = ast_peek(tokens)
@@ -197,40 +189,31 @@ def ast_call_arguments(
             tokens.pop(0)
             return arguments
         arg = ast_assignment_expression(tokens)
-        if arg is None:
-            return None
         peekTok = ast_peek(tokens)
         if peekTok.type == "operator" and peekTok.contents == ",":
             tokens.pop(0)
         elif peekTok.type != "close paren":
-            print("Function call arguments need a close paren")
-            return None
+            raise ast_errors.Expected(peekTok, "closing parenthesis")
         arguments.append(arg)
 
 
-def ast_factor(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_factor(tokens: list[Token]) -> ast_nodes.Expression:
     nextTok = tokens.pop(0)
     if nextTok.type == "open paren":
         exp = ast_expression(tokens)
-        if exp is None:
-            return None
         c_paren = tokens.pop(0)
         if c_paren.type != "close paren":
-            print("Factor must be closed by a parenthesis", c_paren)
-            return None
+            raise ast_errors.Expected(c_paren, "closing parenthesis")
         return exp
     elif nextTok.type == "operator" and nextTok.contents in ["-", "~", "!", "&", "*"]:
         operation = nextTok
         factor = ast_factor(tokens)
-        if factor is None:
-            return None
         return ast_operation(str(operation.contents), factor)
     elif nextTok.type == "operator" and nextTok.contents in ["++", "--"]:
         operation = nextTok
         identifier = ast_identifier(tok := tokens.pop(0))
-        if identifier is None:
-            print("Can only pre-increment identifiers.", f"Line: {tok.line}")
-            return None
+        # if identifier is None: # UNREACHABLE WITHOUT TRY CATCH
+        #     raise ast_errors.SyntaxError(tok, "Can only pre-increment identifiers.")
         return ast_nodes.Increment(identifier, True, operation.contents == "++")
     elif nextTok.type == "identifier":
         peekToken = ast_peek(tokens)
@@ -238,36 +221,24 @@ def ast_factor(tokens: list[token]) -> ast_nodes.Expression | None:
             operation = tokens.pop(0)
             # Post: i++ / i--
             identifier = ast_identifier(nextTok)
-            if identifier is None:
-                return None
             return ast_nodes.Increment(identifier, False, operation.contents == "++")
         if peekToken.type == "open paren":
             tokens.pop(0)
             arguments = ast_call_arguments(tokens)
-            if arguments is None:
-                return None
             var_id = ast_identifier(nextTok)
-            if var_id is None:
-                return None
             return ast_nodes.FunctionCall(var_id, arguments)
         if peekToken.type == "open bracket":
             tokens.pop(0)
             identifier = ast_identifier(nextTok)
-            if identifier is None:
-                return None
             access_index = ast_expression(tokens)
-            if access_index is None:
-                return None
             if (c_bracket := tokens.pop(0)).type != "close bracket":
-                print(
-                    "Syntax error: Expected closing bracket for array subscript.",
-                    f"Line {c_bracket.line}",
-                )
+                raise ast_errors.Expected(c_bracket, "closing bracket")
+                # "Syntax error: Expected closing bracket for array subscript."
             return ast_nodes.arraySubscript(identifier, access_index)
 
         return ast_identifier(nextTok)
-    elif nextTok.type == "literal integer" and type(nextTok.contents) is int:
-        return ast_nodes.LiteralInteger(nextTok.contents)
+    elif nextTok.type == "literal integer" and type(nextTok.value) is int:
+        return ast_nodes.LiteralInteger(nextTok.value)
     elif nextTok.type == "literal string" and type(nextTok.contents) is str:
         return ast_nodes.LiteralString(nextTok.contents)
     elif nextTok.type == "literal char" and type(nextTok.contents) is str:
@@ -276,184 +247,137 @@ def ast_factor(tokens: list[token]) -> ast_nodes.Expression | None:
         return ast_nodes.LiteralBool(nextTok.contents == "true")
     else:
         if nextTok.type == "semicolon":
-            print("Syntax error: Expected a value.", f"Line {nextTok.line}")
-            return None
-        print("Unknown factor token", nextTok)
-        return None
+            raise ast_errors.Expected(nextTok, "value")
+            # "Syntax error: Expected a value."
+        raise ast_errors.SyntaxError(nextTok, "Unknown factor token")
 
 
-def ast_term(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_term(tokens: list[Token]) -> ast_nodes.Expression:
     factor = ast_factor(tokens)
-    if factor is None:
-        return None
     nextTok = ast_peek(tokens)
-    while nextTok.type == "operator" and nextTok.contents in ["*", "/"]:
+    while nextTok.type == "operator" and nextTok.contents in ["*", "/", "%"]:
         operation = tokens.pop(0)
         nextFactor = ast_factor(tokens)
-        if nextFactor is None or type(operation.contents) is not str:
-            return None
         factor = ast_operation(operation.contents, factor, nextFactor)
         nextTok = ast_peek(tokens)
     return factor
 
 
-def ast_additive_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_additive_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_term(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents in ["+", "-"]:
         operation = tokens.pop(0)
         nextTerm = ast_term(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_bitshift_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_bitshift_expression(tokens: list[Token]) -> ast_nodes.Expression:
     factor = ast_additive_expression(tokens)
-    if factor is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents in ["<<", ">>"]:
         operation = tokens.pop(0)
         nextFactor = ast_additive_expression(tokens)
-        if nextFactor is None or type(operation.contents) is not str:
-            return None
         factor = ast_operation(operation.contents, factor, nextFactor)
         nextTok = ast_peek(tokens)
     return factor
 
 
-def ast_relational_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_relational_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_bitshift_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents in ["<", ">", "<=", ">="]:
         operation = tokens.pop(0)
         nextTerm = ast_bitshift_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_equality_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_equality_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_relational_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents in ["==", "!="]:
         operation = tokens.pop(0)
         nextTerm = ast_relational_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_bitwise_and_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_bitwise_and_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_equality_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents == "&":
         operation = tokens.pop(0)
         nextTerm = ast_equality_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_bitwise_xor_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_bitwise_xor_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_bitwise_and_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents == "^":
         operation = tokens.pop(0)
         nextTerm = ast_bitwise_and_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_bitwise_or_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_bitwise_or_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_bitwise_xor_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents == "|":
         operation = tokens.pop(0)
         nextTerm = ast_bitwise_xor_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_logical_and_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_logical_and_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_bitwise_or_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents == "&&":
         operation = tokens.pop(0)
         nextTerm = ast_bitwise_or_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_logical_or_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_logical_or_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_logical_and_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents == "||":
         operation = tokens.pop(0)
         nextTerm = ast_logical_and_expression(tokens)
-        if nextTerm is None or type(operation.contents) is not str:
-            return None
         term = ast_operation(operation.contents, term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_conditional_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_conditional_expression(tokens: list[Token]) -> ast_nodes.Expression:
     term = ast_logical_or_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     if nextTok.type == "operator" and nextTok.contents == "?":
         tokens.pop(0)
         middle = ast_expression(tokens)
-        if middle is None:
-            return None
         colon = tokens.pop(0)
         if not (colon.type == "operator" and colon.contents == ":"):
-            print("Conditional must have the colon '? <exp> : <exp>")
-            return None
+            raise ast_errors.Expected(colon, "colon")
+            # expected colon in conditional
         end = ast_conditional_expression(tokens)
-        if end is None:
-            return None
         return ast_nodes.Conditional(term, middle, end)
     return term
 
 
-def ast_assignment_expression(tokens: list[token]) -> ast_nodes.Expression | None:
+def ast_assignment_expression(tokens: list[Token]) -> ast_nodes.Expression:
     is_assignment = len(tokens) >= 1 and ast_peek(tokens, 1).type == "assignment"
     tokens_copy = copy.deepcopy(tokens)
     tokens_copy.pop(0)
@@ -468,32 +392,30 @@ def ast_assignment_expression(tokens: list[token]) -> ast_nodes.Expression | Non
     # if len(tokens) >= 1 and ast_peek(tokens, 1).type in ["assignment", "open bracket"]:
     if is_assignment:
         v_name = ast_identifier(tok := tokens.pop(0))
-        if v_name is None:
-            print("Assignment left must be identifier", f"Line: {tok.line}")
-            return None
+        # if v_name is None: # UNREACHABLE WITHOUT TRY CATCH
+        #     raise ast_errors.Expected(tok, "assignment")
+        # Syntax error: Assignment left must be identifier
         if subscript:
             _ = tokens.pop(0)
             sub_idx = ast_expression(tokens)
-            close_bracket = tokens.pop(0).type == "close bracket"
+            close_bracket = tokens.pop(0)
 
-            if not close_bracket:
-                print("Syntax error: expected closing bracket after array subscript")
-                return None
-            if sub_idx is None:
-                return None
+            if not close_bracket.type == "close bracket":
+                ast_errors.Expected(close_bracket, "closing bracket")
+                # expected closing bracket after array subscript
             v_name = ast_nodes.arraySubscript(v_name, sub_idx)
 
         assigner = tokens.pop(0)
 
         v_expression = ast_assignment_expression(tokens)
-        if v_expression is None:
-            return None
         if assigner.contents == "=":
             return ast_nodes.Assignment(v_name, v_expression)
         elif assigner.contents in [
             "+=",
             "-=",
             "*=",
+            "/=",
+            "%=",
             "<<=",
             ">>=",
             "&=",
@@ -509,41 +431,37 @@ def ast_assignment_expression(tokens: list[token]) -> ast_nodes.Expression | Non
                 ),
             )
         else:
-            print(f"Unknown assigner: {assigner.contents}", f"Line: {assigner.line}")
+            raise ast_errors.SyntaxError(assigner, "unknown assigner")
     else:
         term = ast_conditional_expression(tokens)
-        if term is None:
-            return None
         return term
 
 
-def ast_expression(tokens: list[token]) -> ast_nodes.Expression | None:
-    if ast_peek(tokens).type == "semicolon":
-        return ast_nodes._none()
+def ast_expression(tokens: list[Token]) -> ast_nodes.Expression:
+    # if ast_peek(tokens).type == "semicolon":
+    #     return ast_nodes._none()
+    # A none expression makes no sense. A 'statement' does, but not an expression
+    # Maybe this was meant to help empty for loops? Not sure
     term = ast_assignment_expression(tokens)
-    if term is None:
-        return None
     nextTok = ast_peek(tokens)
     while nextTok.type == "operator" and nextTok.contents == ",":
         tokens.pop(0)
         nextTerm = ast_assignment_expression(tokens)
-        if nextTerm is None:
-            return None
         term = ast_nodes.Comma(term, nextTerm)
         nextTok = ast_peek(tokens)
     return term
 
 
-def ast_declaration(tokens: list[token]) -> ast_nodes.Statement | None:
+def ast_declaration(tokens: list[Token]) -> ast_nodes.Statement:
     tok = ast_peek(tokens)
     d_type = ast_type(tokens)
-    if d_type is None:
-        print("Syntax error: Declaration must have a type.", f"Line {tok.line}")
-        return None
+    # if d_type is None: # UNREACHABLE WITHOUT TRY CATCH
+    #     raise ast_errors.Expected(tok, "type")
+    # Declaration must have a type.
     d_name = ast_identifier(tok := tokens.pop(0))
-    if d_name is None:
-        print("Declaration type must be followed by identifier", tok)
-        return None
+    # if d_name is None: # UNREACHABLE WITHOUT TRY CATCH
+    #     raise ast_errors.Expected(tok, "Declaration")
+    # Declaration type must be followed by identifier
     nextTok = tokens.pop(0)
 
     if nextTok.type == "open bracket":
@@ -551,36 +469,31 @@ def ast_declaration(tokens: list[token]) -> ast_nodes.Statement | None:
         nextTok = tokens.pop(0)
         if nextTok.type != "close bracket":
             if nextTok.type != "literal integer":
-                print("Array length must be literal Integer")
-                return None
+                raise ast_errors.Expected(nextTok, "literal integer")
+                # Array length must be literal Integer
             print("Array length", nextTok)
-            d_type.length = int(nextTok.contents)
+            d_type.length = nextTok.value
             nextTok = tokens.pop(0)
 
         if nextTok.type != "close bracket":
-            print("Syntax error: expected closing bracket after array length", nextTok)
-            return None
+            raise ast_errors.Expected(nextTok, "closing bracket")
+            # Syntax error: expected closing bracket after array length
         nextTok = tokens.pop(0)
 
     if nextTok.type == "assignment" and nextTok.contents == "=":
         d_value = ast_expression(tokens)
-        if d_value is None:
-            return None
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print("Declaration must end with a semicolon", semicolon)
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Declaration must end with a semicolon
         return ast_nodes.DeclarationAssignment(d_type, d_name, d_value)
     if nextTok.type != "semicolon":
-        print(
-            "Syntax error: Declaration must be followed by semicolon or assignment.",
-            f"Line {nextTok.line}",
-        )
-        return None
+        raise ast_errors.Expected(nextTok, "semicolon")
+        # Declaration must be followed by semicolon or assignment.
     return ast_nodes.Declaration(d_type, d_name)
 
 
-def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
+def ast_statement(tokens: list[Token]) -> ast_nodes.Statement:
     token = ast_peek(tokens)
     if token.type == "type":  # declaration
         return ast_declaration(tokens)
@@ -589,34 +502,21 @@ def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
         r_value = ast_expression(tokens)
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Statement must end with semicolon.",
-                f"Line {semicolon.line}",
-            )
-            return None
+            ast_errors.Expected(semicolon, "semicolon")
+            # Syntax error: Statement must end with semicolon.
         return ast_nodes.Return(r_value)
     elif token.type == "keyword" and token.contents == "if":
         tokens.pop(0)
         o_paren = tokens.pop(0)
         if o_paren.type != "open paren":
-            print(
-                "Syntax error: 'if' must be followed by open paren.",
-                f"Line {o_paren.line}",
-            )
-            return None
+            ast_errors.Expected(o_paren, "open parenthesis")
+            # 'if' must be followed by open paren.
         conditional = ast_expression(tokens)
-        if conditional is None:
-            return None
         c_paren = tokens.pop(0)
         if c_paren.type != "close paren":
-            print(
-                "Syntax error: 'if' conditional, unmatched paren.",
-                f"Line {c_paren.line}",
-            )
-            return None
+            ast_errors.Expected(c_paren, "closing parenthesis")
+            # 'if' conditional, unmatched paren.
         statement = ast_statement(tokens)
-        if statement is None:
-            return None
         if type(if_state := statement) is ast_nodes.If:
             nest_cond = if_state.condition
             conditional = ast_operation("&&", conditional, nest_cond)
@@ -633,120 +533,82 @@ def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
         if maybe_else.type == "keyword" and maybe_else.contents == "else":
             tokens.pop(0)
             elseStatement = ast_statement(tokens)
-            if elseStatement is None:
-                return None
             return ast_nodes.IfElse(conditional, statement, elseStatement)
         return ast_nodes.If(conditional, statement)
     elif token.type == "open brace":
         tokens.pop(0)
         f_statements = ast_statement_collection(tokens)
-        if f_statements is None:
-            return None
         return ast_nodes.Block(f_statements)
     elif token.type == "keyword" and token.contents == "while":
         tokens.pop(0)
         o_paren = tokens.pop(0)
         if o_paren.type != "open paren":
-            print(
-                "Syntax error: 'while' must be followed by open paren.",
-                f"Line {o_paren.line}",
-            )
-            return None
+            raise ast_errors.Expected(o_paren, "open parenthesis")
+            # 'while' must be followed by open paren.
         conditional = ast_expression(tokens)
-        if conditional is None:
-            return None
         c_paren = tokens.pop(0)
         if c_paren.type != "close paren":
-            print(
-                "Syntax error: 'while' conditional, unmatched paren.",
-                f"Line {c_paren.line}",
-            )
-            return None
+            raise ast_errors.Expected(c_paren, "closing parenthesis")
+            # 'while' conditional, unmatched paren.
         statement = ast_statement(tokens)
-        if statement is None:
-            return None
         return ast_nodes.While(conditional, statement)
     elif token.type == "keyword" and token.contents == "do":
         tokens.pop(0)
         statement = ast_statement(tokens)
-        if statement is None:
-            return None
         need_while = tokens.pop(0)
         if need_while.type != "keyword" or need_while.contents != "while":
-            print("Syntax error: 'do' requires a 'while'.", f"Line: {need_while.line}")
-            return None
+            raise ast_errors.Expected(need_while, "while")
+            # 'do' requires a 'while'.
         o_paren = tokens.pop(0)
         if o_paren.type != "open paren":
-            print(
-                "Syntax error: 'while' must be followed by open paren.",
-                f"Line {o_paren.line}",
-            )
-            return None
+            raise ast_errors.Expected(o_paren, "open parenthesis")
+            # 'while' must be followed by open paren.
         conditional = ast_expression(tokens)
-        if conditional is None:
-            return None
         c_paren = tokens.pop(0)
         if c_paren.type != "close paren":
-            print(
-                "Syntax error: 'while' conditional, unmatched paren.",
-                f"Line {c_paren.line}",
-            )
-            return None
+            raise ast_errors.Expected(c_paren, "closing parenthesis")
+            # 'while' conditional, unmatched paren.
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Statement must end with semicolon.",
-                f"Line {semicolon.line}",
-            )
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Statement must end with semicolon.
         return ast_nodes.DoWhile(conditional, statement)
     elif token.type == "keyword" and token.contents == "for":
+        print(tokens)
         tokens.pop(0)
         o_paren = tokens.pop(0)
         if o_paren.type != "open paren":
-            print(
-                "Syntax error: 'for' must be followed by open paren.",
-                f"Line {o_paren.line}",
-            )
-            return None
+            raise ast_errors.Expected(o_paren, "open parenthesis")
+            # 'for' must be followed by open paren.
         if ast_peek(tokens).type == "type":  # declaration
             initialExpression = ast_declaration(tokens)
-            if initialExpression is None:
-                return None
         else:
-            initialExpression = ast_expression(tokens)
-            if initialExpression is None:
-                return None
-            semicolon = tokens.pop(0)
-            if semicolon.type != "semicolon":
-                print(
-                    "Syntax error: Missing semicolon.",
-                    f"Line {semicolon.line}",
-                )
-                return None
-        conditional = ast_expression(tokens)
-        if conditional is None:
-            return None
+            if ast_peek(tokens).type == "semicolon":
+                initialExpression = ast_nodes._none()
+                _ = tokens.pop(0)
+            else:
+                initialExpression = ast_expression(tokens)
+                semicolon = tokens.pop(0)
+                if semicolon.type != "semicolon":
+                    raise ast_errors.Expected(semicolon, "semicolon")
+                    # Missing semicolon in for-pre.
+        if ast_peek(tokens).type == "semicolon":
+            conditional = ast_nodes._none()
+        else:
+            conditional = ast_expression(tokens)
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Missing semicolon.",
-                f"Line {semicolon.line}",
-            )
-            return None
-        postExpression = ast_expression(tokens)
-        if postExpression is None:
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Missing semicolon in for-condition.
+        if ast_peek(tokens).type == "close paren":
+            postExpression = ast_nodes._none()
+        else:
+            postExpression = ast_expression(tokens)
         c_paren = tokens.pop(0)
         if c_paren.type != "close paren":
-            print(
-                "Syntax error: 'for' conditional, unmatched paren.",
-                f"Line {c_paren.line}",
-            )
-            return None
+            raise ast_errors.Expected(c_paren, "closing parenthesis")
+            #'for' conditional, unmatched paren.
         statement = ast_statement(tokens)
-        if statement is None:
-            return None
         return ast_nodes.ForLoop(
             initialExpression, conditional, postExpression, statement
         )
@@ -754,28 +616,22 @@ def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
         tokens.pop(0)
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Missing semicolon.",
-                f"Line {semicolon.line}",
-            )
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Missing semicolon.
         return ast_nodes.Continue()
     elif token.type == "keyword" and token.contents == "break":
         tokens.pop(0)
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Missing semicolon.",
-                f"Line {semicolon.line}",
-            )
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Missing semicolon.
         return ast_nodes.Break()
     elif token.type == "keyword" and token.contents == "asm":
         tokens.pop(0)
         tok = tokens.pop(0)
         if tok.type != "open brace":
-            print("Syntax error: expected '{' after 'asm', got", tok)
-            return None
+            raise ast_errors.Expected(tok, "open brace")
+            # expected '{' after 'asm'
         startLine = tok.line
         asmLines = []
         uid = str(uuid.uuid4())[:8]
@@ -789,6 +645,8 @@ def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
                 if asmLines[thisLine].endswith(" "):
                     asmLines[thisLine] = asmLines[thisLine][:-1]
                 asmLines[thisLine] += str(tok.contents) + " "
+            elif tok.contents == "$":
+                asmLines[thisLine] += str(tok.contents)
             else:
                 asmLines[thisLine] += str(tok.contents) + " "
 
@@ -802,19 +660,14 @@ def ast_statement(tokens: list[token]) -> ast_nodes.Statement | None:
         return ast_nodes.LiteralASM(asmLines)
     else:
         tryExpression = ast_expression(tokens)
-        if tryExpression is None:
-            return None
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print(
-                "Syntax error: Statement must end with semicolon.",
-                f"Line {semicolon.line}",
-            )
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Statement must end with semicolon.
         return tryExpression
 
 
-def ast_statement_collection(tokens: list[token]) -> list | None:
+def ast_statement_collection(tokens: list[Token]) -> list:
     statementList = []
     trimming = False
     mentionedTrimming = False
@@ -824,31 +677,32 @@ def ast_statement_collection(tokens: list[token]) -> list | None:
             tokens.pop(0)
             return statementList
         statement = ast_statement(tokens)
-        if statement is None:
-            return None
         if not trimming:
             statementList.append(statement)
             if type(statement) is ast_nodes.Return:
                 trimming = True
         elif not mentionedTrimming:
-            print("Trimming unreachable code after return.", f"Line: {peekToken.line}")
+            print(
+                "Warning: Trimming unreachable code after return.",
+                f"Line: {peekToken.line}",
+            )
             mentionedTrimming = True
 
 
-def ast_directive(tokens: list[token]) -> ast_nodes.Node | None:
+def ast_directive(tokens: list[Token]) -> ast_nodes.Node:
     directive = tokens.pop(0)
     if directive.contents == "include":
         fileName = tokens.pop(0)
         if fileName.type != "literal string":
-            print("Expected string path to include")
-            return None
+            raise ast_errors.Expected(fileName, "string path")
+            # Syntax error: Expected string path to include
         return ast_nodes.Include(fileName.contents)
     else:
-        print("Unknown directive:", directive)
-        return None
+        raise ast_errors.SyntaxError(directive, "Unknown directive")
+        # Unknown directive
 
 
-def ast_toplevel(tokens: list[token]) -> ast_nodes.Node | None:
+def ast_toplevel(tokens: list[Token]) -> ast_nodes.Node:
     tok = ast_peek(tokens)
 
     if tok.type == "symbol" and tok.contents == "#":
@@ -856,13 +710,13 @@ def ast_toplevel(tokens: list[token]) -> ast_nodes.Node | None:
         return ast_directive(tokens)
 
     _type = ast_type(tokens)
-    if _type is None:
-        print("Declaration must start with a type", tok)
-        return None
+    # if _type is None: # UNREACHABLE WITHOUT TRY CATCH
+    #     raise ast_errors.Expected(tok, "type")
+    # Declaration must start with a type
     _name = ast_identifier(tok := tokens.pop(0))
-    if _name is None:
-        print("Declaration type must be followed by identifier", tok)
-        return None
+    # if _name is None:  # UNREACHABLE WITHOUT TRY CATCH
+    #     raise ast_errors.Expected(tok, "identifier")
+    # Declaration type must be followed by identifier
     peekTok = ast_peek(tokens)
     if peekTok.type == "semicolon":
         _ = tokens.pop(0)
@@ -870,12 +724,10 @@ def ast_toplevel(tokens: list[token]) -> ast_nodes.Node | None:
     elif peekTok.type == "assignment" and peekTok.contents == "=":
         _ = tokens.pop(0)
         _expr = ast_expression(tokens)
-        if _expr is None:
-            return None
         semicolon = tokens.pop(0)
         if semicolon.type != "semicolon":
-            print("Declaration must end with a semicolon", semicolon)
-            return None
+            raise ast_errors.Expected(semicolon, "semicolon")
+            # Syntax error: Declaration must end with a semicolon
         return ast_nodes.DeclarationAssignment(_type, _name, _expr)
 
     # first_type = ast_peek(tokens, 1)
@@ -886,9 +738,6 @@ def ast_toplevel(tokens: list[token]) -> ast_nodes.Node | None:
     # else:
     f_arguments = ast_arguments(tokens)
 
-    if f_arguments is None:
-        return None
-
     # print(list(arg._type.type is ast_nodes.basetypes._void for arg in f_arguments))
     # if any(arg._type.type is ast_nodes.basetypes._void for arg in f_arguments):
     #     print("VOID")
@@ -897,19 +746,17 @@ def ast_toplevel(tokens: list[token]) -> ast_nodes.Node | None:
     if token.type == "semicolon":
         return ast_nodes.FunctionPrototype(_type, _name, f_arguments)
     elif token.type != "open brace":
-        print("Statement must start with open brace", token)
-        return None
+        raise ast_errors.Expected(tok, "open brace")
+        # Statement must start with open brace
     f_statements = ast_statement_collection(tokens)
-    if f_statements is None:
-        return None
     return ast_nodes.Function(_type, _name, f_arguments, f_statements)
 
 
-def ast_head(tokens: list[token]) -> list[ast_nodes.Node]:
+def ast_head(tokens: list[Token]) -> list[ast_nodes.Node]:
     head = []
     while len(tokens) > 0:
         f = ast_toplevel(tokens)
-        if f is None:
+        if f is None:  # UNREACHABLE WITHOUT TRY CATCH
             return []
         else:
             head.append(f)
@@ -917,13 +764,13 @@ def ast_head(tokens: list[token]) -> list[ast_nodes.Node]:
 
 
 if __name__ == "__main__":
-    from tokenizer import tokenize, token
+    from tokenizer import tokenize, Token
 
     file = Path("test.g")
     with open(file, "r") as f:
         fileContents: str = f.read()
 
-    tokens: list[token] = tokenize(fileContents, file)
+    tokens: list[Token] = tokenize(fileContents, file)
 
     # print(tokens)
     AST: list[ast_nodes.Node] = ast_head(tokens)
@@ -931,3 +778,14 @@ if __name__ == "__main__":
         print("SAD (No AST output...)")
         exit()
     print(AST)
+    f = AST[0]
+    assert isinstance(f, ast_nodes.Function)
+    asm = f.statements[1]
+    assert isinstance(asm, ast_nodes.LiteralASM)
+    print(asm.value)
+
+    f = AST[2]
+    assert isinstance(f, ast_nodes.Function)
+    asm = f.statements[1]
+    assert isinstance(asm, ast_nodes.LiteralASM)
+    print(asm.value)

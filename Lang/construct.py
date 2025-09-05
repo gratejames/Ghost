@@ -200,22 +200,22 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += f"eq_match_{uid}:\n"
             asm += "LD R0 1\n"
             asm += f"eq_done_{uid}:\n"
-        elif op.op == "==":
+        elif op.op == "!=":
             uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
             asm += "PSH R0\n"
             asm += csrt_expression(op.expr_b, var_map)
             asm += "POP R1\n"
-            asm += f"ST R1 $eq_val_{uid}\n"
-            asm += f"CNE R0 $eq_val_{uid}\n"
-            asm += f"JMPC eq_match_{uid}\n"
+            asm += f"ST R1 $neq_val_{uid}\n"
+            asm += f"CNE R0 $neq_val_{uid}\n"
+            asm += f"JMPC neq_match_{uid}\n"
             asm += "LD R0 0\n"
-            asm += f"JMP eq_done_{uid}\n"
-            asm += f"eq_val_{uid}:\n"
+            asm += f"JMP neq_done_{uid}\n"
+            asm += f"neq_val_{uid}:\n"
             asm += ".db 0\n"
-            asm += f"eq_match_{uid}:\n"
+            asm += f"neq_match_{uid}:\n"
             asm += "LD R0 1\n"
-            asm += f"eq_done_{uid}:\n"
+            asm += f"neq_done_{uid}:\n"
         elif op.op == "<":
             uid = getUID()
             asm += csrt_expression(op.expr_a, var_map)
@@ -320,6 +320,39 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
             asm += f"or_true_{uid}:\n"
             asm += "LD R0 1\n"
             asm += f"or_done_{uid}:\n"
+        elif op.op == "/":
+            uid = getUID()
+            asm += csrt_expression(op.expr_a, var_map)
+            asm += "PSH R0"
+            asm += csrt_expression(op.expr_b, var_map)
+            asm += "STZ R1"
+            asm += "POP R0"
+            asm += "LD R2 0"
+            asm += f"division_loop_{uuid}:"
+            asm += "CGT R0 0x8000 ; Is Negative"
+            asm += f"JMPC division_exit_{uuid}"
+            asm += "SUB R1"
+            asm += "INC R2"
+            asm += f"JMP division_loop_{uuid}"
+            asm += "JMPC division_exit_{uuid}:"
+            asm += "DEC R2"
+            asm += "LDZ R2"
+        elif op.op == "%":
+            uid = getUID()
+            asm += csrt_expression(op.expr_a, var_map)
+            asm += "PSH R0"
+            asm += csrt_expression(op.expr_b, var_map)
+            asm += "STZ R1"
+            asm += "POP R0"
+            asm += "LD R2 0"
+            asm += f"division_loop_{uuid}:"
+            asm += "CGT R0 0x8000 ; Is Negative"
+            asm += f"JMPC division_exit_{uuid}"
+            asm += "SUB R1"
+            asm += "INC R2"
+            asm += f"JMP division_loop_{uuid}"
+            asm += "JMPC division_exit_{uuid}:"
+            asm += "LDZ R1"
         else:
             print(f"Unknown bi-operator: {op.op}")
             exit()
@@ -368,6 +401,11 @@ def csrt_expression(state: ast_nodes.Expression, var_map):
         var = var_map[func.id.name]
         if type(var) is not MappedVarFunc:
             print(f"{func.id.name} is not a function.")
+            exit()
+        if len(var.arguments) != len(func.args):
+            print(
+                f"{func.id.name} has arguments {list(a._type for a in var.arguments)}, rather than the {list(a._type for a in func.args)} given"
+            )
             exit()
         var.was_read = True
         for arg in func.args[::-1]:
@@ -734,6 +772,17 @@ def csrt_function(functionStruct: ast_nodes.Function, var_map: immutables.Map):
     asm += "LDSP\n"
     asm += "ST R0 $ebp\n"
     asm += ";prologue concluded\n"
+    # print(functionStruct.id.name in var_map, var_map.get(functionStruct.id.name, None))
+    if functionStruct.id.name in var_map:
+        prev_def = var_map[functionStruct.id.name]
+        if prev_def.was_set:
+            print(f"{functionStruct.id.name} was already defined")
+            exit()
+        if not str(list(a._type for a in prev_def.arguments)) == str(
+            list(a._type for a in functionStruct.args)
+        ):
+            print("Function definition does not match prototype")
+            exit()
     f = MappedVarFunc(functionStruct._type, functionStruct.args)
     f.was_set = True
     var_map = var_map.set(functionStruct.id.name, f)
@@ -879,7 +928,7 @@ def construct(AST: list[ast_nodes.Node], fs=False) -> str | int:
 
 
 if __name__ == "__main__":
-    from tokenizer import tokenize, token
+    from tokenizer import tokenize, Token
     from my_ast import ast_head
     from pathlib import Path
 
@@ -887,7 +936,7 @@ if __name__ == "__main__":
     with open(file, "r") as f:
         fileContents: str = f.read()
 
-    tokens: list[token] = tokenize(fileContents, Path(file))
+    tokens: list[Token] = tokenize(fileContents, Path(file))
 
     # print(tokens)
     AST: list[ast_nodes.Node] = ast_head(tokens)

@@ -17,14 +17,14 @@ DD R0
 LDD R0
 
 DD R0
-6a83bd1f_loop:
+b5f3db88_loop:
 LDD R1
 CEZ R1
-JMPC 6a83bd1f_done
+JMPC b5f3db88_done
 DBGC R1
 INCD
-JMP 6a83bd1f_loop
-6a83bd1f_done:
+JMP b5f3db88_loop
+b5f3db88_done:
 
 ;begin auto-epilog
 LD R0 0

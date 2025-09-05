@@ -122,9 +122,22 @@
 			+ [x] array should extend pointer
 			+ [ ] Should array subscript extend identifier? Should identifiers be pointers???
 	+ [ ] Malloc/free
-+ [x] Rename stuff in constructor to dunders
-+ [ ] backslash escaping
-+ [ ] Function prototypes don't need variable names
+	+ [x] Rename stuff in constructor to dunders
+	+ [ ] backslash escaping
+	+ [ ] Function prototypes don't need variable names
+	+ [ ] Block-quotes
+	+ [ ] Flaws revealed by testing:
+		+ [ ] Scoping for for-loops is incorrect. See chapter 8/valid/for_shadow . The inner scope should include the loopiness.
+			+ [ ] Create intermediate scope
+		+ [x] Allow empty segments in for loop: `for (int i = 0; i < 10;) {}`
+		+ [ ] Switch/case
+		+ [ ] Constructor doesn't validate function arguments
+			+ [x] Length
+			+ [ ] Types
+		+ [ ] Function parameters and body should be in the same scope
+		+ [ ] Literal Integers are broken now. Add 'value' field
+		+ [ ] Use exceptions in AST
+			+ [ ] Replace all return None's with exceptions
 
 # Simulator Keybinds
 + ctr+shift+d: Debug Window

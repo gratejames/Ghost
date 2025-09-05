@@ -111,7 +111,7 @@ class Return(Statement):
         return f"(return {self.expr})"
 
 
-class _none(Expression):
+class _none(Statement):
     pass
 
 
@@ -355,13 +355,15 @@ class IfElse(Statement):
 class ForLoop(Statement):
     def __init__(
         self,
-        initial: Expression | Statement,
-        conditional: Expression,
-        post: Expression,
+        initial: Statement,
+        conditional: Expression | _none,
+        post: Statement,
         statement: Statement,
     ):
         self.initial = initial
-        self.conditional = conditional
+        self.conditional = (
+            conditional if not isinstance(conditional, _none) else LiteralInteger(1)
+        )
         self.post = post
         self.statement = statement
 

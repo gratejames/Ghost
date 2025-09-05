@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tokenizer import tokenize, token
+from tokenizer import tokenize, Token
 from construct import construct
 from my_ast import ast_head
 from ast_nodes import Node
@@ -12,7 +12,7 @@ def compile(fileName: Path, fs=False) -> str:
     with open(fileName, "r") as f:
         fileContents: str = f.read()
 
-    tokens: list[token] = tokenize(fileContents, fileName)
+    tokens: list[Token] = tokenize(fileContents, fileName)
     # print(tokens)
 
     AST: list[Node] = ast_head(tokens)
