@@ -80,7 +80,8 @@ class PreToken:
         self.pos = pos
 
     def __repr__(self):
-        return f"('{self.contents}':{self.line}:{self.file})"
+        # return f"('{self.contents}':{self.line}:{self.file})"
+        return f"('{self.contents}':{self.line})"
 
     contents: str = ""
     line: int = 0
@@ -117,7 +118,8 @@ class Token:
         self.value = value
 
     def __repr__(self):
-        return f"({self.type} '{self.contents}', {self.line}:{self.tokenNumber}:{self.file})"
+        # return f"({self.type} '{self.contents}', {self.line}:{self.tokenNumber}:{self.file})"
+        return f"({self.type} '{self.contents}', {self.line}:{self.tokenNumber})"
 
     def blame(self):
         print("\n".join(self.blame_string()))
@@ -166,7 +168,8 @@ def split(fileLines: list[Line]) -> list[PreToken]:
                 continue
             if not (char == " " and contents[-1].contents == " ") and not char == "\n":
                 contents.append(PreToken(char, line.line + 1, charI, line.file))
-        contents.append(PreToken(" ", line.line + 1, contents[-1].pos, line.file))
+        if len(contents) > 0:
+            contents.append(PreToken(" ", line.line + 1, contents[-1].pos, line.file))
     # print(contents)
 
     # print("PRE TOKENS", contents)

@@ -16,9 +16,9 @@ def compile(fileName: Path, fs=False) -> str:
     # print(tokens)
 
     AST: list[Node] = ast_head(tokens)
-    if AST == []:
-        print("SAD (No AST output...)")
-        exit(1)
+    # if AST == []:
+    #     print("SAD (No AST output...)")
+    #     exit(1)
     print(AST)
     assembly = str(construct(AST, fs))
     # print(assembly)

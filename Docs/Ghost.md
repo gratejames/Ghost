@@ -131,13 +131,17 @@
 			+ [ ] Create intermediate scope
 		+ [x] Allow empty segments in for loop: `for (int i = 0; i < 10;) {}`
 		+ [ ] Switch/case
+		+ [ ] goto/labels
 		+ [ ] Constructor doesn't validate function arguments
 			+ [x] Length
 			+ [ ] Types
 		+ [ ] Function parameters and body should be in the same scope
 		+ [ ] Literal Integers are broken now. Add 'value' field
-		+ [ ] Use exceptions in AST
-			+ [ ] Replace all return None's with exceptions
+	+ [x] Use exceptions in AST
+		+ [x] Replace all return None's with exceptions
+	+ [x] Fix ASM capturing (Patched but still ad-hoc)
+	+ [ ] Add 'blame' method to all AST Nodes
+	+ [ ] semantic checking
 
 # Simulator Keybinds
 + ctr+shift+d: Debug Window
