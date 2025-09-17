@@ -109,7 +109,7 @@
 + [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
 + [ ] Make assembler smarter about single quotes
 + [ ] Syntax highlighting for ghasm in g?
-+ [ ] More g
++ [ ] More g/c
 	+ [x] types - get ChatGPT to generate a bunch of test cases?
 		+ [x] lists
 			+ [x] Heap? No, stack
