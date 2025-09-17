@@ -21,6 +21,22 @@ def ast_type(tokens: list[Token]) -> ast_nodes.Type:
     return t
 
 
+def ast_typeNode(tokens: list[Token]) -> ast_nodes.TypeNode:
+    _type = ast_pop(tokens)
+    if _type.type != "type" or type(_type.contents) is not str:
+        raise ast_errors.Expected(_type, "type")
+
+    t = ast_nodes.TypeNode(ast_nodes.Type(_type.contents), _type)
+
+    nextTok = ast_peek(tokens)
+    if nextTok.type == "operator" and nextTok.contents == "*":
+        ast_pop(tokens)
+        t.type = ast_nodes.Pointer(t.type)
+        return t
+
+    return t
+
+
 def ast_identifier(_id: Token) -> ast_nodes.Identifier:
     if (
         _id.type != "identifier"
@@ -30,7 +46,7 @@ def ast_identifier(_id: Token) -> ast_nodes.Identifier:
         raise ast_errors.Expected(_id, "identifier")
     if not _id.contents[0].isalpha():
         raise ast_errors.SyntaxError(_id, "Identifier must start with a letter")
-    return ast_nodes.Identifier(_id.contents)
+    return ast_nodes.Identifier(_id.contents, _id)
 
 
 def ast_peek(tokens: list[Token], i: int = 0) -> Token:
@@ -57,87 +73,92 @@ def ast_operation(
     operand_b: ast_nodes.Expression | None = None,
 ) -> ast_nodes.Expression:
     if operand_b is None:
-        if isinstance(operand_a, ast_nodes.LiteralInteger):
-            match operation_type:
-                case "-":
-                    return ast_nodes.LiteralInteger(-operand_a.value)
-                case "~":
-                    return ast_nodes.LiteralInteger(
-                        op_invert(operand_a.value),
-                    )
-                case "!":
-                    return ast_nodes.LiteralInteger(int(operand_a.value == 0))
+        # if isinstance(operand_a, ast_nodes.LiteralInteger):
+        #     match operation_type:
+        #         case "-":
+        #             return ast_nodes.LiteralInteger(-operand_a.value, operand_a.token)
+        #         case "~":
+        #             return ast_nodes.LiteralInteger(
+        #                 op_invert(operand_a.value), operand_a.token
+        #             )
+        #         case "!":
+        #             return ast_nodes.LiteralInteger(
+        #                 int(operand_a.value == 0), operand_a.token
+        #             )
         return ast_nodes.unOperation(operation_type, operand_a)
     else:
-        if isinstance(operand_a, ast_nodes.LiteralInteger) and operation_type in [
-            "*",
-            "+",
-        ]:
-            temp = operand_a
-            operand_a = operand_b
-            operand_b = temp
+        # if isinstance(operand_a, ast_nodes.LiteralInteger) and operation_type in [
+        #     "*",
+        #     "+",
+        # ]:
+        #     temp = operand_a
+        #     operand_a = operand_b
+        #     operand_b = temp
 
-        if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type == "*":
-            if operand_b.value == 0:
-                return ast_nodes.LiteralInteger(0)
-            if operand_b.value == 1:
-                return operand_a
+        # if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type == "*":
+        #     if operand_b.value == 0:
+        #         return ast_nodes.LiteralInteger(0)
+        #     if operand_b.value == 1:
+        #         return operand_a
 
-        if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type in [
-            "+",
-            "-",
-            "|",
-            "^",
-        ]:
-            if operand_b.value == 0:
-                return operand_a
+        # if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type in [
+        #     "+",
+        #     "-",
+        #     "|",
+        #     "^",
+        # ]:
+        #     if operand_b.value == 0:
+        #         return operand_a
 
-        if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type == "&":
-            if operand_b.value == 0xFFFF:
-                return operand_a
+        # if isinstance(operand_b, ast_nodes.LiteralInteger) and operation_type == "&":
+        #     if operand_b.value == 0xFFFF:
+        #         return operand_a
 
-        if operation_type == "&&" and (
-            (isinstance(operand_a, ast_nodes.LiteralInteger) and operand_a.value == 0)
-            or (
-                isinstance(operand_b, ast_nodes.LiteralInteger) and operand_b.value == 0
-            )
-        ):
-            return ast_nodes.LiteralInteger(0)
+        # if operation_type == "&&" and (
+        #     (isinstance(operand_a, ast_nodes.LiteralInteger) and operand_a.value == 0)
+        #     or (
+        #         isinstance(operand_b, ast_nodes.LiteralInteger) and operand_b.value == 0
+        #     )
+        # ):
+        #     return ast_nodes.LiteralInteger(0)
 
-        if operation_type == "||" and (
-            (isinstance(operand_a, ast_nodes.LiteralInteger) and operand_a.value != 0)
-            or (
-                isinstance(operand_b, ast_nodes.LiteralInteger) and operand_b.value != 0
-            )
-        ):
-            return ast_nodes.LiteralInteger(1)
+        # if operation_type == "||" and (
+        #     (isinstance(operand_a, ast_nodes.LiteralInteger) and operand_a.value != 0)
+        #     or (
+        #         isinstance(operand_b, ast_nodes.LiteralInteger) and operand_b.value != 0
+        #     )
+        # ):
+        #     return ast_nodes.LiteralInteger(1)
 
-        if isinstance(operand_a, ast_nodes.LiteralInteger) and isinstance(
-            operand_b, ast_nodes.LiteralInteger
-        ):
-            match operation_type:
-                case "*":
-                    return ast_nodes.LiteralInteger(operand_a.value * operand_b.value)
-                case "+":
-                    return ast_nodes.LiteralInteger(operand_a.value + operand_b.value)
-                case "-":
-                    return ast_nodes.LiteralInteger(operand_a.value - operand_b.value)
-                case "<<":
-                    return ast_nodes.LiteralInteger(operand_a.value << operand_b.value)
-                case ">>":
-                    return ast_nodes.LiteralInteger(operand_a.value >> operand_b.value)
-                case "&":
-                    return ast_nodes.LiteralInteger(operand_a.value & operand_b.value)
-                case "|":
-                    return ast_nodes.LiteralInteger(operand_a.value | operand_b.value)
-                case "^":
-                    return ast_nodes.LiteralInteger(operand_a.value ^ operand_b.value)
+        # if isinstance(operand_a, ast_nodes.LiteralInteger) and isinstance(
+        #     operand_b, ast_nodes.LiteralInteger
+        # ):
+        #     match operation_type:
+        #         case "*":
+        #             return ast_nodes.LiteralInteger(
+        #                 operand_a.value * operand_b.value,
+        #                 operand_a.token.combine(operand_b.token),
+        #             )
+        #         case "+":
+        #             return ast_nodes.LiteralInteger(operand_a.value + operand_b.value)
+        #         case "-":
+        #             return ast_nodes.LiteralInteger(operand_a.value - operand_b.value)
+        #         case "<<":
+        #             return ast_nodes.LiteralInteger(operand_a.value << operand_b.value)
+        #         case ">>":
+        #             return ast_nodes.LiteralInteger(operand_a.value >> operand_b.value)
+        #         case "&":
+        #             return ast_nodes.LiteralInteger(operand_a.value & operand_b.value)
+        #         case "|":
+        #             return ast_nodes.LiteralInteger(operand_a.value | operand_b.value)
+        #         case "^":
+        #             return ast_nodes.LiteralInteger(operand_a.value ^ operand_b.value)
 
         return ast_nodes.biOperation(operation_type, operand_a, operand_b)
 
 
-def ast_arguments(tokens: list[Token]) -> list[ast_nodes.function_arguments]:
-    arguments: list[ast_nodes.function_arguments] = []
+def ast_arguments(tokens: list[Token]) -> list[ast_nodes.FunctionArgument]:
+    arguments: list[ast_nodes.FunctionArgument] = []
     o_paren = ast_pop(tokens)
     if o_paren.type != "open paren":
         # "Arguments must start with a paren"
@@ -148,16 +169,16 @@ def ast_arguments(tokens: list[Token]) -> list[ast_nodes.function_arguments]:
             ast_pop(tokens)
             break
 
-        a_type = ast_type(tokens)
-        if a_type.type is ast_nodes.basetypes._void:
-            a_name = ast_nodes.Identifier("Void")
+        a_type = ast_typeNode(tokens)
+        if a_type.type.type is ast_nodes.basetypes._void:
+            a_name = ast_nodes.Identifier("Void", a_type.token)
         else:
             a_name = ast_identifier(tok := ast_pop(tokens))
             # TODO Could try catch to provide a more contextualized error
             # if a_name is None: # UNREACHABLE WITHOUT TRY CATCH
             #     raise ast_errors.Expected(tok, "closing parenthesis")
             # Arguments type must be followed by identifier
-        arguments.append(ast_nodes.function_arguments(a_type, a_name))
+        arguments.append(ast_nodes.FunctionArgument(a_type, a_name))
 
         peekTok = ast_peek(tokens)
         if peekTok.type == "operator" and peekTok.contents == ",":
@@ -245,13 +266,13 @@ def ast_factor(tokens: list[Token]) -> ast_nodes.Expression:
 
         return ast_identifier(nextTok)
     elif nextTok.type == "literal integer" and type(nextTok.value) is int:
-        return ast_nodes.LiteralInteger(nextTok.value)
+        return ast_nodes.LiteralInteger(nextTok.value, nextTok)
     elif nextTok.type == "literal string" and type(nextTok.contents) is str:
-        return ast_nodes.LiteralString(nextTok.contents)
+        return ast_nodes.LiteralString(nextTok.contents, nextTok)
     elif nextTok.type == "literal char" and type(nextTok.contents) is str:
-        return ast_nodes.LiteralChar(nextTok.contents)
+        return ast_nodes.LiteralChar(nextTok.contents, nextTok)
     elif nextTok.type == "keyword" and nextTok.contents in ["true", "false"]:
-        return ast_nodes.LiteralBool(nextTok.contents == "true")
+        return ast_nodes.LiteralBool(nextTok.contents == "true", nextTok)
     else:
         if nextTok.type == "semicolon":
             raise ast_errors.Expected(nextTok, "value")
@@ -461,7 +482,7 @@ def ast_expression(tokens: list[Token]) -> ast_nodes.Expression:
 
 def ast_declaration(tokens: list[Token]) -> ast_nodes.Statement:
     tok = ast_peek(tokens)
-    d_type = ast_type(tokens)
+    d_type = ast_typeNode(tokens)
     # if d_type is None: # UNREACHABLE WITHOUT TRY CATCH
     #     raise ast_errors.Expected(tok, "type")
     # Declaration must have a type.
@@ -471,21 +492,21 @@ def ast_declaration(tokens: list[Token]) -> ast_nodes.Statement:
     # Declaration type must be followed by identifier
     nextTok = ast_pop(tokens)
 
-    if nextTok.type == "open bracket":
-        d_type = ast_nodes.Array(d_type)
-        nextTok = ast_pop(tokens)
-        if nextTok.type != "close bracket":
-            if nextTok.type != "literal integer":
-                raise ast_errors.Expected(nextTok, "literal integer")
-                # Array length must be literal Integer
-            print("Array length", nextTok)
-            d_type.length = nextTok.value
-            nextTok = ast_pop(tokens)
+    # if nextTok.type == "open bracket":
+    #     d_array = ast_nodes.LiteralArray(d_type)
+    #     nextTok = ast_pop(tokens)
+    #     if nextTok.type != "close bracket":
+    #         if nextTok.type != "literal integer":
+    #             raise ast_errors.Expected(nextTok, "literal integer")
+    #             # Array length must be literal Integer
+    #         print("Array length", nextTok)
+    #         d_array.length = nextTok.value
+    #         nextTok = ast_pop(tokens)
 
-        if nextTok.type != "close bracket":
-            raise ast_errors.Expected(nextTok, "closing bracket")
-            # Syntax error: expected closing bracket after array length
-        nextTok = ast_pop(tokens)
+    #     if nextTok.type != "close bracket":
+    #         raise ast_errors.Expected(nextTok, "closing bracket")
+    #         # Syntax error: expected closing bracket after array length
+    #     nextTok = ast_pop(tokens)
 
     if nextTok.type == "assignment" and nextTok.contents == "=":
         d_value = ast_expression(tokens)
@@ -511,7 +532,7 @@ def ast_statement(tokens: list[Token]) -> ast_nodes.Statement:
         if semicolon.type != "semicolon":
             raise ast_errors.Expected(semicolon, "semicolon")
             # Syntax error: Statement must end with semicolon.
-        return ast_nodes.Return(r_value)
+        return ast_nodes.Return(r_value, token)
     elif token.type == "keyword" and token.contents == "if":
         ast_pop(tokens)
         o_paren = ast_pop(tokens)
@@ -625,14 +646,14 @@ def ast_statement(tokens: list[Token]) -> ast_nodes.Statement:
         if semicolon.type != "semicolon":
             raise ast_errors.Expected(semicolon, "semicolon")
             # Missing semicolon.
-        return ast_nodes.Continue()
+        return ast_nodes.Continue(token)
     elif token.type == "keyword" and token.contents == "break":
         ast_pop(tokens)
         semicolon = ast_pop(tokens)
         if semicolon.type != "semicolon":
             raise ast_errors.Expected(semicolon, "semicolon")
             # Missing semicolon.
-        return ast_nodes.Break()
+        return ast_nodes.Break(token)
     elif token.type == "keyword" and token.contents == "asm":
         ast_pop(tokens)
         tok = ast_pop(tokens)
@@ -719,7 +740,7 @@ def ast_toplevel(tokens: list[Token]) -> ast_nodes.Node:
         ast_pop(tokens)
         return ast_directive(tokens)
 
-    _type = ast_type(tokens)
+    _type = ast_typeNode(tokens)
     # if _type is None: # UNREACHABLE WITHOUT TRY CATCH
     #     raise ast_errors.Expected(tok, "type")
     # Declaration must start with a type
@@ -784,3 +805,32 @@ if __name__ == "__main__":
         print("SAD (No AST output...)")
         exit()
     print(AST)
+
+    # def recurseBlame(node: ast_nodes.Node):
+    #     if type(node) is ast_nodes.Function:
+    #         node.typenode.blame()
+    #         node.id.blame()
+    #         for arg in node.args:
+    #             recurseBlame(arg)
+    #         for statement in node.statements:
+    #             recurseBlame(statement)
+    #     elif type(node) is ast_nodes.DeclarationAssignment:
+    #         node.typenode.blame()
+    #         node.id.blame()
+    #         node.expr.blame()
+    #     elif type(node) is ast_nodes.Declaration:
+    #         node.typenode.blame()
+    #         node.id.blame()
+    #     elif type(node) is ast_nodes.FunctionCall:
+    #         node.id.blame()
+    #         for arg in node.args:
+    #             arg.blame()
+    #     elif type(node) is ast_nodes.FunctionArgument:
+    #         node.blame()
+    #         node.typenode.blame()
+    #     else:
+    #         node.blame()
+
+    # # Blame Debugging
+    # for node in AST:
+    #     recurseBlame(node)

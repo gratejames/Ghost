@@ -837,23 +837,14 @@ def construct(AST: list[ast_nodes.Node], fs=False) -> str | int:
     var_map = immutables.Map(__continue_target=0, __break_target=0)
     for mainNode in AST:
         if type(mainNode) is ast_nodes.Include:
-            # print("Including ", mainNode.file)
             asm += f"#INC {mainNode.file}\n"
         elif type(mainNode) is ast_nodes.Function:
-            # if mainNode.id.name == "main":
-            #     if mainNode._type.type != ast_nodes.types._int:
-            #         print("Main function must return int")
-            #         exit()
             new_asm = csrt_function(mainNode, var_map)
             asm += new_asm
             f = MappedVarFunc(mainNode._type, mainNode.args)
             f.was_set = True
             var_map = var_map.set(mainNode.id.name, f)
         elif type(mainNode) is ast_nodes.FunctionPrototype:
-            # if mainNode.id.name == "main":
-            #     if mainNode._type.type != ast_nodes.types._int:
-            #         print("Main function must return int")
-            #         exit()
             var_map = var_map.set(
                 mainNode.id.name, MappedVarFunc(mainNode._type, mainNode.args)
             )

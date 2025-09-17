@@ -1,9 +1,34 @@
 from enum import Enum
+from tokenizer import Token
+from pathlib import Path
+
+
+def prettyPath(path: Path) -> Path:
+    local = Path(".").absolute()
+    path = path.absolute()
+    if path.is_relative_to(local):
+        return path.relative_to(local)
+    else:
+        return path.absolute()
 
 
 class Node:
     def __init__(self):
         pass
+
+    def blame(self):
+        print(f"Warning: Unset blame for {type(self)}")
+
+    def _blame_line(self, file: Path, line: int):
+        print(f"in file: {file}, line {line}")
+
+        with open(file, "r") as f:
+            fileContents = f.read()
+        lineContents = fileContents.split("\n")[line - 1]
+        print(f"> {lineContents}")
+
+    def _blame_token(self, token: Token):
+        token.blame()
 
 
 class basetypes(Enum):
@@ -50,6 +75,25 @@ class Type:
         return NotImplemented
 
 
+class TypeNode(Node):
+    type: Type
+
+    def __init__(self, type: Type, token: Token):
+        self.type = type
+        self.token = token
+
+    def __repr__(self):
+        return self.type.__repr__()
+
+    def __eq__(self, other):
+        if isinstance(other, Type):
+            return self.type.__repr__() == other.type.__repr__()
+        return NotImplemented
+
+    def blame(self):
+        self._blame_token(self.token)
+
+
 class TypeWrapper(Type):
     type: basetypes
     subType: Type
@@ -64,16 +108,16 @@ class Pointer(TypeWrapper):
         return f"{self.subType}*"
 
 
-class Array(Pointer):
-    length: int | None
+# class Array(Pointer):
+#     length: int | None
 
-    def __init__(self, _type: Type):
-        self.type = basetypes._array
-        self.subType = _type
-        self.length = None
+#     def __init__(self, _type: Type):
+#         self.type = basetypes._array
+#         self.subType = _type
+#         self.length = None
 
-    def __repr__(self):
-        return f"{self.subType}[{self.length}]"
+#     def __repr__(self):
+#         return f"{self.subType}[{self.length}]"
 
 
 class Statement(Node):
@@ -81,7 +125,7 @@ class Statement(Node):
 
 
 class Expression(Statement):
-    _type: Type = Type("")
+    _type: Type
     pass
 
 
@@ -94,21 +138,37 @@ class Include(Statement):
 
 
 class Break(Statement):
+    def __init__(self, token: Token):
+        self.token = token
+
     def __repr__(self):
         return "(break)"
 
+    def blame(self):
+        self._blame_token(self.token)
+
 
 class Continue(Statement):
+    def __init__(self, token: Token):
+        self.token = token
+
     def __repr__(self):
         return "(continue)"
 
+    def blame(self):
+        self._blame_token(self.token)
+
 
 class Return(Statement):
-    def __init__(self, expr: Expression | None):
+    def __init__(self, expr: Expression | None, token: Token):
         self.expr = expr
+        self.token = token
 
     def __repr__(self):
         return f"(return {self.expr})"
+
+    def blame(self):
+        self._blame_token(self.token)
 
 
 class _none(Statement):
@@ -157,48 +217,82 @@ class Conditional(Expression):
 
 
 class Identifier(Expression):
-    def __init__(self, name: str):
+    def __init__(
+        self,
+        name: str,
+        token: Token,
+    ):
         self.name = name
         self._type = Type("identifier")
+        self.token = token
 
     def __repr__(self):
         return f"id:{self.name}"
 
+    def blame(self):
+        self._blame_token(self.token)
+
 
 class LiteralInteger(Expression):
-    def __init__(self, value: int):
+    def __init__(self, value: int, token: Token):
         self.value = value
         self._type = Type("int")
+        self.token = token
 
     def __repr__(self):
         return f"int lit:{self.value}"
 
+    def blame(self):
+        self._blame_token(self.token)
+
 
 class LiteralString(Expression):
-    def __init__(self, value: str):
+    def __init__(self, value: str, token: Token):
         self.value = value
         self._type = Pointer(Type("char"))
+        self.token = token
 
     def __repr__(self):
         return f"str lit:{self.value}"
 
+    def blame(self):
+        self._blame_token(self.token)
+
 
 class LiteralChar(LiteralInteger):
-    def __init__(self, value: str | int):
+    def __init__(self, value: str | int, token: Token):
         self.value = ord(value) if type(value) is str else value
         self._type = Type("char")
+        self.token = token
 
     def __repr__(self):
         return f"char lit:'{self.value}'"
 
+    def blame(self):
+        self._blame_token(self.token)
+
 
 class LiteralBool(LiteralInteger):
-    def __init__(self, value: bool):
+    def __init__(self, value: bool, token: Token):
         self.value = value != 0
         self._type = Type("bool")
+        self.token = token
 
     def __repr__(self):
         return f"bool lit:'{self.value}'"
+
+    def blame(self):
+        self._blame_token(self.token)
+
+
+# class LiteralArray(Node):
+#     length: int | None
+
+#     def __init__(self, _type: TypeNode):
+#         self.length = None
+
+#     # def __repr__(self):
+#     #     return f"{self.subType}[{self.length}]"
 
 
 class LiteralASM(Expression):
@@ -279,24 +373,29 @@ class arraySubscript(Identifier):
         return f"({self.id}[{self.idx}])"
 
 
-class function_arguments(Node):
-    def __init__(self, _type: Type, id: Identifier):
-        self._type = _type
+class FunctionArgument(Node):
+    def __init__(self, typenode: TypeNode, id: Identifier):
+        self._type = typenode.type
+        self.typenode = typenode
         self.id = id
 
     def __repr__(self):
         return f"(function arg:{self._type} {self.id})"
 
+    def blame(self):
+        self._blame_token(self.id.token)
+
 
 class Function(Node):
     def __init__(
         self,
-        _type: Type,
+        typenode: TypeNode,
         id: Identifier,
-        args: list[function_arguments],
+        args: list[FunctionArgument],
         statements: list[Statement],
     ):
-        self._type = _type
+        self._type = typenode.type
+        self.typenode = typenode
         self.id = id
         self.args = args
         self.statements = statements
@@ -304,9 +403,14 @@ class Function(Node):
     def __repr__(self):
         return f"(function:{self._type} {self.id} {self.args} {self.statements})"
 
+    def blame(self):
+        file = prettyPath(self.id.token.file)
+        line = self.id.token.line
+        self._blame_line(file, line)
+
 
 class FunctionPrototype(Node):
-    def __init__(self, _type: Type, id: Identifier, args: list[function_arguments]):
+    def __init__(self, _type: Type, id: Identifier, args: list[FunctionArgument]):
         self._type = _type
         self.id = id
         self.args = args
@@ -402,10 +506,11 @@ class DoWhile(Statement):
 class Declaration(Statement):
     def __init__(
         self,
-        _type: Type,
+        typenode: TypeNode,
         id: Identifier,
     ):
-        self._type = _type
+        self._type = typenode.type
+        self.typenode = typenode
         self.id = id
 
     def __repr__(self):
@@ -415,14 +520,15 @@ class Declaration(Statement):
 class DeclarationAssignment(Statement):
     def __init__(
         self,
-        _type: Type,
+        typenode: TypeNode,
         id: Identifier,
         expr: Expression,
     ):
-        self._type = _type
-        if _type != expr._type:
+        self._type = typenode.type
+        self.typenode = typenode
+        if self._type != expr._type:
             print(
-                f"Warning: Assigned expression of type '{expr._type}' to variable of type '{_type}'"
+                f"Warning: Assigned expression of type '{expr._type}' to variable of type '{self._type}'"
             )
         self.id = id
         self.expr = expr

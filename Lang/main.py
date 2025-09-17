@@ -3,6 +3,7 @@
 from tokenizer import tokenize, Token
 from construct import construct
 from my_ast import ast_head
+from semantic_pass import semantic_head
 from ast_nodes import Node
 import sys
 from pathlib import Path
@@ -19,7 +20,10 @@ def compile(fileName: Path, fs=False) -> str:
     # if AST == []:
     #     print("SAD (No AST output...)")
     #     exit(1)
-    print(AST)
+    # print(AST)
+
+    AST = semantic_head(AST)
+
     assembly = str(construct(AST, fs))
     # print(assembly)
     return assembly
@@ -31,11 +35,10 @@ def main():
     if len(args) == 0:
         file = Path("test.g")
     else:
-        if len(args) > 0:
-            file = Path(args[0])
-            if not file.exists():
-                print("Failed to load file", args[0])
-                exit(1)
+        file = Path(args[0])
+        if not file.exists():
+            print("Failed to load file", args[0])
+            exit(1)
         if len(args) > 1 and args[1] == "-fs":
             fs = True
 

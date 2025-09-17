@@ -1,13 +1,15 @@
 from my_ast import Token
+import sys
+from silenterror import SilentException
 
 
-class SilentException(Exception):
+class CompilerError(SilentException):
     def __init__(self, message: str):
         self.message = message
         super().__init__(message)
 
 
-class SyntaxError(SilentException):
+class SyntaxError(CompilerError):
     def __init__(self, token: Token | None, message: str):
         if token is None:
             message = "Syntax error: " + message + "\n" + "Failed to blame"
@@ -22,20 +24,3 @@ class Expected(SyntaxError):
     def __init__(self, token: Token | None, what_expected: str):
         message = f"Expected {what_expected}"
         super().__init__(token, message)
-
-
-import sys
-
-
-# Custom exception hook
-def handle_uncaught(exc_type, exc_value, traceback):
-    if isinstance(exc_value, SilentException):
-        print(exc_value.message)
-        sys.exit(1)
-    else:
-        # Default behavior for other exceptions
-        sys.__excepthook__(exc_type, exc_value, traceback)
-
-
-# Set the global exception hook
-sys.excepthook = handle_uncaught

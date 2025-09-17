@@ -121,7 +121,7 @@
 				+ [x] so should pointers actually
 			+ [x] array should extend pointer
 			+ [ ] Should array subscript extend identifier? Should identifiers be pointers???
-	+ [ ] Malloc/free
+	+ [ ] Malloc/free links
 	+ [x] Rename stuff in constructor to dunders
 	+ [ ] backslash escaping
 	+ [ ] Function prototypes don't need variable names

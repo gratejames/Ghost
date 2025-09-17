@@ -131,7 +131,7 @@ class Token:
             fileContents = f.read()
         tok_length = len(token.contents)
         return [
-            f"in file: {prettyPath(token.file)}",
+            f"in file: {prettyPath(token.file)}, line {token.line}",
             fileContents.split("\n")[token.line - 1],
             " " * (token.pos - tok_length + 1) + "^" + "~" * (tok_length - 1),
         ]
