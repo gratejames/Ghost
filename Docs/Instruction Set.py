@@ -11,6 +11,57 @@ allArguments = {}         # {Index:arguments, }
 pythonExportInstructions = {}  # {instruction: {"Binary":binary, "Arguments":arguments}, }
 pythonExportShorthand = {}     # {shorthand: {arguments:mnemonic, }, }
 
+FileSystemStructure = "Windows"
+
+
+base_affectedFiles = {
+	"Instruction Set.md": "Instruction Set.md",
+	"OUTPUT-AssemblerDefs.py": "../Assembler/AssemblerDefs.py",
+	"GHASM.sublime-syntax.template": "GHASM.sublime-syntax.template",
+	"INPUT-GHASM.tmPreferences": "GHASM.tmPreferences",
+	"INPUT-GHASM.sublime-build": "GHASM.sublime-build",
+	"INPUT-cpu.cpp": "../Simulator/src/cpu.cpp",
+	"OUTPUT-cpu.cpp": "../Simulator/src/cpu.cpp",
+}
+
+if FileSystemStructure == "Linux": # Places the Sublime files in their Linux location
+	affectedFiles = {
+		"OUTPUT-GHASM.sublime-syntax": os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-syntax"),
+		"OUTPUT-GHASM.tmPreferences":  os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences"),
+		"OUTPUT-GHASM.sublime-build":  os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-build"),
+	}
+elif FileSystemStructure == "Windows": # Places the Sublime files in their Windows location
+	affectedFiles = {
+		"OUTPUT-GHASM.sublime-syntax": os.path.expanduser(r"~\AppData\Roaming\Sublime Text\Packages\User\GHASM.sublime-syntax"),
+		"OUTPUT-GHASM.tmPreferences":  os.path.expanduser(r"~\AppData\Roaming\Sublime Text\Packages\User\GHASM.tmPreferences"),
+		"OUTPUT-GHASM.sublime-build":  os.path.expanduser(r"~\AppData\Roaming\Sublime Text\Packages\User\GHASM.sublime-build"),
+	}
+elif FileSystemStructure == "Manual": # Allows the user to place the syntax file manually
+	affectedFiles = {
+		"OUTPUT-GHASM.sublime-syntax": "GHASM.sublime-syntax",
+		"OUTPUT-GHASM.tmPreferences": None,
+		"OUTPUT-GHASM.sublime-build": None,
+		"OUTPUT-cpu.cpp": None,
+	}
+elif FileSystemStructure == "Custom": # Set your own file paths
+	affectedFiles = {
+		"Instruction Set.md": None, # Set EDITMODE explicetly to disble editing
+		"OUTPUT-AssemblerDefs.py": None,
+		"GHASM.sublime-syntax.template": None,
+		"OUTPUT-GHASM.sublime-syntax": None, # Leave as none to disable output
+		"INPUT-GHASM.tmPreferences": None,
+		"OUTPUT-GHASM.tmPreferences": None, # Leave as none to disable output
+		"INPUT-GHASM.sublime-build": None,
+		"OUTPUT-GHASM.sublime-build": None, # Leave as none to disable output
+		"INPUT-cpu.cpp": None,
+		"OUTPUT-cpu.cpp": None, # Leave as none to disable output (Default: Same as above)
+	}
+
+for k, v in base_affectedFiles.items():
+	if k not in affectedFiles.keys():
+		affectedFiles[k] = v
+
+
 def formatNumbers():
 	global maxInstructionNumber, items, Index
 	if "0b" not in items[0]:
@@ -87,7 +138,7 @@ def registerShortcuts():
 
 
 # MAIN (Don't feel like writing a function. Sue me.)
-with open("Instruction Set.md", "r+" if EDITMODE else "r") as dest:
+with open(affectedFiles["Instruction Set.md"], "r+" if EDITMODE else "r") as dest:
 	Index = 0
 
 	# Read file, reset for writing
@@ -120,26 +171,27 @@ with open("Instruction Set.md", "r+" if EDITMODE else "r") as dest:
 		if EDITMODE:
 			dest.write(outputLine + "\n")
 
-with open("../Assembler/AssemblerDefs.py", 'w+') as f:
+with open(affectedFiles["OUTPUT-AssemblerDefs.py"], 'w+') as f:
 	f.write("Instructions = " + json.dumps(pythonExportInstructions, indent=4) + "\n")
 	f.write("Shorthand = " + json.dumps(pythonExportShorthand, indent=4) + "\n")
 
 
-genSyntaxPath = "GHASM.sublime-syntax.template"
-with open(genSyntaxPath, 'r') as f:
+with open(affectedFiles["GHASM.sublime-syntax.template"], 'r') as f:
 	genSyntaxData = f.read()
 
 genSyntaxData = genSyntaxData.replace(r"%INSTRUCTIONS%", '|'.join(unique_mnemonics))
 genSyntaxData = genSyntaxData.replace(r"%SHORTHAND%", '|'.join(shortcutResolver.keys()))
 
-with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-syntax"), 'w+') as f:
+with open(affectedFiles["OUTPUT-GHASM.sublime-syntax"], 'w+') as f:
 	f.write(genSyntaxData)
-with open("GHASM.tmPreferences", 'r') as f1:
-	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences"), 'w+') as f2:
-		f2.write(f1.read())
-with open("GHASM.sublime-build", 'r') as f1:
-	with open(os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-build"), 'w+') as f2:
-		f2.write(f1.read())
+if affectedFiles["OUTPUT-GHASM.tmPreferences"] is not None:
+	with open(affectedFiles["INPUT-GHASM.tmPreferences"], 'r') as f1:
+		with open(affectedFiles["OUTPUT-GHASM.tmPreferences"], 'w+') as f2:
+			f2.write(f1.read())
+if affectedFiles["OUTPUT-GHASM.sublime-build"] is not None:
+	with open(affectedFiles["INPUT-GHASM.sublime-build"], 'r') as f1:
+		with open(affectedFiles["OUTPUT-GHASM.sublime-build"], 'w+') as f2:
+			f2.write(f1.read())
 
 print("Done Reading" + (" and Revising!" if EDITMODE else "!"))
 
@@ -224,9 +276,7 @@ def debugOutChar(value):
 def setOffset(value):
 	return f"\t\toffsetRegister = {value};\n"
 
-cppFilePath = "/home/flicker/Desktop/Ghost/Simulator/src/cpu.cpp"
-
-with open(cppFilePath, 'r') as f:
+with open(affectedFiles["INPUT-cpu.cpp"], 'r') as f:
 	cppFile = f.read()
 
 debuggingString1 = "const std::string InstructionDebugging[0x100] {"
@@ -366,9 +416,9 @@ for i in range(0, 0x100):
 	elif mne == "POPA":
 		content = setRR(popStack(), "R3") + setRR(popStack(), "R2") + setRR(popStack(), "R1") + setRR(popStack(), "R0")
 	elif mne == "LDSP":
-		content = f"\t\tR0 = SP;\n"
+		content = f"\t\tR0 = SP-offsetRegister;\n"
 	elif mne == "STSP":
-		content = f"\t\tSP = R0;\n"
+		content = f"\t\tSP = R0+offsetRegister;\n"
 	elif mne == "CEZA":
 		content = cond(getAtArgument(), "==", "0")
 	elif mne == "CNZA":
@@ -458,7 +508,8 @@ for i in range(0, 0x100):
 
 cppFile = cppFile[:instructionsStart] + allInstrutions + cppFile[instructionsEnd:]
 
-with open(cppFilePath, 'w+') as f:
-	f.write(cppFile)
+if affectedFiles["OUTPUT-cpu.cpp"] is not None:
+	with open(affectedFiles["OUTPUT-cpu.cpp"], 'w+') as f:
+		f.write(cppFile)
 
 print("Done Writing!")
