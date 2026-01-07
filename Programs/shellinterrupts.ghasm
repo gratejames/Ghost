@@ -62,17 +62,19 @@ formatPathString:
 ; | 2 | Set   | R0 Char | Does not advance cursor
 ; | 3 | Put   | R0 Char | Does not handle newlines, advances cursor
 ; | 4 | Num   | R0 Val  | Prints value in base 10
-; | 5 | Buf   | $R1, R0 | Buffer length R0, ignores newlines
+; | 5 | Buf   | $R1, R0 | Buffer with length R0, ignores newlines
 ; | 6 | Str   | R1 ptr  | Displays string, handles newline
 ; | 7 | Line  | R1 ptr  | Displays string, adds newline
-; | 8 | Blank | None    | Blanks the screen, but now the charmem
-; | 9 |       |         | 
+; | 8 | Blank | None    | Blanks the screen, but not the charmem
+; | 9 | Cursr | None    | Returns cursor position in R0
 ; | A | Font  | None    | Returns the font ptr
+; | B | SetCr | R0 Bool | Sets cursor display on or off
 
 ; As a rule, R0 is a value and R1 is a pointer
 
 #SHARE outputInterrupt
 outputInterrupt:
+	IDIS
 	PSH R0
 	AOR
 	ADO 0
@@ -100,11 +102,14 @@ outputInterrupt:
 	CE R2 0x0008
 	CALLC BlankScreen
 	CE R2 0x0009
-	; CALLC 
+	CALLC GetCursorPos
 	CE R2 0x000a
 	CALLC GetFont
-
+	CE R2 0x000b
+	CALLC SetCursorDisplay
+	
 	ADO $PrevAO
+	IEN
 	RET
 
 GetFont:

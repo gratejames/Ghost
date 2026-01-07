@@ -1,0 +1,168 @@
+#INC ./lib/IVT.ghasm
+
+DBGC 'E'
+DBGC 'D'
+DBGC 0xa
+
+PSH R3
+; ==== Setup output routines
+CALL setupFont
+LD R1 welcomeText
+CALL printLine
+; === Read argument string from R3
+POP R3
+
+ST R3 $argumentptr
+DD R3
+LDD R3
+; DBGC R3
+CEZ R3
+JMPC skip_cantloadonlaunch
+LD R1 cantloadonlaunchText
+CALL printLine
+skip_cantloadonlaunch:
+; === Set up keyboard interrupt
+LD R0 0x00
+LD R1 KeyboardInterrupt
+INT IupdateInterrupt
+; === Initialize Data Structures
+CALL initialize_arrays
+; === Holding loop, waiting for commands
+CALL printCommandPrompt
+loop:
+	CALL blinkCursor ; IDIS guard doesn't fix
+	CALL delay
+	CALL handle_keys ; IDIS guard doesn't fix
+	CEZ $isDone
+	JMPC loop
+
+LD R2 1
+INT Ioutput
+
+RET
+
+; === Routines
+
+handle_keys:
+	LD R0 $lastKeyPressed
+	ST 0 $lastKeyPressed
+	CNZ R0
+	CALLC normalKeyPressed
+
+	LD R0 $returnPressedLately
+	ST 0 $returnPressedLately
+	CNZ R0
+	CALLC enterPressed
+	RET
+
+; R0 is key
+normalKeyPressed:
+	CALL add_char_to_buf
+	LD R2 3
+	INT Ioutput
+	RET
+
+enterPressed:
+	CEZ $cur_line_buffer_size
+	RETC
+	DD $cur_line_buffer
+	LD R1 $cur_line_buffer_size
+	enterPressedLoop:
+		LDD R0
+		DBGC R0
+		INCD
+		DEC R1
+		CNZ R1
+		JMPC enterPressedLoop
+	DBGC 0xa
+	ST 0 $cur_line_buffer_size
+	RET
+
+; R0 is key
+; Stores the gives character to the next slot in the buf
+add_char_to_buf:
+	PSH R1
+	LD R1 $cur_line_buffer_size
+	ADD R1 cur_line_buffer
+	DD R1
+	INC R1
+	SUB R1 cur_line_buffer
+	ST R1 $cur_line_buffer_size
+	STD R0
+	POP R1
+	RET
+
+.ds "HERE:"
+cur_line_buffer_size:	.db 0
+.ds ":"
+cur_line_buffer:		.dz 65
+
+blinkCursor:
+	; Fetch currentTick
+	LD R0 $currentTick
+	INC R0
+	ST R0 $currentTick
+	CE R0 0
+
+	; Make sure that it's either 0x8000 or 0x0000
+	PSH R0
+	AND R0 0x7fff
+	CNZ R0
+	POP R0
+	RETC
+
+	; Use that first bit as the flag
+	SHR R0 15
+	LD R2 0xb
+	INT Ioutput
+	RET
+
+delay:
+	LD R0 0
+	delayLoop:
+		INC R0
+		CNE R0 0x180
+		JMPC delayLoop
+	RET
+
+printCommandPrompt:
+	LD R0 '>'
+	LD R2 3
+	INT Ioutput
+	RET
+
+setupFont:
+	LD R2 0xa
+	INT Ioutput ; Get font
+	ST R3 $Font
+	RET
+
+printLine:
+	LD R2 7
+	INT Ioutput
+	RET
+
+cls:
+	LD R2 8
+	INT Ioutput
+	RET
+
+initialize_arrays:
+	RET
+
+mode:		 			.db 0
+currentTick: 			.db 0
+argumentptr: 			.db 0
+welcomeText: 			.ds "Welcome to GhostED"
+						.db 0
+cantloadonlaunchText:	.ds "Does not support any command line arguments, yet. Please use 'e' to 'edit' the requested file"
+isDone: 				.db 0
+
+returnPressedLately:	.db 0
+lastKeyPressed:			.db 0
+
+#INC ./ed/ed_keys.ghasm
+
+Font: .db 0
+FontI:
+#INC ./fontGen/fontI.hex

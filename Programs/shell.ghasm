@@ -75,7 +75,7 @@ startup:
 
 	ST KeyboardInterrupt $0xaf00	;; Register Keyboard Interrupt
 
-	LD R0 '>'
+	LD R0 '$'
 	CALL PrintAtCursor
 
 	MV $Cursor $LastCursor
@@ -244,7 +244,7 @@ KeyboardInterrupt:
 		IEN
 		CALL handleUserInput
 
-		LD R0 '>'
+		LD R0 '$'
 		CALL PrintAtCursor
 
 		MV $Cursor $LastCursor
@@ -308,6 +308,7 @@ ExecuteFile:
 	; R0 <- error code (Nominal 0)
 	; R1 <- bytes read
 	PSH R1
+argumentptr: 		.db 0
 	CALL vfs_fread
 	CNZ R0
 	POP R1
@@ -1065,7 +1066,7 @@ CMD_CAT:
 		POP R2
 		RET
 
-CMD_STAT:
+CMD_STAT: ; Prints: (editable ? E:N)(File ? F:D) (First Page) (File Size)
 	SUB R0 4
 	CLT R0 1
 	JMPC CMD_STAT_NOARG
@@ -1682,5 +1683,5 @@ ShiftTable:
 
 #DEF RAMDISKSIZE 0x1000
 RAMDISK:
-#RAMFS RAMDISKSIZE ramdisk1.txt
+#RAMFS RAMDISKSIZE ramdisk.txt
 .ds "IMPORTANT"

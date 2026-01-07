@@ -1,0 +1,129 @@
+; Ctrl-c implementation:
+; Should functions keep track of a good return-point for themselves?
+#SHARE KeyboardInterrupt
+KeyboardInterrupt:
+	IDIS
+	ST 0x7fff $currentTick
+	PSH
+	CPSH
+	; === Load new key states
+	AOR
+	ADO 0
+	PSH R0
+		; DBGC $0xafd1
+		; DBG $0xafd0
+		LD R0 $0xafd1
+		LD R1 $0xafd0
+	POP R3
+	ADO R3
+	; === Key logic
+	CEZ R1
+	JMPC KI_Release
+	; === Key Pressed:
+		CE R0 0x00e0 				; L_Control Down
+		JMPC KI_Control_Down
+		CE R0 0x00e1 				; L_Shift	Down
+		JMPC KI_Shift_Down
+		CE R0 0x00e2 				; L_Alt		Down
+		JMPC KI_Alt_Down
+		CE R0 0x00e3 				; L_Win		Down
+		JMPC KI_Win_Down
+		CE R0 0x000d 				; Enter		Down
+		JMPC KI_Enter_Down
+		KI_Normal:
+			JMP KI_Other_Down
+		JMP KI_Done
+	; === Key Released:
+	KI_Release:
+		CE R0 0x00e0 				; L_Control	Up
+		JMPC KI_Control_Up
+		CE R0 0x00e1 				; L_Shift	Up
+		JMPC KI_Shift_Up
+		CE R0 0x00e2 				; L_Alt		Up
+		JMPC KI_Alt_Up
+		CE R0 0x00e3 				; L_Win		Up
+		JMPC KI_Win_Up
+	KI_Done:
+	CPOP
+	POP
+	IEN
+	RET
+
+	KI_Enter_Down:
+		ST R0 $returnPressedLately
+		JMP KI_Done
+
+	KI_Other_Down:
+		LD R1 $KB_Mods
+		AND R1 0b0010
+		CNZ R1
+		JMPC KI_Other_Down_WithControl
+
+		ST R0 $lastKeyPressed
+		JMP KI_Done
+
+	KI_Other_Down_WithControl:
+		CNE R0 'q'
+		JMPC KI_Normal
+		ST 1 $isDone
+		JMP KI_Done
+
+	KI_Win_Up:
+		LD R0 0
+		LD R1 3
+		CALL SetModifier
+		JMP KI_Done
+
+	KI_Win_Down:
+		LD R0 1
+		LD R1 3
+		CALL SetModifier
+		JMP KI_Done
+	KI_Alt_Up:
+		LD R0 0
+		LD R1 2
+		CALL SetModifier
+		JMP KI_Done
+	KI_Alt_Down:
+		LD R0 1
+		LD R1 2
+		CALL SetModifier
+		JMP KI_Done
+	KI_Shift_Up:
+		LD R0 0
+		LD R1 0
+		CALL SetModifier
+		JMP KI_Done
+	KI_Shift_Down:
+		LD R0 1
+		LD R1 0
+		CALL SetModifier
+		JMP KI_Done
+	KI_Control_Up:
+		LD R0 0
+		LD R1 1
+		CALL SetModifier
+		JMP KI_Done
+	KI_Control_Down:
+		LD R0 1
+		LD R1 1
+		CALL SetModifier
+		JMP KI_Done
+
+
+; R0 -> State
+; R1 -> Modifier Position
+SetModifier:
+	PSH R0
+	LD R0 1
+	SHL R1
+	NOT R0
+	AND R0 $KB_Mods ; Mask out the bit for the specific modifier
+	STZ R2
+	POP R0
+	SHL R1
+	ADD R2 ; Add masked to state
+	ST R0 $KB_Mods
+	RET
+
+KB_Mods:			.db 0 ; win+alt+ctrl+shift

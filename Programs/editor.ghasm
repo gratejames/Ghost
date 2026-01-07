@@ -1,6 +1,12 @@
 #INC ./lib/IVT.ghasm
 
 DBGC '~'
+DBGC 'E'
+DBGC 'D'
+DBGC 'I'
+DBGC 'T'
+DBGC '~'
+DBGC 0xa
 
 ST R3 $argumentptr
 CALL cls
@@ -76,7 +82,6 @@ blinkCursor:
 		RET
 
 KeyboardInterrupt:
-	ST 0xffff $currentTick
 	IDIS
 	PSH
 	CPSH
@@ -89,6 +94,8 @@ KeyboardInterrupt:
 		LD R1 $0xafd0
 	POP R3
 	ADO R3
+	ST 0xffff $currentTick
+
 		CEZ R1
 		JMPC KI_Release
 		CE R0 'q' ; TODO MODIFIERS AND KEY UP VS KEY DOWN

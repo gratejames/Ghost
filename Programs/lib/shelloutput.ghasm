@@ -436,3 +436,28 @@ ScrollScreen:
 	ST R0 $Cursor
 	POP
 	RET
+
+; Uses R0
+#SHARE GetCursorPos
+GetCursorPos:
+	LD R0 $Cursor
+	RET
+
+#SHARE SetCursorDisplay
+SetCursorDisplay:
+	CNZ R0
+	JMPC SetCursorDisplay_SHOW
+
+		LD R1 $Cursor
+		ADD R1 CharMem
+		DD R1
+		LDD R0
+		CALL SetAtCursor
+
+		RET
+	SetCursorDisplay_SHOW:
+
+		LD R0 '_' 			; Character
+		CALL SetAtCursor
+
+		RET

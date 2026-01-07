@@ -1,0 +1,5 @@
+/bin/edit: editor.ghasm +x
+/bin/ed: ed/ed.ghasm +x
+/str.txt: str.ghasm
+/s: script.ghasm
+/ct: ../LLVM_play/out.ghasm +x
