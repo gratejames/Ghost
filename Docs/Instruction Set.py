@@ -12,7 +12,7 @@ pythonExportInstructions = {}  # {instruction: {"Binary":binary, "Arguments":arg
 pythonExportShorthand = {}     # {shorthand: {arguments:mnemonic, }, }
 
 FileSystemStructure = "Windows"
-
+# GhostRoot =  "/home/flicker/Desktop/Ghost"
 
 base_affectedFiles = {
 	"Instruction Set.md": "Instruction Set.md",
@@ -29,19 +29,24 @@ if FileSystemStructure == "Linux": # Places the Sublime files in their Linux loc
 		"OUTPUT-GHASM.sublime-syntax": os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-syntax"),
 		"OUTPUT-GHASM.tmPreferences":  os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.tmPreferences"),
 		"OUTPUT-GHASM.sublime-build":  os.path.expanduser("~/.config/sublime-text/Packages/User/GHASM.sublime-build"),
+		"GhostRoot": os.path.expanduser("~/Desktop/Ghost"),
 	}
 elif FileSystemStructure == "Windows": # Places the Sublime files in their Windows location
 	affectedFiles = {
 		"OUTPUT-GHASM.sublime-syntax": os.path.expanduser(r"~\AppData\Roaming\Sublime Text\Packages\User\GHASM.sublime-syntax"),
 		"OUTPUT-GHASM.tmPreferences":  os.path.expanduser(r"~\AppData\Roaming\Sublime Text\Packages\User\GHASM.tmPreferences"),
+		"INPUT-GHASM.sublime-build":   "GHASM - Windows.sublime-build",
 		"OUTPUT-GHASM.sublime-build":  os.path.expanduser(r"~\AppData\Roaming\Sublime Text\Packages\User\GHASM.sublime-build"),
+		"GhostRoot": r"D:\\Ghost",
 	}
 elif FileSystemStructure == "Manual": # Allows the user to place the syntax file manually
 	affectedFiles = {
 		"OUTPUT-GHASM.sublime-syntax": "GHASM.sublime-syntax",
 		"OUTPUT-GHASM.tmPreferences": None,
+		"INPUT-GHASM.sublime-build": None, # Copying the sublime build requires GhostRoot
 		"OUTPUT-GHASM.sublime-build": None,
 		"OUTPUT-cpu.cpp": None,
+		"GhostRoot": None,
 	}
 elif FileSystemStructure == "Custom": # Set your own file paths
 	affectedFiles = {
@@ -55,6 +60,7 @@ elif FileSystemStructure == "Custom": # Set your own file paths
 		"OUTPUT-GHASM.sublime-build": None, # Leave as none to disable output
 		"INPUT-cpu.cpp": None,
 		"OUTPUT-cpu.cpp": None, # Leave as none to disable output (Default: Same as above)
+		"GhostRoot": None,
 	}
 
 for k, v in base_affectedFiles.items():
@@ -191,7 +197,7 @@ if affectedFiles["OUTPUT-GHASM.tmPreferences"] is not None:
 if affectedFiles["OUTPUT-GHASM.sublime-build"] is not None:
 	with open(affectedFiles["INPUT-GHASM.sublime-build"], 'r') as f1:
 		with open(affectedFiles["OUTPUT-GHASM.sublime-build"], 'w+') as f2:
-			f2.write(f1.read())
+			f2.write(f1.read().replace("%GhostRoot%", affectedFiles["GhostRoot"]))
 
 print("Done Reading" + (" and Revising!" if EDITMODE else "!"))
 

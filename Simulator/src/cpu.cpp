@@ -57,7 +57,6 @@ void cpu::reset() {
 void cpu::tick() {
 	if (halted)
 		return;
-	t++;
 	instruction = MEMORY[PC];
 	if (verbose)
 		debug();

@@ -1,0 +1,3 @@
+BRK
+PSH R0
+JMP 1

@@ -33,6 +33,8 @@ class ramfs:
             subAssembler = assembler()
             subAssembler.loadFile(source)
             fileContents = " ".join(subAssembler.assemble(org=0, warnHLT=-1).split())
+            for k, v in subAssembler.definitions.items():
+                print("\t\t", k, hex(v))
         elif source.endswith(".g"):
             import os
 
@@ -241,7 +243,7 @@ class assembler:
                 break
             outLine += char
         # if stringLine:
-        # 	print(line)
+        #   print(line)
         return outLine.strip()
 
     def resolveORG(self, line):
@@ -368,9 +370,9 @@ class assembler:
         return "#DATA " + line
 
     def prettyOrList(self, listOfWords):
-        # ['a']				=> "a"
-        # ['a', 'b']		=> "a or c"
-        # ['a', 'b', 'c']	=> "a, b, or c"
+        # ['a']             => "a"
+        # ['a', 'b']        => "a or c"
+        # ['a', 'b', 'c']   => "a, b, or c"
         if len(listOfWords) == 0:
             return ""
         elif len(listOfWords) == 1:
@@ -435,7 +437,7 @@ class assembler:
         if line.strip() == "":  # Empty
             return line
         # if ':' in line:               # Label
-        # 	return line
+        #   return line
         if line.startswith("#DATA"):  # Data
             return line
         if line.startswith("#RAMFS"):  # ramfs
@@ -515,8 +517,8 @@ class assembler:
         if not all(character in "0123456789abcdef" for character in hexString[2:]):
             return False
         # for character in hexString[2:]:
-        # 	if character not in '0123456789abcdef':
-        # 		return False
+        #   if character not in '0123456789abcdef':
+        #       return False
         return True
 
     def parseString(self, line):
@@ -637,7 +639,7 @@ class assembler:
             linesList[lineN] = line
 
         # for k, v in self.definitions.items():
-        # 	print("\t" * self.nested + "-", "(D)", k, hex(v))
+        #   print("\t" * self.nested + "-", "(D)", k, hex(v))
 
         for k in self.shares:
             print("\t" * self.nested + "-", "(S)", k)
@@ -726,3 +728,5 @@ if __name__ == "__main__":
         with open(fileName, "w+") as f:
             f.write(x.assemble())
         print(f"Writing to {fileName.split('/')[-1]}")
+        for k, v in x.definitions.items():
+            print("\t", k, hex(v))

@@ -514,9 +514,29 @@ void createDebugText() {
 }
 
 void TickerFunc () {
+  // int t = 0;
   while (!processor->closed) {
-    if (!processor->broken)
+    if (!processor->broken) {
+      // t++;
       processor->tick();
+      // if (t == 20001074-75) {
+      //   processor->broken = true;
+      //   std::cout << "Time" << std::endl;
+      // }
+      // if ((t >= 20001000)) {
+      //   unsigned short Registers[9] = {};
+      //   processor->readRegisterState(Registers);
+      //   std::cout << Registers[0] << "(" << Registers[6] << ")" << std::endl;
+      // }
+      // if ((t >= 20000000) && (t%1000==0)) {
+      //   processor->keyStateChange(32, 1); // Maybe do direct interrupt jump instead
+      //   std::cout << "key t=" << t << std::endl;
+      // }
+      // if (processor->MEMORY[0xb597] || processor->MEMORY[0xb598]) {
+      //   processor->broken = true;
+      //   std::cout << "Centinel t=" << t << std::endl;
+      // }
+    }
   }
 }
 

@@ -3,6 +3,7 @@
 + [x] Have .data prefixes make any sense please
 + [x] To and from R0 for better math
 + [ ] Text modes?
++ [ ] Want a BRKC instruction pls
 + [x] ~~Simulate external video card?~~
 	+ [x] ~~Immitate N64 - interrupt on each scanline? Nah, would have to sync the render and logic threads~~
 + [x] Interrupts should probably queue...
@@ -43,6 +44,7 @@
 	+ [ ] Exiting causes executable to be unrunable, but only from script (sh s)
 	+ [ ] handle no argument
 		+ [ ] make interrupts for shell printing, so that the program can print it's own error messages
+	+ [ ] Maybe copy Blue's ED first?
 + [ ] path variable
 	+ [ ] changable/extensible command table
 	+ [ ] loading into the command table from a given folder
@@ -72,6 +74,7 @@
 				+ [x] Fetch CWD
 				+ [x] Set Keyboard Interrupt
 	+ [x] Neither arguments nor interrupts can work unless I can read from the AO
+	+ [ ] Have the shell store the amount of used memory before and after, alert the user if it doesn't match the amount of used memory *after*
 + [x] cd'ing into a file causes corruption?
 + [x] echo without argument causes stack problems
 + [x] memory leak in ls
@@ -108,6 +111,7 @@
 + [x] An actual debugger UI instead of just keyboard shortcuts? A menubar?
 + [ ] Seems there might be a bug in malloc when OOM, where control flow escapes instead of returning a nullptr
 + [ ] Make assembler smarter about single quotes
++ [ ] Make assembler handle empty lines in ramdisk.txt
 + [ ] Syntax highlighting for ghasm in g?
 + [ ] More g/c
 	+ [x] types - get ChatGPT to generate a bunch of test cases?
