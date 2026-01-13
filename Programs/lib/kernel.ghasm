@@ -1,4 +1,5 @@
-#DEF HEAP_SIZE 0x1000 
+; Memory Management - James Smythe
+#DEF HEAP_SIZE 0x1000
 
 ; R0 -> Size
 ; R0 <- Pointer or 0 if fail
@@ -39,7 +40,7 @@ malloc:
 		INC R0
 		STD R1						; And store it to the footer as well
 		POP R0
-		JMP malloc_Done		
+		JMP malloc_Done
 	malloc_FailedAllocate:			; If the block is allocated or too small we need to jump to get to the next header, and try again.
 		; DBGC 'F'
 		ADD R1						; Add the length of the block to the address of the header

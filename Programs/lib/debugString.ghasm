@@ -1,0 +1,19 @@
+; R0 <- String Address
+#SHARE debug_string
+debug_string:
+	DD R0
+	debug_string_loop:
+	LDD R0
+	CEZ R0
+	JMPC debug_string_done
+	DBGC R0
+	INCD
+	JMP debug_string_loop
+	debug_string_done:
+	RET
+
+#SHARE debug_string_line
+debug_string_line:
+	CALL debug_string
+	DBGC 0xa
+	RET

@@ -1,0 +1,188 @@
+; Linked List - James Smyhe
+
+; header struct:
+;   int size
+;   ptr first
+
+; node struct:
+;   ptr next
+;   byte data
+
+; R0 <- Pointer to new list, or zero if fail
+#SHARE ll_init
+ll_init:
+	LD R0 2
+	CALL malloc
+	CEZ R0
+	JMPC ll_init_fail
+	; If malloc failed, skip and just return zero.
+	; R0 is the pointer
+	DD R0
+	STD 0 ; Size 0
+	INCD
+	STD 0 ; First pointer, 0
+	ll_init_fail:
+	RET
+
+; R0 -> Pointer to list
+; R0 <- Size of list
+#SHARE ll_size
+ll_size:
+	DD R0
+	LDD R0
+	RET
+
+; R0 -> Pointer *to* first pointer
+; R1 -> Amount of steps to traverse
+; R0 <- Pointer to chosen pointer
+; R1 <- Landing Value
+ll_traverse:
+	ll_traverse_loop:
+		CEZ R1 ; If we're done, then R0 holds that final pointer
+		JMPC ll_traverse_loop_done
+
+		; In each iteration, we simply decrement R1 and dereference R0
+		DD R0
+		LDD R0
+		DEC R1
+
+		JMP ll_traverse_loop
+
+	ll_traverse_loop_done:
+	DD R0
+	LDD R1
+	DD R1
+	INCD
+	LDD R2
+	RET
+
+
+; R0 -> Pointer to list
+; R1 -> Value
+; TODO: R0 <- zero on fail, other value on success
+#SHARE ll_append
+ll_append:
+	PSH R0
+	PSH R1
+
+	DD R0
+	LDD R1 ; Load the size to R1, amount of steps we need
+	INC R0 ; Point to first pointer instead of ll size
+	CALL ll_traverse
+
+	PSH R0
+	LD R0 2
+	CALL malloc
+	; TODO check for error and return!
+	POP R1
+	DD R1
+	; Pointer for new item!
+	STD R0 ; Store it to the previous node's pointer
+	; Set up the new node:
+	POP R1
+	DD R0
+	STD 0 ; Store the next pointer as zero
+	INCD
+	STD R1 ; Store the new value
+
+	POP R0 ; The head pointer
+	DD R0
+	LDD R1
+	INC R1
+	STD R1 ; Increment the list size
+
+	RET
+
+; R0 -> Pointer to list
+; R1 -> Index
+; R2 <- Value
+#SHARE ll_fetch
+ll_fetch:
+	DD R0
+	INC R0 ; Point to first pointer instead of ll size
+	; R1 already holds the traverse distance
+	CALL ll_traverse
+	RET
+
+; R0 -> Pointer to list
+; R1 -> Index
+; R2 -> Value
+#SHARE ll_set
+ll_set:
+	PSH R2
+	DD R0
+	INC R0
+	CALL ll_traverse
+	; R0 has the pre-pointer
+	; R1 has the pointer to the struct
+	POP R2
+	LDD R0
+	DD R0
+	INCD
+	STD R2
+	; R2 has the new value
+	INC R1 ; store to value, not address
+	DD R1
+	STD R2
+	RET
+
+; R0 -> Pointer to list
+; R1 -> Index
+#SHARE ll_remove
+ll_remove:
+	PSH R0
+	DD R0
+	INC R0
+	CALL ll_traverse
+	; R0 has the pre-pointer
+	; R1 has the pointer to the removed node
+	DD R1
+	LDD R2 ; Load the previous forward pointer
+	DD R0
+	STD R2 ; Update the pre-pointer
+
+	LDZ R1
+	CALL free
+	; DD R1
+	; LDD R2
+	; PSH R2 ; Push the forward pointer
+	; PSH R0 ; Push the pre-pointer
+	; STZ R1
+	; CALL free ; Free the pointer
+	; ; TODO Check for errors
+	; POP R0 ; Pop the pre-pointer
+	; DD R0 ; Dereference
+	; POP R2 ; Pop the forward pointer
+	; STD R2 ; Store the forward pointer to the pre-pointer
+
+	; Decrement list size
+	POP R0
+	DD R0
+	LDD R0
+	DEC R0
+	STD R0
+	RET
+
+; R0 -> Pointer to list
+#SHARE ll_deinit
+ll_deinit:
+	DD R0
+	LDD R1 ; Load the array size
+	INCD
+	LDD R2 ; Load the next pointer
+	INC R1
+	; R0 has the pointer to free
+	; R1 has number of nodes to delete: Root(1) + size
+	; R2 has the forward pointer
+	ll_deinit_loop:
+		; DBG R0
+			PSH
+			CALL free
+			POP
+		LDZ R2 ; Set the pointer to free to be the forward pointer
+		DD R0
+		LDD R2 ; Load the next forward pointer
+		DEC R1
+		CNZ R1
+		JMPC ll_deinit_loop
+	RET
