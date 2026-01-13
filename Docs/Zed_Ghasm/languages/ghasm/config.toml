@@ -1,0 +1,6 @@
+name = "Ghasm"
+grammar = "ghasm"
+path_suffixes = ["ghasm"]
+line_comments = ["; "]
+
+hard_tabs = true

@@ -1,0 +1,9 @@
+id = "ghasm"
+name = "Ghasm"
+version = "0.0.1"
+schema_version = 1
+description = "Syntax for Ghasm"
+
+[grammars.ghasm]
+repository = "file:///home/flicker/Desktop/Ghost/Docs/Zed_Ghasm/Grammar"
+rev = "master"
