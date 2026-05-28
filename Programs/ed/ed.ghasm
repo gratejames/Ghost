@@ -4,45 +4,50 @@ DBGC 'E'
 DBGC 'D'
 DBGC 0xa
 
-PSH R3
-; ==== Setup output routines
+ST R3 $argumentptr
+
+; === Setup output routines
 CALL setupFont
 LD R1 welcomeText
 CALL printLine
-; === Read argument string from R3
-POP R3
 
-ST R3 $argumentptr
-DD R3
-LDD R3
-; DBGC R3
-CEZ R3
-JMPC skip_cantloadonlaunch
-LD R1 cantloadonlaunchText
-CALL printLine
-skip_cantloadonlaunch:
+; === Initialize Data Structures
+CALL initialize_arrays
+
+; === Read argument string
+LD R1 $argumentptr
+DD R1
+LDD R2
+CEZ R2
+JMPC done_file_load
+; === Load Files
+CALL setupFile
+CALL loadFile
+CALL readFile
+CALL splitFile
+done_file_load:
+
 ; === Set up keyboard interrupt
 LD R0 0x00
 LD R1 KeyboardInterrupt
 INT IupdateInterrupt
-; === Initialize Data Structures
-CALL initialize_arrays
+
 ; === Holding loop, waiting for commands
 CALL printCommandPrompt
 loop:
-	CALL blinkCursor ; IDIS guard doesn't fix
+	CALL blinkCursor
 	CALL delay
-	CALL handle_keys ; IDIS guard doesn't fix
+	CALL handle_keys
 	CEZ $isDone
 	JMPC loop
 
+CALL deinitialize_arrays
+
 LD R2 1
 INT Ioutput
-
 RET
 
 ; === Routines
-
 handle_keys:
 	LD R0 $lastKeyPressed
 	ST 0 $lastKeyPressed
@@ -65,18 +70,130 @@ normalKeyPressed:
 enterPressed:
 	CEZ $cur_line_buffer_size
 	RETC
-	DD $cur_line_buffer
+
+	CEZ $mode
+	JMPC submitCommand
+	JMP submitText
+
+submitText:
+	RET
+submitCommand:
+		LD R0 0
+		LD R2 0xb
+		INT Ioutput ; Hide cursor
+		LD R2 1
+		INT Ioutput ; Print newline
+
+	LD R0 cur_line_buffer
+	ADD R0 $cur_line_buffer_size
+	DD R0
+	STD 0
+
+	DD cur_line_buffer
 	LD R1 $cur_line_buffer_size
-	enterPressedLoop:
-		LDD R0
-		DBGC R0
-		INCD
-		DEC R1
-		CNZ R1
-		JMPC enterPressedLoop
-	DBGC 0xa
+	LDD R0
+	CE R0 'p'
+	JMPC command_print
+	; CE R0 'p'
+	; JMPC command_print
+	; CE R0 'p'
+	; JMPC command_print
+
+	LD R1 unknownCommandText
+	CALL printLine
+	submitCommand_handled:
+	CALL printCommandPrompt
 	ST 0 $cur_line_buffer_size
 	RET
+	submitCommand_handled_string_in:
+	ST 0 $cur_line_buffer_size
+	RET
+
+command_print:
+	LD R1 cur_line_buffer
+	INC R1
+	CALL yield_line_setup
+	CALL yield_line
+	CE R0 0xffff ; No line list: print all
+		PSH R0
+		LD R0 $lineArray
+		CALL ll_size
+		STZ R3
+		POP R0
+		; R3 has size
+	JMPC command_print_printall
+		DEC R3
+		ST R3 $command_print_maxidx
+		; while (R0 < 0xfffe) { ; 0 or 0xffff would be reasons to exit
+		; 	if (R0 < linelist.size) {
+		;		STZ R1
+		; 		CALL outFileLine
+		; 	}
+		; 	R0 = yield_line
+		; }
+		command_print_parse_loop:
+			DEC R0
+			DBG R0
+			CGT R0 0xfffd
+			JMPC command_print_parse_loop_done
+			CGT R0 $command_print_maxidx
+			JMPC command_print_pares_dontPrint
+				STZ R1
+				CALL outFileLine
+		 	command_print_pares_dontPrint:
+			CALL yield_line
+			JMP command_print_parse_loop
+		command_print_parse_loop_done:
+		JMP submitCommand_handled
+
+	command_print_printall:
+		LD R1 0
+		command_print_printall_loop:
+			; R1 is index
+			; R3 is size
+			CALL outFileLine
+			INC R1
+			LDZ R1
+			XOR R3
+			CNZ R0 ; If R1 != R3
+			JMPC command_print_printall_loop
+		JMP submitCommand_handled
+
+command_print_maxidx: .db 0
+
+; R1 -> Index
+outFileLine:
+	PSH
+	PSH R1
+
+	INC R1 ; Line number
+	LDZ R1
+	LD R2 4
+	INT Ioutput
+
+	LD R1 lineSep
+	LD R2 6
+	INT Ioutput
+
+
+	POP R1
+
+	LD R0 $lineArray
+	; R0 -> Pointer to list
+	; R1 -> Index
+	; R2 <- Value
+	CALL ll_fetch
+	LDZ R2
+	STZ R1
+
+	LD R2 7
+	INT Ioutput
+
+	POP
+	RET
+
+lineSep: .ds "! "
+.db 0
 
 ; R0 is key
 ; Stores the gives character to the next slot in the buf
@@ -91,11 +208,6 @@ add_char_to_buf:
 	STD R0
 	POP R1
 	RET
-
-.ds "HERE:"
-cur_line_buffer_size:	.db 0
-.ds ":"
-cur_line_buffer:		.dz 65
 
 blinkCursor:
 	; Fetch currentTick
@@ -126,9 +238,11 @@ delay:
 	RET
 
 printCommandPrompt:
+	PSH
 	LD R0 '>'
 	LD R2 3
 	INT Ioutput
+	POP
 	RET
 
 setupFont:
@@ -142,27 +256,49 @@ printLine:
 	INT Ioutput
 	RET
 
-cls:
-	LD R2 8
-	INT Ioutput
-	RET
-
 initialize_arrays:
+	CALL ll_init
+	ST R0 $lineArray
+	CALL ll_init
+	ST R0 $liveArray
 	RET
 
-mode:		 			.db 0
-currentTick: 			.db 0
-argumentptr: 			.db 0
-welcomeText: 			.ds "Welcome to GhostED"
-						.db 0
-cantloadonlaunchText:	.ds "Does not support any command line arguments, yet. Please use 'e' to 'edit' the requested file"
-isDone: 				.db 0
+deinitialize_arrays:
+	LD R0 $lineArray
+	CALL ll_deinit
+	LD R0 $liveArray
+	CALL ll_deinit
+	RET
 
+; Program Vars
+mode:		 			.db 0 ; 0: comand, 1: text_get
+argumentptr: 			.db 0
+isDone: 				.db 0
+cur_line_buffer_size:	.db 0
+cur_line_buffer:		.dz 65
+
+; File Vars
+lineArray:				.db 0 ; List of pointers to the start of each line in the file
+liveArray:				.db 0 ; List of pointers to all the dynamically allocated lines that -we- need to free
+
+; Keyboard Vars
 returnPressedLately:	.db 0
 lastKeyPressed:			.db 0
+currentTick: 			.db 0
 
+; Strings
+welcomeText: 			.ds "Welcome to GhostED"
+.db 0
+unknownCommandText:		.ds "Command not known"
+.db 0
+
+#INC ./lib/linkedList.ghasm
 #INC ./ed/ed_keys.ghasm
+#INC ./ed/ed_files.ghasm
+#INC ./ed/ed_digits.ghasm
 
 Font: .db 0
 FontI:
 #INC ./fontGen/fontI.hex
+
+; .ds "DONE!"

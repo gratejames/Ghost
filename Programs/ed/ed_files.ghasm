@@ -1,0 +1,138 @@
+HLT
+.ds "ED_FILES"
+
+#SHARE setupFile
+setupFile:
+	LD R2 0
+	INT IformatPath
+	ST R1 $pathName
+	ST R2 $fileName
+	CALL findNameLength
+	INT IshellCWD
+	ST R1 $diskNumber
+	RET
+
+#SHARE loadFile
+loadFile:
+	; == Load File
+	LD R0 $diskNumber
+	LD R1 $pathName
+	LD R2 $fileName
+	LD R3 0
+	INT Ifopen
+	; R0 error, R1 file pointer
+	CNZ R0
+	JMPC loadFileError_load
+	ST R1 $fileNumber
+
+	LD R0 $diskNumber
+	LD R1 $pathName
+	LD R2 $fileName
+	INT Istat
+	; R0 error, R3 malloc'd details
+	CNZ R0
+	JMPC loadFileError_stat
+	LDZ R3
+	ADD R3 2
+	DD R3
+	LDD R1
+	ST R1 $fileSize
+	INT Ifree
+	RET
+
+
+#SHARE readFile
+readFile:
+	LD R0 $fileSize
+	INT Imalloc
+	CEZ R0
+	JMPC readFileError_malloc
+	ST R0 $workingBuffer
+
+	LD R0 $fileNumber
+	LD R1 $workingBuffer
+	LD R2 $fileSize
+	INT Ifread
+	CNZ R0
+	JMPC readFileError_fread ; Error
+	CNE R1 $fileSize
+	JMPC readFileError_fread ; Read mismatch
+	RET
+
+#SHARE splitFile
+splitFile:
+	LD R1 $workingBuffer
+	CALL splitFile_appendLine ; append first line
+	; R1 has pointer to first line
+	splitFile_scanloop:
+		DD R1
+		LDD R0 ; Load Character
+		CEZ R0 ; EOF
+		JMPC splitFile_done
+		CNE R0 0xa
+		INC R1
+		JMPC splitFile_scanloop
+		; We have a newline:
+		STD 0 ; Replace with string terminator
+		CALL splitFile_appendLine
+		JMP splitFile_scanloop
+
+	splitFile_done:
+	RET
+
+splitFile_appendLine:
+	PSH
+		LD R0 $lineArray
+		CALL ll_append
+	POP
+	RET
+
+loadFileError_load:
+	LD R1 loadFileError_load_text
+	CALL printLine
+	HLT
+loadFileError_stat:
+	LD R1 loadFileError_stat_text
+	CALL printLine
+	HLT
+readFileError_fread:
+	LD R1 readFileError_fread_text
+	CALL printLine
+	HLT
+readFileError_malloc:
+	LD R1 readFileError_malloc_text
+	CALL printLine
+	HLT
+
+pathName: 			.db 0 ; ptr
+pathNameLength:     .db 0
+fileName: 			.db 0 ; ptr
+diskNumber: 		.db 0
+
+fileNumber: 		.db 0
+fileSize: 			.db 0
+
+workingBuffer: 		.db 0 ; ptr
+
+findNameLength:
+	LD R3 $fileName
+	findNameLength_loop:
+		DD R3
+		LDD R1
+		CNZ R1
+		INC R3
+		JMPC findNameLength_loop
+	DEC R3
+	SUB R3 $fileName
+	ST R3 $pathNameLength
+	RET
+
+
+loadFileError_load_text:	.ds "Failed to STAT file"
+.db 0
+loadFileError_stat_text: 	.ds "Failed to LOAD file"
+.db 0
+readFileError_fread_text: 	.ds "Failed to malloc room for the file"
+.db 0
+readFileError_malloc_text:	.ds "Failed to READ file"
+.db 0

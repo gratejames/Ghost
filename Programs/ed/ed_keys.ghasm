@@ -1,3 +1,6 @@
+HLT
+.ds "ED_KEYS"
+
 ; Ctrl-c implementation:
 ; Should functions keep track of a good return-point for themselves?
 #SHARE KeyboardInterrupt

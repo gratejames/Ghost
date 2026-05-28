@@ -1,0 +1,134 @@
+HLT
+.ds "ED_DIGITS"
+; LD R1 Input
+; CALL yield_line_setup
+; CALL yield_line
+; DBG R0
+; HLT
+; Input: .ds ",1,2"
+; .db 0
+
+
+; R1 -> ptr
+#SHARE yield_line_setup
+yield_line_setup:
+	ST 0 $yield_line_done
+	ST R1 $yield_line_ptr
+	ST 0xffff $initial_value
+	ST 0xffff $final_value
+	RET
+
+; R0 <- Value
+#SHARE yield_line
+yield_line:
+	; DBGC 'Y'
+	LD R1 $yield_line_ptr
+	DD R1
+	LDD R3
+	LD R3 $final_value
+	CNE R3 0xffff ; If the final value is set
+	JMPC yield_line_range   ; Do range things
+
+	LD R0 0xffff
+	CNZ $yield_line_done
+	RETC
+
+	CALL fetch_number
+	CE R0 0xffff
+	JMPC yield_line_terminate
+	DD R1
+	INC R1
+	LDD R2
+	; R0 has the number value just processed
+	; R1 has the address in the string pointing to the next number
+	; R2 has the terminating character (- , 0x00)
+	CE R2 ','
+	JMPC yield_line_comma
+	CE R2 '-'
+	JMPC yield_line_dash
+	JMP yield_line_terminate
+	yield_line_comma:
+		; DBGC 'C'
+		LD R3 $initial_value
+		CE R3 0xffff
+		JMPC yield_line_normal_comma
+			ST R0 $final_value ; We've just come from yield_line_dash
+			LD R0 $initial_value
+		yield_line_normal_comma:
+			ST R1 $yield_line_ptr
+			RET
+
+	yield_line_dash:
+		; DBGC 'D'
+		ST R0 $initial_value
+		ST R1 $yield_line_ptr
+		JMP yield_line
+
+	yield_line_terminate:
+		; DBGC 'T'
+		LD R3 $initial_value
+		CE R3 0xffff
+		JMPC yield_line_normal_term
+			ST R0 $final_value ; We've just come from yield_line_dash
+			LD R0 $initial_value
+		yield_line_normal_term:
+ 			ST 1 $yield_line_done
+			ST R1 $yield_line_ptr
+			RET
+
+	yield_line_range:
+		LD R0 $initial_value
+		CE R0 $final_value
+		JMPC yield_line_range_done ; TODO also compare if final < initial and skip the range
+			INC R0
+			ST R0 $initial_value
+			ST R1 $yield_line_ptr
+			RET
+		yield_line_range_done:
+			ST 0xffff $initial_value
+			ST 0xffff $final_value
+			ST R1 $yield_line_ptr
+			JMP yield_line
+
+initial_value: 		.db 0xffff
+final_value: 		.db 0xffff
+yield_line_done:    .db 0
+yield_line_ptr: 	.db 0
+
+; R0 <- value
+; R1 -> pointer to first digit
+; R1 <- End of number pointer
+fetch_number:
+	; Add digits to R1 until
+	LD R0 0
+	LD R3 0xffff
+	fetch_number_loop:
+		DD R1
+		LDD R2
+			CLT R2 '0'
+			JMPC fetch_number_done
+			CGT R2 '9'
+			JMPC fetch_number_done
+		LD R3 0
+		SUB R2 '0'
+		; Multiply R0 by 10, then add R2
+		CALL tenX
+		ADD R2
+		INC R1
+		JMP fetch_number_loop
+	fetch_number_done:
+	CEZ R3
+	RETC
+	; We never loaded any values
+	LDZ R3
+	RET
+
+
+tenX:
+	PSH R1
+	SHL R0 1
+	STZ R1
+	SHL R0 2
+	ADD R1
+	POP R1
+	RET
