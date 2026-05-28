@@ -1,6 +1,6 @@
 ; Color mode testing
-#DEF ScreenMode 0xaffe
-#DEF pal 0xaf80
+#DEF ScreenMode 0xafef
+#DEF pal 0xaff0
 #DEF ScreenAddress 0xb000
 
 #DEF Loops 0x0600
@@ -14,6 +14,7 @@
 ; MODE 1
 ST 0 $ScreenMode
 DBGC '0'
+DBGC 10
 LD R0 0
 LD R1 0
 LD R2 0
@@ -36,6 +37,7 @@ Mode1Loop:
 ; MODE 2
 ST 1 $ScreenMode
 DBGC '1'
+DBGC 10
 LD R0 0
 LD R1 0
 LD R2 0
@@ -78,6 +80,7 @@ ST 0b0000000000000000 $pal+0xf
 
 ST 2 $ScreenMode
 DBGC '2'
+DBGC 10
 LD R0 0
 LD R1 0
 LD R2 0
@@ -105,6 +108,7 @@ ST 0b1111100000000000 $pal
 
 ST 3 $ScreenMode
 DBGC '3'
+DBGC 10
 LD R0 0
 LD R1 0
 LD R2 0

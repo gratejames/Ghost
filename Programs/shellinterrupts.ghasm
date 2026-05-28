@@ -28,7 +28,7 @@ updateInterrupt:
 	; DBG R1
 	DD R0
 	STD R1
-	
+
 	ADO $PrevAO
 	RET
 
@@ -45,7 +45,9 @@ formatPathString:
 	ADD R1 $PrevAO
 
 	; Do Stuff
+	PSH R2
 	CALL MakeAbsolute
+	POP R2
 	CALL SplitPath
 	CE R2 0xffff
 	JMPC formatPathString_ErrorNoAdd
@@ -58,7 +60,7 @@ formatPathString:
 
 ; | R2| Name  | Regs    | Notes...
 ; | 0 | Clear | None    | Also clears charmem/cursor
-; | 1 | NewL  | None    | Auto scrolls screen
+; | 1 | NewLn | None    | Auto scrolls screen i.e. adds newline
 ; | 2 | Set   | R0 Char | Does not advance cursor
 ; | 3 | Put   | R0 Char | Does not handle newlines, advances cursor
 ; | 4 | Num   | R0 Val  | Prints value in base 10
@@ -107,7 +109,7 @@ outputInterrupt:
 	CALLC GetFont
 	CE R2 0x000b
 	CALLC SetCursorDisplay
-	
+
 	ADO $PrevAO
 	IEN
 	RET

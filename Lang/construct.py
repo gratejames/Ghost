@@ -938,3 +938,85 @@ if __name__ == "__main__":
 
     with open("test.ghasm", "w+") as f:
         f.write(assembly)
+
+
+#     def construct(self, node):
+#         ASM = ""
+#         match node:
+#             case nodes.Ret():
+#                 ASM += self.construct(node.pre_node)
+#                 ASM += ";begin epilog\n"
+#                 ASM += "STZ R1\n"
+#                 ASM += "LD R0 $ebp\n"
+#                 ASM += "STSP\n"
+#                 ASM += "POP R0\n"
+#                 ASM += "ST R0 $ebp\n"
+#                 ASM += "LDZ R1\n"
+#                 ASM += "RET\n"
+#             # case instructions.Add():
+#             #     ASM += self.construct(node.op1)
+#             #     ASM += "STZ R1\n"
+#             #     ASM += self.construct(node.op2)
+#             #     ASM += "ADD R1\n"
+#             case instructions.CALL():
+#                 if len(node.args) > 4:
+#                     print(
+#                         "Too many instructions to put into registers! More than 4 args not supported yet"
+#                     )
+#                     exit()
+#                 for i in range(len(node.args)):
+#                     R = len(node.args) - 1 - i
+#                     ASM += self.construct(node.args[i])
+#                     if R != 0:
+#                         ASM += f"STZ R{R}"
+#                 ASM += f"CALL {node.label}\n"
+#             case nodes.Load():
+#                 if isinstance(const := node.pointer, nodes.Constant):
+#                     ASM += f"LDV R0 {const.value}"
+#                 else:
+#                     print(node.pointer.address)
+#                     exit()
+#             case nodes.Block():
+#                 ASM += node.label.name + ":"
+#                 ASM += self.construct(node.final)
+#             case _:
+#                 print("Failed to construct", type(node))
+#                 exit()
+
+#         return ASM
+
+#     def asmPrint(self):
+#         # print(self.functions)
+#         if "@main" not in self.functions:
+#             print("No entrypoint @main found")
+#             exit(1)
+
+#         # main = self.functions["@main"]
+
+#         # for k, v in self.registers.items():
+#         # print(k, v)
+#         # print()
+#         # print(main.registers)
+#         # print(main.memoryeffects)
+
+#         # for l in main.lines:
+#         # print(l)
+#         # r = self.lower(main.ret)
+#         # print(r)
+#         # for name, f in self.functions.items():
+#         #     print(name)
+#         #     for b in f.blocks:
+#         #         print(b.registers)
+
+#         ASM = "LDSP\nST R0 $ebp\nCALL main\nRET\nebp: .db 0xffff\n"
+#         for name, f in self.functions.items():
+#             ASM += f"{name}:\n"
+#             ASM += "LD R0 $ebp\n"
+#             ASM += "PSH R0\n"
+#             ASM += "LDSP\n"
+#             ASM += "ST R0 $ebp\n"
+#             ASM += ";prologue concluded\n"
+#             ASM += self.construct(self.lower(f.ret))
+#         print(ASM)
+#         with open("out.ghasm", "w+") as f:
+#             f.write(ASM)

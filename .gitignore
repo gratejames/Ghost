@@ -16,3 +16,4 @@ ghost.sublime-workspace
 Programs/tests
 !Programs/fontGen/*.hex
 Programs/fontGen/*.old.hex
+/LLVM_play

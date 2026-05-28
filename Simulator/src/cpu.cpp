@@ -61,6 +61,7 @@ void cpu::tick() {
 	if (verbose)
 		debug();
 	executeFunction(instruction);
+	t++;
 	PC++;
 	if (needToInterrupt)
 		callPendingInterrupt();

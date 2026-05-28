@@ -7,6 +7,17 @@
 ; node struct:
 ;   ptr next
 ;   byte data
+;
+HLT
+.ds "Linked List"
+
+malloc:
+	INT Imalloc
+	RET
+
+free:
+	INT Ifree
+	RET
 
 ; R0 <- Pointer to new list, or zero if fail
 #SHARE ll_init
@@ -101,7 +112,9 @@ ll_fetch:
 	DD R0
 	INC R0 ; Point to first pointer instead of ll size
 	; R1 already holds the traverse distance
+	PSH R3
 	CALL ll_traverse
+	POP R3
 	RET
 
 ; R0 -> Pointer to list
@@ -175,7 +188,6 @@ ll_deinit:
 	; R1 has number of nodes to delete: Root(1) + size
 	; R2 has the forward pointer
 	ll_deinit_loop:
-		; DBG R0
 			PSH
 			CALL free
 			POP

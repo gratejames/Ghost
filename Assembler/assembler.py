@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import sys
 import re
-import AssemblerDefs
+import sys
 from pathlib import Path
+
+import AssemblerDefs
 
 
 def intToHexString(num):
@@ -253,7 +254,7 @@ class assembler:
             newPos = eval(line.replace("#ORG", "").strip(), {**self.definitions})
             if newPos < self.position:
                 self.die(
-                    f"\nX Error resolving #ORG: new position ({newPos}) is less than current ({self.position}), on line {self.lineNumber+1}"
+                    f"\nX Error resolving #ORG: new position ({newPos}) is less than current ({self.position}), on line {self.lineNumber + 1}"
                 )
             outLine = "#DATA " + "0x0000 " * (newPos - self.position)
             return outLine
@@ -276,12 +277,12 @@ class assembler:
             if char == "'":
                 if len(line) < i + 2:
                     self.die(
-                        f"\nX Error resolving char: not enough room, on line {self.lineNumber+1}"
+                        f"\nX Error resolving char: not enough room, on line {self.lineNumber + 1}"
                     )
                 target = line[i + 1]
                 if line[i + 2] != "'":
                     self.die(
-                        f"\nX Error resolving char '{line[i] + target + line[i + 2] }': no closing apostraphe, on line {self.lineNumber+1}"
+                        f"\nX Error resolving char '{line[i] + target + line[i + 2]}': no closing apostraphe, on line {self.lineNumber + 1}"
                     )
                 target = intToHexString(ord(target))
                 line = line[:i] + target + line[i + 3 :]
@@ -302,7 +303,7 @@ class assembler:
             )
             if dataType is None:
                 self.die(
-                    f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber+1}"
+                    f"\nX Error resolving data type of '{dataTypeWord}' on line {self.lineNumber + 1}"
                 )
             val = "".join(line.split(" ")[1:])
             if dataType == "Byte":
@@ -310,7 +311,7 @@ class assembler:
                     line = intToHexString(eval(val, {**self.definitions}))
                 except NameError as e:
                     self.die(
-                        f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}"
+                        f"\nX Could not resolve name '{e.name}' on line {self.lineNumber + 1}"
                     )
             elif dataType == "String":
                 line = self.parseString(line[3:].strip())
@@ -319,7 +320,7 @@ class assembler:
                     line = "0x0000 " * eval(val, {**self.definitions})
                 except NameError as e:
                     self.die(
-                        f"\nX Could not resolve name '{e.name}' on line {self.lineNumber+1}"
+                        f"\nX Could not resolve name '{e.name}' on line {self.lineNumber + 1}"
                     )
             line = "#DATA " + line
         return prefix + line
@@ -333,19 +334,19 @@ class assembler:
                 loadedContents = f.read()
         except OSError:
             self.die(
-                f"X Error including {fileName}: file not found on line {self.lineNumber+1}"
+                f"X Error including {fileName}: file not found on line {self.lineNumber + 1}"
             )
         if fileName.endswith(".hex"):
             line = " ".join(loadedContents.split())
             for word in line.split(" "):
                 if not self.isValidFinalHex(word):
                     self.die(
-                        f"X Error including {fileName}: token not valid hex '{word}' on line {self.lineNumber+1}"
+                        f"X Error including {fileName}: token not valid hex '{word}' on line {self.lineNumber + 1}"
                     )
 
         elif fileName.endswith(".ghasm"):
             print(
-                f"- Subassembling {fileName}, org is {self.position} on line {self.lineNumber+1}"
+                f"- Subassembling {fileName}, org is {self.position} on line {self.lineNumber + 1}"
             )
             subAssembler = assembler()
             subAssembler.loadFile(fileName)
@@ -365,7 +366,7 @@ class assembler:
             self.definitions = {**self.definitions, **subAssembler.getShared()}
         else:
             self.die(
-                f"X Error including {fileName}: file extension not supported {self.lineNumber+1}"
+                f"X Error including {fileName}: file extension not supported {self.lineNumber + 1}"
             )
         return "#DATA " + line
 
@@ -421,7 +422,7 @@ class assembler:
                 return " ".join(words)
             else:
                 print(
-                    f"\nX Error resolving shorthand command '{words[0]}' with arguments [{', '.join(ArgumentTypes)}], on line {self.lineNumber+1}"
+                    f"\nX Error resolving shorthand command '{words[0]}' with arguments [{', '.join(ArgumentTypes)}], on line {self.lineNumber + 1}"
                 )
                 listOfShorthandArguments = list(
                     AssemblerDefs.Shorthand[words[0]].keys()
@@ -467,7 +468,7 @@ class assembler:
             words = line.split()
             if words[1] in self.definitions.keys():
                 self.die(
-                    f"X Error recording definitions: the definition '{words[1]}' was encountered earlier at position {self.definitions[words[1]]} on line {self.lineNumber+1}"
+                    f"X Error recording definitions: the definition '{words[1]}' was encountered earlier at position {self.definitions[words[1]]} on line {self.lineNumber + 1}"
                 )
             self.definitions[words[1]] = int(words[2], 0)
             # self.definitions[words[1]] = eval(words[2], {**self.definitions})
@@ -524,12 +525,12 @@ class assembler:
     def parseString(self, line):
         if line[0] != '"':
             self.die(
-                f'\nX Error parsing string, expected " to open the string but got {line[0]} on line {self.lineNumber+1}'
+                f'\nX Error parsing string, expected " to open the string but got {line[0]} on line {self.lineNumber + 1}'
             )
 
         if line[-1] != '"':
             self.die(
-                f'\nX Error parsing string, expected " to close the string but got {line[-1]} on line {self.lineNumber+1}'
+                f'\nX Error parsing string, expected " to close the string but got {line[-1]} on line {self.lineNumber + 1}'
             )
 
         line = " ".join(intToHexString(ord(char)) for char in line[1:-1])
@@ -642,11 +643,14 @@ class assembler:
         #   print("\t" * self.nested + "-", "(D)", k, hex(v))
 
         for k in self.shares:
-            print("\t" * self.nested + "-", "(S)", k)
+            v = self.definitions[k]
+            print("\t" * self.nested + "-", "(S)", k, hex(v), v)
 
         # print("\t" * self.nested + "- Pass 2: Resolve Labels, Resolving Defs, Resolve Registers, Do Math, Force hexadecimal")
 
-        linesList = "\n".join(linesList).split(
+        linesList = "\n".join(
+            linesList
+        ).split(
             "\n"
         )  # Unfold all the lines that are single list items seperated by "\n" characters from the macro process
 

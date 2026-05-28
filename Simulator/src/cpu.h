@@ -5,6 +5,7 @@ class cpu {
 public:
 	cpu(std::string romFile);
 	void tick();
+	int t = 0; 							// Instructions since last reset
 	void reset();
 	void debug();
 	int getColorAt(int x);
@@ -29,7 +30,6 @@ public:
 
 private:
 	std::string romFileName;
-	int t = 0; 							// Instructions since last reset
 	unsigned short PC = 0; 				// Program Counter: Address of current instruction
 	unsigned short DD = 0; 				// Address Register
 	unsigned short R0 = 0;

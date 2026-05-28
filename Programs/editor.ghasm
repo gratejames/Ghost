@@ -150,7 +150,7 @@ KeyboardInterrupt:
 		LD R0 $KB_Mods
 		AND R0 0b0010
 		CEZ R0
-		JMPC KI_Normal	
+		JMPC KI_Normal
 		ST 1 $isDone
 		JMP KI_Done
 
@@ -595,7 +595,7 @@ setupFile:
 	; LD R2 7
 	; INT Ioutput
 	LD R1 $argumentptr
-	INT IformatPath
+	INT IformatPath ; Missing R2 argument?
 	ST R1 $pathName
 	ST R2 $fileName
 	CALL findNameLength

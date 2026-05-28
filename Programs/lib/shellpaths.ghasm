@@ -161,7 +161,7 @@ MakeAbsolute:
 	PSH R0
 	ST R2 $enableTrailingSlash_abs
 	PSH R3
-	
+
 	DD R1
 	LDD R0
 	CE R0 '/'

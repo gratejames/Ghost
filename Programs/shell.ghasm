@@ -80,6 +80,28 @@ startup:
 
 	MV $Cursor $LastCursor
 
+
+
+	;;; === FAKE KEYS - Very hacky
+	LD R0 FakeKeysString
+	ST 1 $0xafd0	; Set key state
+	FakeKeysLoop:
+		DD R0
+		LDD R1
+			CEZ R1
+			JMPC FakeKeysLoop_Done
+		ST R1 $0xafd1	; Key value
+		INT 0 ; Force call the keyboard interrupt
+		INC R0
+		JMP FakeKeysLoop
+
+		FakeKeysString: .ds "run /bin/ed /str.txt"
+		.db 0x000d ; Enter Key
+		.db 0
+	FakeKeysLoop_Done:
+
+
+
 	loop:
 		CALL blinkCursor
 		CALL delay
@@ -139,7 +161,7 @@ KeyboardInterrupt:
 	JMPC KI_Shift_Down
 	CE R0 0x00e0 ; L_Control
 	JMPC KI_Control_Down
-	
+
 	CALL ApplyShift
 
 	LD R1 $Cursor
@@ -165,7 +187,7 @@ KeyboardInterrupt:
 		CE R0 0x00e0 ; L_Control
 		JMPC KI_Control_Up
 		JMP KeyboardInterruptExit
-		
+
 	KI_Win_Up:
 		LD R0 0
 		LD R1 3
@@ -176,7 +198,7 @@ KeyboardInterrupt:
 		LD R1 3
 		CALL SetModifier
 		JMP KeyboardInterruptExit
-		
+
 	KI_Alt_Up:
 		LD R0 0
 		LD R1 2
@@ -198,7 +220,7 @@ KeyboardInterrupt:
 		LD R1 0
 		CALL SetModifier
 		JMP KeyboardInterruptExit
-		
+
 	KI_Control_Up:
 		LD R0 0
 		LD R1 1
@@ -326,7 +348,7 @@ argumentptr: 		.db 0
 	ADO 0
 	POP R1
 	CALL outputExitCode
-	
+
 	ST KeyboardInterrupt $0xaf00
 	ST 3 $0xafef					;; Display mode
 	CALL RefreshDisplay
@@ -479,7 +501,7 @@ runScript:
 	ST 0 $runScript_done
 	runScript_Loop:
 		; Loop through each line
-		; Copy each line into the buffer	
+		; Copy each line into the buffer
 		LD R1 runScript_linebuffer
 		runScript_Copy:
 			DD R0
@@ -551,7 +573,7 @@ shellExec:
 	CEZ R2
 	RETC
 	; String Index into table of routine pointers
-	
+
 	LD R2 shellExec_Table
 	shellExec_LookupLoop:
 		DD R1
@@ -564,7 +586,7 @@ shellExec:
 		JMPC shellExec_NotASpace
 		LD R0 0
 		shellExec_NotASpace:
-		
+
 		; R0 is character
 		; R1 is character address in user input
 		; R2 is the pointer to the string to compare to
@@ -703,7 +725,7 @@ CMD_CD:
 		CALL PrintLineAtCursor
 		RET
 
-	CMD_CD_newDirectory: 
+	CMD_CD_newDirectory:
 		.ds "/"
 		.dz (12+1)*8 +1
 
@@ -1475,7 +1497,7 @@ CMD_FLAGS:
 	OR R3 ; R0 = new mask bit OR old mask bit
 	ST R0 $CMD_FLAGS_mask
 	JMP CMD_FLAG_doneOne
-	
+
 	CMD_FLAGS_SUB:
 	INC R1
 	DD R1

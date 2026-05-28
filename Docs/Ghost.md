@@ -4,10 +4,13 @@
 + [x] To and from R0 for better math
 + [ ] Text modes?
 + [ ] Want a BRKC instruction pls
++ [ ] Add interrupt for stack overflow
++ [ ] Fix assembler string handler with comments
 + [x] ~~Simulate external video card?~~
 	+ [x] ~~Immitate N64 - interrupt on each scanline? Nah, would have to sync the render and logic threads~~
 + [x] Interrupts should probably queue...
 	+ [x] Nope! Also, get rid of Interupt data - read it in from IO bit of memory!
+	+ [ ] The keyboard interrupt cobbles DD
 + [ ] vfs
 	+ [x] ramdisk
 	+ [x] mkdir

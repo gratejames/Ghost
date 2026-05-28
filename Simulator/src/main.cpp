@@ -134,7 +134,7 @@ int main (int argc, char **argv) {
       0,
       menuBarHeight*menuBarShown,
       WINSIZE*scale,
-      WINSIZE*scale + menuBarHeight*menuBarShown
+      WINSIZE*scale
     };
     SDL_RenderCopy(renderer, texture, nullptr, &placement);
     menuBarDraw();
@@ -387,7 +387,7 @@ void doAction(std::string instructionName) {
     std::cout << "Debugger break" << std::endl;
   } else if (instructionName == "Step") {
     if (processor->broken) {
-      std::cout << "Debugger step" << std::endl;
+      std::cout << "Debugger step" << processor->t << std::endl;
       processor->tick();
     } else {
       std::cout << "Couldn't step - still running" << std::endl;
@@ -514,12 +514,12 @@ void createDebugText() {
 }
 
 void TickerFunc () {
-  // int t = 0;
+  unsigned short stored = 0;
+
   while (!processor->closed) {
     if (!processor->broken) {
-      // t++;
       processor->tick();
-      // if (t == 20001074-75) {
+      // if (processor->t == 88974-1600) {
       //   processor->broken = true;
       //   std::cout << "Time" << std::endl;
       // }
@@ -532,9 +532,12 @@ void TickerFunc () {
       //   processor->keyStateChange(32, 1); // Maybe do direct interrupt jump instead
       //   std::cout << "key t=" << t << std::endl;
       // }
-      // if (processor->MEMORY[0xb597] || processor->MEMORY[0xb598]) {
-      //   processor->broken = true;
-      //   std::cout << "Centinel t=" << t << std::endl;
+      // if (processor->MEMORY[0x0191] != stored) {
+      //   std::cout << "t=" << processor->t << " Centinel was " << stored << " is now " << processor->MEMORY[0x0191] << std::endl;
+      //   stored = processor->MEMORY[0x0191];
+      //   if (stored != 218) {
+      //     processor->broken = true;
+      //   }
       // }
     }
   }

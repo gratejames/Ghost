@@ -25,19 +25,35 @@
 ; Font:
 ; #INC ./fontGen/font.hex
 
-LD R0 27
-PSH R0
-LD R0 7
-STZ R1
-POP R0
-LD R2 0
+; LD R0 27
+; PSH R0
+; LD R0 7
+; STZ R1
+; POP R0
+; LD R2 0
+; loop:
+; CGT R0 0x8000 ; Is Negative
+; JMPC Exit
+; SUB R1
+; INC R2
+; JMP loop
+; Exit:
+; LDZ R1
+; DBG R0
+; HLT
+
+#DEF ScreenAddress 0xb000
+LD R0 ScreenAddress
+LD R1 0x0000
 loop:
-CGT R0 0x8000 ; Is Negative
-JMPC Exit
-SUB R1
-INC R2
-JMP loop
-Exit:
-LDZ R1
-DBG R0
+	DD R0
+	STD R1
+	CLT R0 ScreenAddress+0x3eff
+	INC R0
+	JMPC loop
+	
+	LD R0 ScreenAddress
+	INC R1
+	JMP loop
+
 HLT

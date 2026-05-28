@@ -94,8 +94,8 @@ submitCommand:
 	LDD R0
 	CE R0 'p'
 	JMPC command_print
-	; CE R0 'p'
-	; JMPC command_print
+	CE R0 'a'
+	JMPC command_append
 	; CE R0 'p'
 	; JMPC command_print
 

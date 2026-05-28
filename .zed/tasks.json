@@ -4,8 +4,8 @@
 [
   {
     "label": "Build",
-    "command": "cd $ZED_WORKTREE_ROOT/$ZED_RELATIVE_DIR; /home/flicker/Desktop/Ghost/Assembler/assembler.py \"$ZED_FILE\" && /home/flicker/Desktop/Ghost/Simulator/build/Simulator -f \"$ZED_STEM.hex\" -s 4",
-    // "command": "cd $ZED_WORKTREE_ROOT/Programs; /home/flicker/Desktop/Ghost/Assembler/assembler.py \"shell.ghasm\" && /home/flicker/Desktop/Ghost/Simulator/build/Simulator -f \"shell.hex\" -s 4",
+    // "command": "cd $ZED_WORKTREE_ROOT/$ZED_RELATIVE_DIR; /home/flicker/Desktop/Ghost/Assembler/assembler.py \"$ZED_FILE\" && /home/flicker/Desktop/Ghost/Simulator/build/Simulator -f \"$ZED_STEM.hex\" -s 4",
+    "command": "cd $ZED_WORKTREE_ROOT/Programs; /home/flicker/Desktop/Ghost/Assembler/assembler.py \"shell.ghasm\" && /home/flicker/Desktop/Ghost/Simulator/build/Simulator -f \"shell.hex\" -s 4",
     //"args": [],
     // Env overrides for the command, will be appended to the terminal's environment from the settings.
     // "env": { "foo": "bar" },
