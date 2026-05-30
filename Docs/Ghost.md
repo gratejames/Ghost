@@ -56,6 +56,7 @@
 		+ [ ] How to have function pointer to executable file? It would have to point to a small function that loads the filename and calls the execute routine?
 		+ [ ] This still is inherently limited - how many functions should be allowed?
 + [ ] make stdout a file pointer
+	+ [ ] Oooooh maybe both for the debug output and the on-screen output
 + [x] Memory access
 	+ [x] peek
 	+ [x] poke
