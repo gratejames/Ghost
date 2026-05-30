@@ -133,7 +133,7 @@ free_interrupt:
 
 	ADD R0 $PrevAO
 
-	CALL malloc
+	CALL free
 
 	ADO $PrevAO
 	RET
