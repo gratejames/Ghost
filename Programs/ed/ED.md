@@ -95,8 +95,16 @@ vector<ptr> Live Array
 ## Notes & todo
 
 - [ ] Need command to check file length
-
 - [ ] Backspace support
+
+- [X] Print `p`
+- [ ] Append `a`
+- [ ] Delete `d`
+- [ ] Change `c`
+- [ ] Save `s` and Save As `S`
+- [ ] Edit `e`
+- [ ] Quit `q`
+- [ ] Help `h`
 
 ```
 yield line:

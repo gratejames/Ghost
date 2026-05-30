@@ -45,8 +45,9 @@ ll_size:
 
 ; R0 -> Pointer *to* first pointer
 ; R1 -> Amount of steps to traverse
-; R0 <- Pointer to chosen pointer
-; R1 <- Landing Value
+; R0 <- Pointer to pointer in previous item (pointing to chosen)
+; R1 <- Pointer to chosen node
+; R2 <- Landing Value
 ll_traverse:
 	ll_traverse_loop:
 		CEZ R1 ; If we're done, then R0 holds that final pointer
@@ -109,7 +110,7 @@ ll_append:
 ; R2 <- Value
 #SHARE ll_fetch
 ll_fetch:
-	DD R0
+	DD R0 ; TODO does this line do anything?
 	INC R0 ; Point to first pointer instead of ll size
 	; R1 already holds the traverse distance
 	PSH R3
@@ -123,7 +124,7 @@ ll_fetch:
 #SHARE ll_set
 ll_set:
 	PSH R2
-	DD R0
+	DD R0 ; TODO does this line do anything?
 	INC R0
 	CALL ll_traverse
 	; R0 has the pre-pointer
@@ -198,3 +199,88 @@ ll_deinit:
 		CNZ R1
 		JMPC ll_deinit_loop
 	RET
+
+
+; R0 -> Pointer to list
+; R1 -> Index (Insert after this index)
+; R2 -> Value
+; TODO: R0 <- zero on fail, other value on success
+#SHARE ll_insert
+ll_insert:
+	PSH R0
+				PSH R2
+
+				INC R0 ; Point to first pointer instead of ll size
+
+				; R0 -> Pointer *to* first pointer
+				; R1 -> Amount of steps to traverse
+				; R0 <- Pointer to pointer in previous item (pointing to chosen)
+				; R1 <- Pointer to chosen node
+				; R2 <- Landing Value
+				CALL ll_traverse
+				PSH R1
+				PSH R0
+
+				LD R0 2
+				CALL malloc
+				; TODO check for error and return!
+
+				; R0 has new pointer
+				; Stack: [New value, forward pointer, pre-pointer]
+
+				POP R1
+				DD R1
+				STD R0 ; pre-pointer = new
+
+				POP R1
+				DD R0
+				STD R1 ; new-pointer = forward
+
+				POP R1
+				INCD
+				STD R1 ; Store the new value
+
+	POP R0 ; The head pointer
+	DD R0
+	LDD R1
+	INC R1
+	STD R1 ; Increment the list size
+
+	RET
+
+
+; R0 -> Pointer to list
+#SHARE ll_debug
+ll_debug:
+	PSH
+	DD R0
+	LDD R1 ; Load the size to R1, amount of steps we need
+	INC R0 ; Point to first pointer instead of ll size
+
+	DBGC 'L'
+	DBG R1
+
+	; R0 -> Pointer *to* first pointer
+	; R1 -> Amount of steps to traverse
+	; R0 <- Pointer to pointer in previous item (pointing to chosen)
+	; R1 <- Pointer to chosen node
+	; R2 <- Landing Value
+	ll_debug_traverse:
+		ll_debug_traverse_loop:
+			CEZ R1 ; If we're done, then R0 holds that final pointer
+			JMPC ll_debug_traverse_loop_done
+
+			; In each iteration, we simply decrement R1 and dereference R0
+			DD R0
+			LDD R0
+			DD R0
+			INCD
+			LDD R2
+			DBG R2
+			DEC R1
+
+			JMP ll_debug_traverse_loop
+
+		ll_debug_traverse_loop_done:
+		POP
+		RET

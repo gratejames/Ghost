@@ -26,9 +26,11 @@
 + [ ] Manipulation of registers
 
 # Assembler
++ [ ] Self-terminating strings. `.dsz`?
 + [ ] Fix assembler string handler with comments
 + [ ] Make assembler smarter about single quotes
 + [ ] Make assembler handle empty lines in ramdisk.txt
++ [ ] ifdef directive so that you can define malloc as Imalloc if it's not already defined (See lib/linkedList.ghasm)
 # Shell/OS
 + [ ] Handle whitespace better in commands
 	+ [x] string trim routine - increment pointer and write zeroes over whitespace

@@ -1,0 +1,66 @@
+ST free					$0xaf00+Ifree
+ST malloc				$0xaf00+Imalloc
+
+LD R0 strStart
+CALL debug_string_line
+
+CALL ll_init
+ST R0 $list
+
+LD R0 strInit
+CALL debug_string_line
+
+LD R0 strSize
+CALL debug_string
+
+LD R0 $list
+CALL ll_size
+DBG R0
+
+LD R0 $list
+LD R1 0x10
+CALL ll_append
+LD R1 0x20
+CALL ll_append
+LD R1 0x30
+CALL ll_append
+
+LD R0 strAppend
+CALL debug_string_line
+
+LD R0 $list
+CALL ll_debug
+
+; R0 -> Pointer to list
+; R1 -> Index
+; R2 -> Value
+LD R0 $list
+LD R1 1
+LD R2 0x15
+CALL ll_insert
+
+LD R0 strInsert
+CALL debug_string_line
+
+LD R0 $list
+CALL ll_debug
+
+HLT
+
+#INC ./lib/IVT.ghasm
+#INC ./lib/linkedList.ghasm
+#INC ./lib/debugString.ghasm
+#INC ./lib/kernel.ghasm
+
+strStart:	.ds "LL Test"
+.db 0
+strInit:	.ds "Init"
+.db 0
+strSize:	.ds "Size: "
+.db 0
+strAppend:	.ds "Append"
+.db 0
+strInsert:	.ds "Insert"
+.db 0
+
+list:				.db 0 ; List of pointers to the start of each line in the file
