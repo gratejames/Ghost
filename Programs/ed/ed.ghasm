@@ -33,7 +33,7 @@ LD R1 KeyboardInterrupt
 INT IupdateInterrupt
 
 ; === Holding loop, waiting for commands
-CALL printCommandPrompt
+CALL printRightPrompt
 loop:
 	CALL blinkCursor
 	CALL delay
@@ -71,24 +71,42 @@ enterPressed:
 	CEZ $cur_line_buffer_size
 	RETC
 
-	CEZ $mode
-	JMPC submitCommand
-	JMP submitText
-
-submitText:
-	RET
-submitCommand:
+	; Cursor Management
 		LD R0 0
 		LD R2 0xb
 		INT Ioutput ; Hide cursor
 		LD R2 1
 		INT Ioutput ; Print newline
 
-	LD R0 cur_line_buffer
-	ADD R0 $cur_line_buffer_size
-	DD R0
-	STD 0
+	; zero terminatate buffer line
+		LD R0 cur_line_buffer
+		ADD R0 $cur_line_buffer_size
+		DD R0
+		STD 0
 
+	CEZ $mode
+	JMPC submitCommand
+	JMP submitText
+
+submitText:
+	; Load text address into R0
+	LD R0 cur_line_buffer
+	LD R1 $cur_line_buffer_size
+
+	; Do callback (PSH/RET?)
+	LD R2 $text_callback
+	DEC R2
+	PSH R2
+	RET ; Jumps into the address just pushed
+	; Return point:
+	submitText_handled:
+	; Reset mode
+	ST 0 $mode
+	; Reset cursor and buffer
+	CALL printRightPrompt
+	ST 0 $cur_line_buffer_size
+	RET
+submitCommand:
 	DD cur_line_buffer
 	LD R1 $cur_line_buffer_size
 	LDD R0
@@ -102,12 +120,104 @@ submitCommand:
 	LD R1 unknownCommandText
 	CALL printLine
 	submitCommand_handled:
-	CALL printCommandPrompt
+	CALL printRightPrompt
 	ST 0 $cur_line_buffer_size
 	RET
 	submitCommand_handled_string_in:
 	ST 0 $cur_line_buffer_size
 	RET
+
+command_append:
+	LD R1 cur_line_buffer
+	INC R1
+	CALL yield_line_setup
+	CALL yield_line
+	CE R0 0xffff ; No line list: error
+	JMPC command_append_noinput
+
+	PSH R0
+		LD R0 $lineArray
+		CALL ll_size
+		STZ R3
+		ST R3 $command_append_maxidx
+	POP R0
+
+	CGT R0 $command_append_maxidx
+	JMPC command_append_badinput
+
+	; Store selected line and callback
+	ST R0 $command_append_selected
+	ST callback_append $text_callback
+	ST 1 $mode
+
+
+	JMP submitCommand_handled
+
+	command_append_badinput:
+	command_append_noinput:
+		LD R1 badFormatText
+		CALL printLine
+		JMP submitCommand_handled
+
+command_append_maxidx: .db 0
+command_append_selected: .db 0
+
+; R0 -> address to text buffer
+; R1 -> size of text buffer
+callback_append:
+	; Copies the buffer into a new alloc'd buffer
+	; Inserts it into the proper line
+	; Saves the new malloc'd line into the liveArray
+
+	PSH R0
+	PSH R1
+	LDZ R1
+	INC R0
+	INT Imalloc
+	; TODO error check
+	; R0 has address of new puffer
+	POP R2
+	POP R1
+	PSH R0
+	; Copy R1 -> R0 (buff size R2)
+	callback_append_copy_loop:
+		CEZ R2
+		JMPC callback_append_copy_done
+
+		DD R1
+		LDD R3
+		DD R0
+		STD R3
+
+		INC R0
+		INC R1
+		DEC R2
+		JMP callback_append_copy_loop
+	callback_append_copy_done:
+	DD R0
+	STD 0
+	POP R0
+	; We've copied the text into a new malloc'd buffer
+	; At R0
+	PSH R0
+	STZ R2
+	LD R0 $lineArray
+	LD R1 $command_append_selected
+
+	; R0 -> Pointer to list
+	; R1 -> Index (Insert after this index)
+	; R2 -> Value
+	CALL ll_insert
+
+	POP R1
+	LD R0 $liveArray
+
+	; R0 -> Pointer to list
+	; R1 -> Value
+	CALL ll_append
+
+
+	JMP submitText_handled
 
 command_print:
 	LD R1 cur_line_buffer
@@ -237,9 +347,20 @@ delay:
 		JMPC delayLoop
 	RET
 
-printCommandPrompt:
+printRightPrompt:
+	; if (mode == 0) {
+	;   printchar(">");
+	; } else {
+	;   printchar(":");
+	; }
 	PSH
+	CEZ $mode
+	JMPC printRightPrompt_command
+	LD R0 ':'
+	JMP printRightPrompt_finish
+	printRightPrompt_command:
 	LD R0 '>'
+	printRightPrompt_finish:
 	LD R2 3
 	INT Ioutput
 	POP
@@ -272,6 +393,7 @@ deinitialize_arrays:
 
 ; Program Vars
 mode:		 			.db 0 ; 0: comand, 1: text_get
+text_callback:			.db 0
 argumentptr: 			.db 0
 isDone: 				.db 0
 cur_line_buffer_size:	.db 0
@@ -291,6 +413,8 @@ welcomeText: 			.ds "Welcome to GhostED"
 .db 0
 unknownCommandText:		.ds "Command not known"
 .db 0
+badFormatText:			.ds "Bad Format"
+.db 0
 
 #INC ./lib/linkedList.ghasm
 #INC ./ed/ed_keys.ghasm
@@ -298,7 +422,7 @@ unknownCommandText:		.ds "Command not known"
 #INC ./ed/ed_digits.ghasm
 
 Font: .db 0
-FontI:
-#INC ./fontGen/fontI.hex
+; FontI:
+; #INC ./fontGen/fontI.hex
 
-; .ds "DONE!"
+.ds "DONE!"

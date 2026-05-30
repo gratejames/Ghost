@@ -1,6 +1,11 @@
 ; Memory Management - James Smythe
 #DEF HEAP_SIZE 0x1000
 
+; Node:
+; header: alloc'd bit + size of contents
+; contents
+; footer: same fmt as header
+
 ; R0 -> Size
 ; R0 <- Pointer or 0 if fail
 #SHARE malloc

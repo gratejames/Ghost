@@ -98,7 +98,7 @@ vector<ptr> Live Array
 - [ ] Backspace support
 
 - [X] Print `p`
-- [ ] Append `a`
+- [X] Append `a`
 - [ ] Delete `d`
 - [ ] Change `c`
 - [ ] Save `s` and Save As `S`

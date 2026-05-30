@@ -106,6 +106,7 @@
 ### Program Ideas:
 - [ ] Testing Framework
 - [ ] Snake
+- [ ] Visualizer for heap usage?
 # VFS
 + [ ] maybe unregister fileystem/disk number at some point?
 + [ ] change disk number command
