@@ -98,8 +98,6 @@ vector<ptr> Live Array
 
 - [ ] Backspace support
 
-- [ ] More error checking in number inputs
-
 ```
 yield line:
 10,14-15,17

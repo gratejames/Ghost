@@ -7,7 +7,7 @@ CursorNewline:
 	ST R1 $Cursor
 
 	CLT R1 0x1000
-	JMPC CursorNewline_enoughRoom	
+	JMPC CursorNewline_enoughRoom
 		CALL ScrollScreen ; Scroll screen if there isn't enough room
 		LD R1 $LastCursor
 		SUB R1 0x40
