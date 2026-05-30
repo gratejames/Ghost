@@ -501,7 +501,7 @@ class assembler:
         return outDict
 
     def recordLabels(self, line):
-        if ":" in line and not line.strip().startswith(".ds"):
+        if ":" in line and not line.strip().startswith(".ds") and "':'" not in line and r"\:" not in line:
             if line.split(":")[0] in self.definitions.keys():
                 self.die(
                     f"X Error recording definitions: the definitions '{line.split(':')[0]}' was encountered earlier at position {self.definitions[line.split(':')[0]]}"

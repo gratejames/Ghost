@@ -3,6 +3,7 @@
 + [x] Have .data prefixes make any sense please
 + [x] To and from R0 for better math
 + [ ] Text modes?
++ [x] FIX ASSEMBLER SO YOU CAN HAVE A ':' CHAR
 + [ ] Want a BRKC instruction pls
 + [ ] Add interrupt for stack overflow
 + [ ] Fix assembler string handler with comments
