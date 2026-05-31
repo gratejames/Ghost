@@ -114,8 +114,8 @@ submitCommand:
 	JMPC command_print
 	CE R0 'a'
 	JMPC command_append
-	; CE R0 'p'
-	; JMPC command_print
+	CE R0 'd'
+	JMPC command_delete
 
 	LD R1 unknownCommandText
 	CALL printLine
@@ -127,13 +127,95 @@ submitCommand:
 	ST 0 $cur_line_buffer_size
 	RET
 
+command_delete:
+	LD R1 cur_line_buffer
+	INC R1
+	CALL yield_line_setup
+	CALL yield_line
+	CE R0 0xffff ; No line list: error
+	JMPC command_error_misnumber
+	CE R0 0 ; Zero is not allowed
+	JMPC command_error_badnumber
+
+	PSH R0
+		LD R0 $lineArray
+		CALL ll_size
+		STZ R3
+		ST R3 $command_delete_maxidx
+	POP R0
+
+	CGT R0 $command_delete_maxidx
+	JMPC command_error_badnumber
+
+	LD R3 1
+	PSH R3
+
+	command_delete_loop:
+		; R0: (i) line number to remove
+		; R3: number of deleted so far
+
+		; if i == 0xffff: break
+		CE R0 0xffff
+		JMPC command_delete_loop_done
+		; i -= deleted; deleted++
+		POP R3
+		SUB R3
+		INC R3
+		PSH R3
+		; if (i > cursize): break
+		CGT R0 $command_delete_maxidx
+		JMPC command_delete_loop_done
+
+		ST R0 $command_delete_curline
+		; R2: (linePtr) = lineArray[i];
+		STZ R1
+		LD R0 $lineArray
+		CALL ll_fetch
+		; R1: (liveIdx) = ll_index(liveArray, linePtr);
+		PSH R2
+		LD R0 $liveArray
+		CALL ll_index
+		POP R2
+		; if (liveIdx != 0xffff) {
+		; 	free(linePtr)
+		; 	ll_delete(liveArray, liveIdx)
+		; }
+		CE R1 0xffff
+		JMPC command_delete_not_live
+		PSH
+		LDZ R2
+		CALL Ifree
+		POP
+		LD R0 $liveArray
+		; R1 already holds index
+		CALL ll_remove
+		command_delete_not_live:
+		; ll_delete(lineArray, i)
+		LD R0 $lineArray
+		LD R1 $command_delete_curline
+		CALL ll_remove
+		; cursize--;
+		LD R0 $command_delete_maxidx
+		DEC R0
+		ST R0 $command_delete_maxidx
+		; i = yeild();
+		CALL yield_line
+		JMP command_delete_loop
+
+	command_delete_loop_done:
+	POP R3
+	JMP submitCommand_handled
+
+	command_delete_maxidx: .db 0
+	command_delete_curline: .db 0
+
 command_append:
 	LD R1 cur_line_buffer
 	INC R1
 	CALL yield_line_setup
 	CALL yield_line
 	CE R0 0xffff ; No line list: error
-	JMPC command_append_noinput
+	JMPC command_error_misnumber
 
 	PSH R0
 		LD R0 $lineArray
@@ -143,7 +225,7 @@ command_append:
 	POP R0
 
 	CGT R0 $command_append_maxidx
-	JMPC command_append_badinput
+	JMPC command_error_badnumber
 
 	; Store selected line and callback
 	ST R0 $command_append_selected
@@ -152,12 +234,6 @@ command_append:
 
 
 	JMP submitCommand_handled
-
-	command_append_badinput:
-	command_append_noinput:
-		LD R1 badFormatText
-		CALL printLine
-		JMP submitCommand_handled
 
 command_append_maxidx: .db 0
 command_append_selected: .db 0
@@ -224,13 +300,15 @@ command_print:
 	INC R1
 	CALL yield_line_setup
 	CALL yield_line
-	CE R0 0xffff ; No line list: print all
 		PSH R0
 		LD R0 $lineArray
 		CALL ll_size
 		STZ R3
 		POP R0
 		; R3 has size
+	CEZ R3
+	JMPC submitCommand_handled
+	CE R0 0xffff ; No line list: print all
 	JMPC command_print_printall
 		DEC R3
 		ST R3 $command_print_maxidx
@@ -270,6 +348,16 @@ command_print:
 		JMP submitCommand_handled
 
 command_print_maxidx: .db 0
+
+command_error_misnumber:
+	LD R1 misNumberText
+	CALL printLine
+	JMP submitCommand_handled
+command_error_badnumber:
+	LD R1 badNumberText
+	CALL printLine
+	JMP submitCommand_handled
+
 
 ; R1 -> Index
 outFileLine:
@@ -413,7 +501,11 @@ welcomeText: 			.ds "Welcome to GhostED"
 .db 0
 unknownCommandText:		.ds "Command not known"
 .db 0
-badFormatText:			.ds "Bad Format"
+badNumberText:			.ds "Bad Number (Out of range?)"
+.db 0
+misNumberText:			.ds "Missing Number"
+.db 0
+unxNumberText:			.ds "Unexpected Number"
 .db 0
 
 #INC ./lib/linkedList.ghasm

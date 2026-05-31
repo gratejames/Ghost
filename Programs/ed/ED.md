@@ -96,10 +96,13 @@ vector<ptr> Live Array
 
 - [ ] Need command to check file length
 - [ ] Backspace support
+- [ ] Need to confirm heap is being cleaned up correctly
+- [ ] keep track of unsaved vs saved for quit warning
+- [X] p on an empty file gets stuck in loop printing nonesense
 
 - [X] Print `p`
 - [X] Append `a`
-- [ ] Delete `d`
+- [X] Delete `d`
 - [ ] Change `c`
 - [ ] Save `s` and Save As `S`
 - [ ] Edit `e`
@@ -107,8 +110,37 @@ vector<ptr> Live Array
 - [ ] Help `h`
 
 ```
+delete:
+int deleted = 0;
+int curLine = yeild();
+int listSize = len(lineArray)
+loop:
+  if (curLine==0xffff) {
+    break
+  }
+
+  curLine -= deleted;
+  deleted++;
+
+  if (curLine > listSize) {
+    break
+  }
+  linePtr = lineArray[curLine];
+  liveIdx = ll_index(liveArray, linePtr);
+  if (liveIdx != 0xffff) {
+    free(linePtr)
+    ll_delete(liveArray, liveIdx)
+  }
+  ll_delete(lineArray, curLine)
+  listSize--;
+
+  curLine = yeild();
+```
+
+```
 yield line:
-10,14-15,17
+10,13-15,17
+-> 10, 13, 14, 15, 17
 
 ; R1 -> pointer to first value
 ; R0 <- value
