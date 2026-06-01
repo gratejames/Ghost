@@ -156,6 +156,8 @@ ll_index:
 			ll_index_traverse_loop_found:
 			POP R0
 			SUB R1
+			STZ R1
+			DEC R1
 			; index = list size - steps remaining
 			POP R3
 			RET
