@@ -68,8 +68,11 @@ normalKeyPressed:
 	RET
 
 enterPressed:
+	CNZ $mode
+	JMPC skip_empty_check ; skip check if it's text entry mode
 	CEZ $cur_line_buffer_size
 	RETC
+	skip_empty_check:
 
 	; Cursor Management
 		LD R0 0
@@ -83,7 +86,6 @@ enterPressed:
 		ADD R0 $cur_line_buffer_size
 		DD R0
 		STD 0
-
 	CEZ $mode
 	JMPC submitCommand
 	JMP submitText
@@ -116,6 +118,18 @@ submitCommand:
 	JMPC command_append
 	CE R0 'd'
 	JMPC command_delete
+	CE R0 'c'
+	JMPC command_change
+	CE R0 's'
+	JMPC command_save
+	CE R0 'S'
+	JMPC command_saveAs
+	CE R0 'e'
+	JMPC command_edit
+	CE R0 'q'
+	JMPC command_quit
+	CE R0 'h'
+	JMPC command_help
 
 	LD R1 unknownCommandText
 	CALL printLine
@@ -127,7 +141,65 @@ submitCommand:
 	ST 0 $cur_line_buffer_size
 	RET
 
+
+command_help:
+	LD R1 helpText
+	CALL printLine
+	JMP submitCommand_handled
+command_quit:
+	LD R0 $unsavedChanges
+	CEZ R0
+	JMPC command_quit_immediate
+
+	LD R1 unsavedChangesText
+	CALL printLine
+
+	ST callback_quit_confirm $text_callback
+	ST 1 $mode
+
+	JMP submitCommand_handled
+	command_quit_immediate:
+		ST 1 $isDone
+		RET
+
+	; R0 -> address to text buffer
+	; R1 -> size of text buffer
+	; Default: save
+	callback_quit_confirm:
+		CEZ R1
+		JMPC callback_quit_confirm_yes
+		DD R0
+		LDD R1
+		CE R1 'n'
+		JMPC callback_quit_confirm_no
+		CE R1 'N'
+		JMPC callback_quit_confirm_no
+		JMP callback_quit_confirm_yes
+
+
+	callback_quit_confirm_yes:
+		LD R1 saveConfirmText
+		CALL printLine
+		ST 1 $isDone
+		RET
+	callback_quit_confirm_no:
+		LD R1 saveDiscardedText
+		CALL printLine
+		ST 1 $isDone
+		RET
+
+
+command_edit:
+	JMP submitCommand_handled
+command_saveAs:
+	JMP submitCommand_handled
+command_save:
+	JMP submitCommand_handled
+command_change:
+	JMP submitCommand_handled
+
 command_delete:
+	ST 1 $unsavedChanges
 	LD R1 cur_line_buffer
 	INC R1
 	CALL yield_line_setup
@@ -210,6 +282,7 @@ command_delete:
 	command_delete_curline: .db 0
 
 command_append:
+	ST 1 $unsavedChanges
 	LD R1 cur_line_buffer
 	INC R1
 	CALL yield_line_setup
@@ -490,6 +563,7 @@ cur_line_buffer:		.dz 65
 ; File Vars
 lineArray:				.db 0 ; List of pointers to the start of each line in the file
 liveArray:				.db 0 ; List of pointers to all the dynamically allocated lines that -we- need to free
+unsavedChanges:			.db 0
 
 ; Keyboard Vars
 returnPressedLately:	.db 0
@@ -506,6 +580,30 @@ badNumberText:			.ds "Bad Number (Out of range?)"
 misNumberText:			.ds "Missing Number"
 .db 0
 unxNumberText:			.ds "Unexpected Number"
+.db 0
+unsavedChangesText:
+.ds "You have unsaved changes."
+.db 0xa
+.ds "Save? [Y/n] "
+.db 0
+saveConfirmText:
+.ds "Changes saved"
+.db 0
+saveDiscardedText:
+.ds "Changes discarded"
+.db 0
+
+
+helpText:
+.ds "Help:"
+.db 0xa
+.ds "p: Print a range    | s: Save this file"
+.db 0xa
+.ds "d: Delete a range   | S: Save, new name"
+.db 0xa
+.ds "a: Append to a line | e: Edit a file   "
+.db 0xa
+.ds "c: Change a line    | q: Quit          "
 .db 0
 
 #INC ./lib/linkedList.ghasm

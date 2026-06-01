@@ -94,10 +94,13 @@ vector<ptr> Live Array
 
 ## Notes & todo
 
+- [ ] Implement callback_quit_confirm_yes
 - [ ] Need command to check file length
 - [ ] Backspace support
+- [ ] Shift support
 - [ ] Need to confirm heap is being cleaned up correctly
-- [ ] keep track of unsaved vs saved for quit warning
+- [ ] Allow escape via `esc` from text entry
+- [X] keep track of unsaved vs saved for quit warning
 - [X] p on an empty file gets stuck in loop printing nonesense
 
 - [X] Print `p`
@@ -106,8 +109,8 @@ vector<ptr> Live Array
 - [ ] Change `c`
 - [ ] Save `s` and Save As `S`
 - [ ] Edit `e`
-- [ ] Quit `q`
-- [ ] Help `h`
+- [X] Quit `q`
+- [X] Help `h`
 
 ```
 delete:
